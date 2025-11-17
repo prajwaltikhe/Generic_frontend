@@ -55,9 +55,9 @@ const settingsSubMenus = [
     icon: <ArrowRight style={{ fontSize: '20px' }} />,
     style: { top: '-82px' },
     items: [
-      { to: '/master/employee', label: 'Employee' },
-      { to: '/master/vehicle', label: 'Vehicle' },
-      { to: '/master/driver', label: 'Driver' },
+      { to: '/master/employee', label: 'Employees' },
+      { to: '/master/vehicle', label: 'Vehicles' },
+      { to: '/master/driver', label: 'Drivers' },
       { to: '/master/departments', label: 'Departments' },
       { to: '/master/plants', label: 'Plants' },
       { to: '/master/plant-in-time', label: 'Plant In Time' },
@@ -68,8 +68,8 @@ const settingsSubMenus = [
     icon: <ArrowRight style={{ fontSize: '20px' }} />,
     style: { top: '-82px' },
     items: [
-      { to: '/management/geofence', label: 'Geofence' },
-      { to: '/management/vehicle-route', label: 'Vehicle Route' },
+      { to: '/management/geofence', label: 'Geofences' },
+      { to: '/management/vehicle-route', label: 'Vehicle Routes' },
       { to: '/management/feedbacks', label: 'Feedbacks' },
       { to: '/management/route-change-request', label: 'Route change request' },
       { to: '/management/emergency-alerts', label: 'Emergency alerts' },

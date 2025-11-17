@@ -94,8 +94,8 @@ function formatEmp(data, offset = 0) {
     gender: emp.gender || '',
     vehicle_route_id: emp.vehicle_route_id || '',
     address: emp.address || '',
-    boarding_latitude: emp.boarding_latitude ?? emp.latitude ?? '',
-    boarding_longitude: emp.boarding_longitude ?? emp.longitude ?? '',
+    boarding_latitude: emp.boarding_latitude ?? emp.latitude ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
+    boarding_longitude: emp.boarding_longitude ?? emp.longitude ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
     boarding_address: emp.boarding_address || '',
     status:
       emp.active === 1 || (typeof emp.status === 'string' && emp.status.trim().toLowerCase() === 'active')
@@ -120,7 +120,7 @@ function Employee() {
   const [file, setFile] = useState(null);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [filterData, setFilterData] = useState({ company_id, department: '', employee: '' });
+  const [filterData, setFilterData] = useState({ company_id, department: '', employee_id: '' });
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
@@ -150,7 +150,7 @@ function Employee() {
     const payload = {
       company_id,
       department: filterData.department || undefined,
-      employee: filterData.employee || undefined,
+      employee_id: filterData.employee_id || undefined,
       search: searchQuery?.trim() || undefined,
       page: 1,
       limit: customLimit !== undefined ? customLimit : limit,
@@ -201,7 +201,7 @@ function Employee() {
   };
 
   const handleFormReset = () => {
-    setFilterData({ company_id, department: '', employee: '' });
+    setFilterData({ company_id, department: '', employee_id: '' });
     setSearchQuery('');
     setPage(0);
   };
@@ -269,7 +269,7 @@ function Employee() {
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between mb-4'>
-        <h1 className='text-2xl font-bold text-[#07163d]'>Employee (Total: {totalCount})</h1>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Employees (Total: {totalCount})</h1>
         <div className='flex gap-2'>
           <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <Link to='/master/employee/create'>
@@ -315,7 +315,7 @@ function Employee() {
           fileInputRef={fileInputRef}
           setFile={setFile}
           departments={departments}
-          employees={allEmployeeOptions}
+          employeeIds={allEmployeeOptions}
           isDate={false}
         />
       </form>

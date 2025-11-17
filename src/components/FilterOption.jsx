@@ -13,6 +13,7 @@ function FilterOption({
   handleFormReset,
   handleFormSubmit,
   employees = [],
+  employeeIds=[],
   vehicles = [],
   routes = [],
   plants = [],
@@ -48,6 +49,10 @@ function FilterOption({
   const employeeOptions = toArray(employees).map((e) => ({
     label: `${e.first_name || ''} ${e.last_name || ''}`.trim(),
     value: e.id,
+  }));
+  const employeeIdOptions = toArray(employeeIds).map((e) => ({
+    label: `${e.employee_id || ''}`.trim(),
+    value: e.employee_id,
   }));
   const vehicleOptions = toArray(vehicles).map((v) => ({ label: v?.vehicle?.vehicle_number, value: v.vehicle_id }));
   const routeOptions = toArray(routes).map((r) => ({ label: r.name, value: r.id }));
@@ -129,6 +134,22 @@ function FilterOption({
                   options={employeeOptions}
                   value={filterData.employee || ''}
                   onChange={(v) => setFilterData({ ...filterData, employee: v })}
+                />
+              ))}
+            {employeeIdOptions.length > 0 &&
+              (report ? (
+                <MultiSelect
+                  label='Select Employee IDs'
+                  options={employeeIdOptions}
+                  value={filterData.employee_ids || []}
+                  onChange={handleMultiChange('employee_ids', employeeIdOptions)}
+                />
+              ) : (
+                <SingleSelect
+                  label='Select Employee ID'
+                  options={employeeIdOptions}
+                  value={filterData.employee_id || ''}
+                  onChange={(v) => setFilterData({ ...filterData, employee_id: v })}
                 />
               ))}
             {plantOptions.length > 0 &&

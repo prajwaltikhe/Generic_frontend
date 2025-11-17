@@ -103,6 +103,8 @@ function DynamicRoute() {
         <Route path='vehicle/view' element={<VehicleForm />} />
         <Route path='driver' element={<Driver />} />
         <Route path='driver/create' element={<DriverForm />} />
+        <Route path='driver/edit' element={<DriverForm />} />
+        <Route path='driver/view' element={<DriverForm />} />
 
         <Route path='*' element={<div>404</div>} />
       </Route>

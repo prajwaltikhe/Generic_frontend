@@ -47,7 +47,6 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
     ['Vehicle Name', 'vehicle_name'],
     ['Vehicle Number', 'vehicle_number'],
     ['Route Name', 'route_name'],
-    ['Total Distance', 'total_distance'],
     ['Today Distance', 'today_distance'],
     ['Total Seats', 'seats'],
     ['Assigned Seats', 'assigned_seats'],

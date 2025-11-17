@@ -1,10 +1,12 @@
 import L from 'leaflet';
+import { toast } from 'react-toastify';
 import { APIURL } from '../../../../constants';
 import { useState, useEffect, useRef } from 'react';
 import { Autocomplete, TextField } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AddressServices, ApiService } from '../../../../services';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
@@ -34,15 +36,21 @@ const DriverForm = () => {
   const [selectedAddressOption, setSelectedAddressOption] = useState(null);
   const addressTimeoutRef = useRef(null);
 
+  const location = useLocation();
+  const { state: rowData } = location;
+  const isViewMode = rowData?.mode === 'view';
+  const isEditMode = rowData?.mode === 'edit';
+  const readOnly = isViewMode;
+  const showSaveButton = !readOnly;
+
   const handleChange = (e) => {
+    if (readOnly) return;
     const { name, value } = e.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const location = useLocation();
-  const rowData = location.state;
-
   const handleDrop = (e) => {
+    if (readOnly) return;
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
@@ -52,32 +60,40 @@ const DriverForm = () => {
   };
 
   useEffect(() => {
-    if (rowData) {
-      const [firstName = '', ...rest] = rowData.driverName?.split(' ') || [];
-      const lastName = rest.join(' ') || '';
-      setFormValues({
-        firstName,
-        lastName,
-        punchId: rowData.punchId || '',
-        email: rowData.driverEmail || '',
-        phoneNumber: rowData.phoneNumber || '',
-        dateOfBirth: rowData.dateOfBirth || '',
-        drivingLicenceNo: rowData.drivingLicenceNo || '',
-        drivingLicenceIssueDate: rowData.drivingLicenceIssueDate || '',
-        drivingLicenceExpiryDate: rowData.drivingLicenceExpiryDate || '',
-        profilePhoto: rowData.profilePhoto || '',
-        address: rowData.address || '',
-        latitude: rowData.latitude || '',
-        longitude: rowData.longitude || '',
-      });
+    if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
+    const d = rowData.rowData;
+    // Split name for editing/view
+    const [firstName = '', ...rest] = d.driverName?.split(' ') || [];
+    const lastName = rest.join(' ') || '';
+    setFormValues({
+      firstName,
+      lastName,
+      punchId: d.punchId || '',
+      email: d.driverEmail || '',
+      phoneNumber: d.phoneNumber || '',
+      dateOfBirth: d.dateOfBirth || '',
+      drivingLicenceNo: d.drivingLicenceNo || '',
+      drivingLicenceIssueDate: d.drivingLicenceIssueDate || '',
+      drivingLicenceExpiryDate: d.drivingLicenceExpiryDate || '',
+      profilePhoto: d.profilePhoto || '',
+      address: d.address || '',
+      latitude: d.latitude || '',
+      longitude: d.longitude || '',
+    });
+    // For autocomplete selection
+    if (d.address) {
+      setSelectedAddressOption({ label: d.address, value: d.place_id || null });
     }
   }, [rowData]);
 
   useEffect(() => {
-    if (rowData && rowData.address) setSelectedAddressOption({ label: rowData.address, value: rowData.place_id });
-  }, [rowData]);
+    if (readOnly && formValues.address) {
+      setSelectedAddressOption({ label: formValues.address, value: null });
+    }
+  }, [formValues.address, readOnly]);
 
   const handleDragOver = (e) => {
+    if (readOnly) return;
     e.preventDefault();
   };
 
@@ -91,50 +107,57 @@ const DriverForm = () => {
 
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+    if (readOnly) return;
     let profileImageBytes = null;
 
-    if (formValues.profilePhoto instanceof File) {
-      profileImageBytes = await convertFileToBase64(formValues.profilePhoto);
-    } else if (typeof formValues.profilePhoto === 'string' && formValues.profilePhoto !== '') {
-      profileImageBytes = formValues.profilePhoto;
-    }
-
-    const payload = {
-      first_name: formValues.firstName,
-      last_name: formValues.lastName,
-      punch_id: formValues.punchId ? parseInt(formValues.punchId) : null,
-      email: formValues.email,
-      phone_number: formValues.phoneNumber,
-      date_of_birth: formValues.dateOfBirth ? new Date(formValues.dateOfBirth).toISOString() : null,
-      driving_licence: formValues.drivingLicenceNo,
-      driving_licence_issue_date: formValues.drivingLicenceIssueDate
-        ? new Date(formValues.drivingLicenceIssueDate).toISOString()
-        : null,
-      driving_licence_expire_date: formValues.drivingLicenceExpiryDate
-        ? new Date(formValues.drivingLicenceExpiryDate).toISOString()
-        : null,
-      latitude: formValues.latitude,
-      longitude: formValues.longitude,
-      address: formValues.address,
-      status_id: 1,
-      profile_photo: profileImageBytes,
-    };
-
-    if (rowData) {
-      const res = await ApiService.put(`${APIURL.DRIVER}/${rowData.actual_id}`, payload);
-
-      if (res.success) {
-        navigate('/master/driver');
-      } else {
-        alert(res.message || 'Something went wrong.');
+    try {
+      if (formValues.profilePhoto instanceof File) {
+        profileImageBytes = await convertFileToBase64(formValues.profilePhoto);
+      } else if (typeof formValues.profilePhoto === 'string' && formValues.profilePhoto !== '') {
+        profileImageBytes = formValues.profilePhoto;
       }
-    } else {
-      const res = await ApiService.post(APIURL.DRIVER, payload);
-      if (res.success) {
-        navigate('/master/driver');
+
+      const payload = {
+        first_name: formValues.firstName,
+        last_name: formValues.lastName,
+        punch_id: formValues.punchId ? parseInt(formValues.punchId) : null,
+        email: formValues.email,
+        phone_number: formValues.phoneNumber,
+        date_of_birth: formValues.dateOfBirth ? new Date(formValues.dateOfBirth).toISOString() : null,
+        driving_licence: formValues.drivingLicenceNo,
+        driving_licence_issue_date: formValues.drivingLicenceIssueDate
+          ? new Date(formValues.drivingLicenceIssueDate).toISOString()
+          : null,
+        driving_licence_expire_date: formValues.drivingLicenceExpiryDate
+          ? new Date(formValues.drivingLicenceExpiryDate).toISOString()
+          : null,
+        latitude: formValues.latitude,
+        longitude: formValues.longitude,
+        address: formValues.address,
+        status_id: 1,
+        profile_photo: profileImageBytes,
+      };
+
+      if (rowData?.rowData) {
+        const res = await ApiService.put(`${APIURL.DRIVER}/${rowData.rowData.actual_id}`, payload);
+
+        if (res.success) {
+          toast.success('Driver updated successfully');
+          navigate('/master/driver');
+        } else {
+          toast.error(res.message || 'Failed to update driver.');
+        }
       } else {
-        alert(res.message || 'Something went wrong.');
+        const res = await ApiService.post(APIURL.DRIVER, payload);
+        if (res.success) {
+          toast.success('Driver created successfully');
+          navigate('/master/driver');
+        } else {
+          toast.error(res.message || 'Failed to create driver.');
+        }
       }
+    } catch (error) {
+      toast.error('Something went wrong. Please try again.');
     }
   };
 
@@ -165,6 +188,7 @@ const DriverForm = () => {
                     placeholder='Driver First Name'
                     value={formValues.firstName}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -182,6 +206,7 @@ const DriverForm = () => {
                     placeholder='Last Name'
                     value={formValues.lastName}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -199,6 +224,7 @@ const DriverForm = () => {
                     placeholder='Punch Id'
                     value={formValues.punchId}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -216,6 +242,7 @@ const DriverForm = () => {
                     placeholder='Email'
                     value={formValues.email}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -233,6 +260,7 @@ const DriverForm = () => {
                     placeholder='Phone Number'
                     value={formValues.phoneNumber}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -250,6 +278,7 @@ const DriverForm = () => {
                     placeholder='Date Of Birth'
                     value={formValues.dateOfBirth}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -267,6 +296,7 @@ const DriverForm = () => {
                     placeholder='Driving Licence No.'
                     value={formValues.drivingLicenceNo}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -284,6 +314,7 @@ const DriverForm = () => {
                     placeholder='Driving Licence issue date'
                     value={formValues.drivingLicenceIssueDate}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -301,6 +332,7 @@ const DriverForm = () => {
                     placeholder='Driving Licence expiry date'
                     value={formValues.drivingLicenceExpiryDate}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -308,10 +340,16 @@ const DriverForm = () => {
                   <label className='block mb-2 text-sm font-medium text-gray-900'>Profile Image</label>
                   <div className='flex items-center justify-center w-full'>
                     <div
-                      className='flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100'
-                      onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                      className={
+                        'flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg ' +
+                        (readOnly
+                          ? 'bg-gray-100 cursor-not-allowed'
+                          : 'cursor-pointer bg-gray-50 hover:bg-gray-100')
+                      }
+                      onClick={() => !readOnly && fileInputRef.current && fileInputRef.current.click()}
                       onDrop={handleDrop}
-                      onDragOver={handleDragOver}>
+                      onDragOver={handleDragOver}
+                    >
                       <div className='flex flex-col items-center justify-center pt-5 pb-6'>
                         <svg
                           className='w-8 h-8 mb-4 text-gray-500'
@@ -342,11 +380,13 @@ const DriverForm = () => {
                         name='profilePhoto'
                         id='profilePhoto'
                         onChange={(e) => {
+                          if (readOnly) return;
                           if (e.target.files.length > 0) {
                             const file = e.target.files[0];
                             setFormValues((prev) => ({ ...prev, profilePhoto: file }));
                           }
                         }}
+                        disabled={readOnly}
                       />
                     </div>
                   </div>
@@ -354,7 +394,9 @@ const DriverForm = () => {
                     <img
                       src={
                         typeof formValues.profilePhoto === 'string'
-                          ? formValues.profilePhoto
+                          ? formValues.profilePhoto.startsWith('data:') || formValues.profilePhoto.startsWith('http')
+                            ? formValues.profilePhoto
+                            : `data:image/jpeg;base64,${formValues.profilePhoto}`
                           : URL.createObjectURL(formValues.profilePhoto)
                       }
                       alt='Preview'
@@ -380,29 +422,38 @@ const DriverForm = () => {
                     isOptionEqualToValue={(option, value) => option.value === value?.value}
                     getOptionLabel={(option) => option.label}
                     size='small'
-                    renderInput={(params) => <TextField {...params} label='Address' />}
-                    onInputChange={(event, value) => {
-                      if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
-                      clearTimeout(addressTimeoutRef.current);
-                      addressTimeoutRef.current = setTimeout(async () => {
-                        if (value) setAddressOnSearch((await AddressServices.getLocationFromName(value)) || []);
-                      }, 500);
-                    }}
+                    renderInput={(params) => <TextField {...params} label='Address' InputProps={{ ...params.InputProps, readOnly: readOnly }} />}
+                    onInputChange={
+                      readOnly
+                        ? undefined
+                        : (event, value) => {
+                            if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
+                            addressTimeoutRef.current = setTimeout(async () => {
+                              if (value) setAddressOnSearch((await AddressServices.getLocationFromName(value)) || []);
+                            }, 500);
+                          }
+                    }
                     value={selectedAddressOption}
-                    onChange={(event, value) => {
-                      if (value) {
-                        setSelectedAddressOption(value);
-                        setFormValues((prev) => ({
-                          ...prev,
-                          address: value.otherData.display_name,
-                          latitude: value.otherData.lat,
-                          longitude: value.otherData.lon,
-                        }));
-                      } else {
-                        setSelectedAddressOption(null);
-                        setFormValues((prev) => ({ ...prev, address: '', latitude: '', longitude: '' }));
-                      }
-                    }}
+                    onChange={
+                      readOnly
+                        ? undefined
+                        : (event, value) => {
+                            if (value) {
+                              setSelectedAddressOption(value);
+                              setFormValues((prev) => ({
+                                ...prev,
+                                address: value.otherData.display_name,
+                                latitude: value.otherData.lat,
+                                longitude: value.otherData.lon,
+                              }));
+                            } else {
+                              setSelectedAddressOption(null);
+                              setFormValues((prev) => ({ ...prev, address: '', latitude: '', longitude: '' }));
+                            }
+                          }
+                    }
+                    readOnly={readOnly}
+                    disabled={readOnly}
                   />
                 </div>
               </div>
@@ -418,6 +469,7 @@ const DriverForm = () => {
                     placeholder='Latitude'
                     value={formValues.latitude}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
 
@@ -432,6 +484,7 @@ const DriverForm = () => {
                     placeholder='Longitude'
                     value={formValues.longitude}
                     onChange={handleChange}
+                    InputProps={{ readOnly: readOnly }}
                   />
                 </div>
               </div>
@@ -471,11 +524,13 @@ const DriverForm = () => {
               </div>
 
               <div className='flex justify-end gap-4 mt-4'>
-                <button
-                  type='submit'
-                  className='text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
-                  Save
-                </button>
+                {showSaveButton && (
+                  <button
+                    type='submit'
+                    className='text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
+                    Save
+                  </button>
+                )}
                 <Link to='/master/driver'>
                   <button
                     type='button'

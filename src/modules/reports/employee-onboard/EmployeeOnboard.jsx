@@ -66,7 +66,7 @@ function EmployeeOnboard() {
     fromDate: '',
     toDate: '',
     departments: [],
-    employees: [],
+    employee_ids: [],
     plants: [],
   });
   const [filteredData, setFilteredData] = useState([]);
@@ -87,12 +87,12 @@ function EmployeeOnboard() {
   }, [dispatch]);
 
   const buildApiPayload = (fetchLimit) => {
-    const { fromDate, toDate, departments, employees, routes, vehicles, plants } = filterData;
+    const { fromDate, toDate, departments, employee_ids, routes, vehicles, plants } = filterData;
     const company_id = localStorage.getItem('company_id');
     const payload = { company_id };
 
     payload.departments = departments?.length ? JSON.stringify(departments) : undefined;
-    payload.employees = employees?.length ? JSON.stringify(employees) : undefined;
+    payload.employee_ids = employee_ids?.length ? JSON.stringify(employee_ids) : undefined;
     payload.plants = plants?.length ? JSON.stringify(plants) : undefined;
     payload.routes = JSON.stringify(Array.isArray(routes) ? routes : []);
     payload.vehicles = JSON.stringify(Array.isArray(vehicles) ? vehicles : []);
@@ -127,7 +127,7 @@ function EmployeeOnboard() {
       fromDate: '',
       toDate: '',
       departments: [],
-      employees: [],
+      employee_ids: [],
       plants: [],
     };
     setFilterData(cleared);
@@ -174,7 +174,7 @@ function EmployeeOnboard() {
           routes={routes}
           departments={departments || []}
           vehicles={routes || []}
-          employees={employees || []}
+          employeeIds={employees || []}
           plants={plants || []}
           report={true}
         />

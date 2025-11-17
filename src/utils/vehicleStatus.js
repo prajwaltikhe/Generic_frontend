@@ -52,7 +52,6 @@ export const processVehicles = (vehicles) => {
       vehicle_name: v.vehicle_name ?? '-',
       vehicle_number: v.vehicle_number ?? '-',
       route_name: route,
-      total_distance: getOdo(odoVal),
       today_distance: getOdo(todayVal),
       seats: v.seats ?? '-',
       assigned_seats: v.AssignedSeats ?? '-',
