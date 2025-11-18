@@ -44,7 +44,7 @@ function AutoSelect({ label, options, value, loading, onChange, required, disabl
         loading={loading}
         value={value}
         onChange={onChange}
-        isOptionEqualToValue={(o, v) => o?.value === v?.value}
+        isOptionEqualToValue={(o, v) => o?.value == v?.value}
         getOptionLabel={(o) => o?.label || ''}
         renderInput={(params) => <TextField {...params} size='small' fullWidth />}
         disabled={disabled}
@@ -72,7 +72,7 @@ const INITIAL_FORM = {
   dateOfBirth: '',
   selectedGender: '',
   vehicleRoute: '',
-  boardingPoint: '',
+  boardingPoint: '', 
   profilePhoto: '',
   address: '',
   latitude: '',
@@ -134,15 +134,14 @@ function EmployeeForm() {
     apiUrl: formVal.vehicleRoute ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute}/stops` : null,
     dataKey: 'stops',
     labelSelector: (d) => d?.address ?? '',
-    valueSelector: (d) => d.id,
+    valueSelector: (d) => d?.address ?? '',
   });
 
   useEffect(() => {
     if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
     const d = rowData.rowData;
-    const lat = d.boarding_latitude ? String(d.boarding_latitude) : '';
-    const lng = d.boarding_longitude ? String(d.boarding_longitude) : '';
-    const address = d.boarding_address?.trim() || d.address?.trim() || '';
+    const lat = d.latitude ? String(d.latitude) : '';
+    const lng = d.longitude ? String(d.longitude) : '';
 
     setFormVal({
       firstName: d.first_name || '',
@@ -151,42 +150,27 @@ function EmployeeForm() {
       punchId: d.punch_id || '',
       email: d.email || '',
       phoneNumber: d.phone_number?.trim() || '',
-      selectedDepartment: d.department_id || '',
-      selectedPlant: d.plant_id || '',
+      selectedDepartment: dept.options?.find(opt => opt.label === d.department)?.value || '',
+      selectedPlant: plant.options?.find(opt => opt.label === d.plant)?.value || '',
       dateOfJoining: d.date_of_joining || '',
       dateOfBirth: d.date_of_birth || '',
       selectedGender: d.gender === 'Male' ? '2' : d.gender === 'Female' ? '1' : '',
-      vehicleRoute: d.vehicle_route_id || '',
-      boardingPoint: d.boarding_stop_id || '',
+      vehicleRoute: route.options?.find(opt => opt.label === d.vehicle_route_id)?.value || '',
+      boardingPoint: boarding.options?.find(opt => opt.label === d.boarding_address)?.value || '',
       profilePhoto: null,
-      address,
+      address: d.address?.trim() || '',
       latitude: lat,
       longitude: lng,
     });
 
-    if (address) {
+    if (d.address || "") {
       setSelectedAddress({
-        label: address,
+        label: d.address || "",
         value: `${lat}-${lng}`,
-        otherData: { display_name: address, lat, lon: lng },
+        otherData: { display_name: d.address, lat, lon: lng },
       });
     }
-  }, [rowData, isEditMode]);
-
-  useEffect(() => {
-    if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
-    const { department, plant: plantName } = rowData.rowData;
-    const deptOpt = dept.options.find((x) => x.label === department);
-    const plantOpt = plant.options.find((x) => x.label === plantName);
-
-    if (deptOpt || plantOpt) {
-      setFormVal((prev) => ({
-        ...prev,
-        selectedDepartment: deptOpt?.value || prev.selectedDepartment,
-        selectedPlant: plantOpt?.value || prev.selectedPlant,
-      }));
-    }
-  }, [dept.options, plant.options, rowData, isEditMode]);
+  }, [rowData, isEditMode, route.options, dept.options, boarding.options]);
 
   const handleAddressSearch = useCallback((_, value) => {
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
@@ -260,13 +244,11 @@ function EmployeeForm() {
         date_of_birth: formVal.dateOfBirth,
         gender: formVal.selectedGender,
         vehicle_route_id: formVal.vehicleRoute,
-        boarding_stop_id: formVal.boardingPoint,
-        boarding_address: formVal.address,
+        address: formVal.address,
+        boarding_address: formVal.boardingPoint,
         profile_img: formVal.profilePhoto?.name || '',
         latitude: lat ? parseFloat(lat) : '',
         longitude: lng ? parseFloat(lng) : '',
-        boarding_latitude: lat ? parseFloat(lat) : '',
-        boarding_longitude: lng ? parseFloat(lng) : '',
         status_id: 1,
       };
 
@@ -404,6 +386,7 @@ function EmployeeForm() {
                 onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v?.value || '' }))}
                 disabled={isViewMode}
               />
+           
               <AutoSelect
                 label='Boarding Point'
                 options={boarding.options}
@@ -434,10 +417,10 @@ function EmployeeForm() {
                   onDrop={
                     !isViewMode
                       ? (e) => {
-                          e.preventDefault();
-                          if (e.dataTransfer.files?.length)
-                            setFormVal((p) => ({ ...p, profilePhoto: e.dataTransfer.files[0] }));
-                        }
+                        e.preventDefault();
+                        if (e.dataTransfer.files?.length)
+                          setFormVal((p) => ({ ...p, profilePhoto: e.dataTransfer.files[0] }));
+                      }
                       : undefined
                   }
                   onDragOver={!isViewMode ? (e) => e.preventDefault() : undefined}

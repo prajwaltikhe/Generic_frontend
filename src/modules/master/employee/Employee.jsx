@@ -92,7 +92,7 @@ function formatEmp(data, offset = 0) {
     date_of_birth: emp.date_of_birth ? dayjs(emp.date_of_birth).format('YYYY-MM-DD') : '',
     created_at: emp.created_at ? dayjs(emp.created_at).format('YYYY-MM-DD HH:mm') : '',
     gender: emp.gender || '',
-    vehicle_route_id: emp.vehicle_route_id || '',
+    vehicle_route_id: emp.vehicle_route_name || '',
     address: emp.address || '',
     boarding_latitude: emp.boarding_latitude ?? emp.latitude ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
     boarding_longitude: emp.boarding_longitude ?? emp.longitude ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
@@ -110,7 +110,7 @@ function Employee() {
   const fileInputRef = useRef();
 
   const company_id = localStorage.getItem('company_id');
-  const { employees, loading } = useSelector((s) => s.employee);
+  const { loading } = useSelector((s) => s.employee);
   const { departments } = useSelector((s) => s.department);
 
   const [page, setPage] = useState(0);
