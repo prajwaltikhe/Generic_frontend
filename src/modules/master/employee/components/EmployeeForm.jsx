@@ -8,10 +8,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaf
 import { Autocomplete, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
 
 const getOptionObj = (options, value, byLabel = false) => {
-  // Search by value if not byLabel, otherwise by label
-  if (byLabel) {
-    return options.find((o) => o.label == value) || null;
-  }
+  if (byLabel) return options.find((o) => o.label == value) || null;
   return options.find((o) => o.value == value) || null;
 };
 
@@ -40,7 +37,6 @@ function TextInput({ name, label, type = 'text', required, placeholder, formVal,
   );
 }
 
-// value accepts full option object, for compatibility with MUI Autocomplete "value" prop
 function AutoSelect({ label, options, value, loading, onChange, required, disabled }) {
   return (
     <div>
@@ -75,7 +71,7 @@ const INITIAL_FORM = {
   punchId: '',
   email: '',
   phoneNumber: '',
-  selectedDepartment: null, // will store whole option object
+  selectedDepartment: null,
   selectedPlant: null,
   dateOfJoining: '',
   dateOfBirth: '',
@@ -112,7 +108,6 @@ function EmployeeForm() {
   const fileInputRef = useRef(null);
   const addressTimeoutRef = useRef(null);
 
-  // All select values now store whole option objects (or null)
   const [formVal, setFormVal] = useState(INITIAL_FORM);
   const [addressOptions, setAddressOptions] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -148,18 +143,15 @@ function EmployeeForm() {
     valueSelector: (d) => d?.address ?? '',
   });
 
-  // --- Fix for inputs: when in edit mode, initialize selects by label/text from rowData (because state has label, not value) ---
   useEffect(() => {
     if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
 
     const d = rowData.rowData;
-    // for select fields, try to find the option by label from rowData
     let departOpt = null;
     let plantOpt = null;
     let routeOpt = null;
     let boardingOpt = null;
 
-    // Only set values if dropdowns are loaded (otherwise wait for options below)
     if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
     if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
     if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_id, true);
@@ -177,25 +169,19 @@ function EmployeeForm() {
       selectedPlant: plantOpt || null,
       dateOfJoining: d.date_of_joining || '',
       dateOfBirth: d.date_of_birth || '',
-      selectedGender: d.gender ?? '', // already set to '1' or '2'
+      selectedGender: d.gender ?? '',
       vehicleRoute: routeOpt || null,
       boardingPoint: boardingOpt || null,
       address: d.address || '',
       latitude: d.latitude || d.boarding_latitude || '',
       longitude: d.longitude || d.boarding_longitude || '',
-      // profilePhoto stays/defaults
     }));
-    // eslint-disable-next-line
   }, [rowData, dept.options, plant.options, route.options, boarding.options]);
 
-  // For edit: If boardingPoint not set but has boarding_address in rowData, set when boarding options ready
   useEffect(() => {
     if (!formVal.vehicleRoute || !rowData?.rowData?.boarding_address || !boarding.options.length) return;
-    // Try match by label
     const match = getOptionObj(boarding.options, rowData.rowData.boarding_address, true);
-    if (match) {
-      setFormVal((p) => ({ ...p, boardingPoint: match }));
-    }
+    if (match) setFormVal((p) => ({ ...p, boardingPoint: match }));
   }, [formVal.vehicleRoute, boarding.options, rowData?.rowData?.boarding_address]);
 
   const handleAddressSearch = useCallback((_, value) => {
@@ -257,7 +243,6 @@ function EmployeeForm() {
         return;
       }
 
-      // Fix: get values from selected option objects (for select inputs)
       const payload = {
         first_name: formVal.firstName,
         last_name: formVal.lastName,
