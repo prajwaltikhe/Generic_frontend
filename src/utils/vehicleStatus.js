@@ -44,11 +44,11 @@ export const processVehicles = (vehicles) => {
       : 'Unknown';
     const speedStr = v.speed != null && !isNaN(Number(v.speed)) ? `${Number(v.speed)} km/h` : '-';
 
-    const odoVal = io.find((e) => e.propertyName === 'totalOdometer')?.value;
     const todayVal = io.find((e) => e.propertyName === 'tripOdometer')?.value;
 
     return {
       id: v.id ?? '-',
+      imei_number: v.imei_number ?? '-',
       vehicle_name: v.vehicle_name ?? '-',
       vehicle_number: v.vehicle_number ?? '-',
       route_name: route,
