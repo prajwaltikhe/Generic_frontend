@@ -7,6 +7,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { Autocomplete, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
 
+const getOptionObj = (options, value, byLabel = false) => {
+  // Search by value if not byLabel, otherwise by label
+  if (byLabel) {
+    return options.find((o) => o.label == value) || null;
+  }
+  return options.find((o) => o.value == value) || null;
+};
+
 function TextInput({ name, label, type = 'text', required, placeholder, formVal, setFormVal, disabled }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,6 +40,7 @@ function TextInput({ name, label, type = 'text', required, placeholder, formVal,
   );
 }
 
+// value accepts full option object, for compatibility with MUI Autocomplete "value" prop
 function AutoSelect({ label, options, value, loading, onChange, required, disabled }) {
   return (
     <div>
@@ -66,13 +75,13 @@ const INITIAL_FORM = {
   punchId: '',
   email: '',
   phoneNumber: '',
-  selectedDepartment: '',
-  selectedPlant: '',
+  selectedDepartment: null, // will store whole option object
+  selectedPlant: null,
   dateOfJoining: '',
   dateOfBirth: '',
   selectedGender: '',
-  vehicleRoute: '',
-  boardingPoint: '', 
+  vehicleRoute: null,
+  boardingPoint: null,
   profilePhoto: '',
   address: '',
   latitude: '',
@@ -99,9 +108,11 @@ function EmployeeForm() {
   const isViewMode = rowData?.mode === 'view';
   const isEditMode = rowData?.mode === 'edit';
 
+  console.log(rowData);
   const fileInputRef = useRef(null);
   const addressTimeoutRef = useRef(null);
 
+  // All select values now store whole option objects (or null)
   const [formVal, setFormVal] = useState(INITIAL_FORM);
   const [addressOptions, setAddressOptions] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -131,46 +142,61 @@ function EmployeeForm() {
   });
 
   const boarding = useDropdownOpt({
-    apiUrl: formVal.vehicleRoute ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute}/stops` : null,
+    apiUrl: formVal.vehicleRoute ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute.value}/stops` : null,
     dataKey: 'stops',
     labelSelector: (d) => d?.address ?? '',
     valueSelector: (d) => d?.address ?? '',
   });
 
+  // --- Fix for inputs: when in edit mode, initialize selects by label/text from rowData (because state has label, not value) ---
   useEffect(() => {
     if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
-    const d = rowData.rowData;
-    const lat = d.latitude ? String(d.latitude) : '';
-    const lng = d.longitude ? String(d.longitude) : '';
 
-    setFormVal({
+    const d = rowData.rowData;
+    // for select fields, try to find the option by label from rowData
+    let departOpt = null;
+    let plantOpt = null;
+    let routeOpt = null;
+    let boardingOpt = null;
+
+    // Only set values if dropdowns are loaded (otherwise wait for options below)
+    if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
+    if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
+    if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_id, true);
+    if (boarding.options?.length > 0) boardingOpt = getOptionObj(boarding.options, d.boarding_address, true);
+
+    setFormVal((prev) => ({
+      ...prev,
       firstName: d.first_name || '',
       lastName: d.last_name || '',
       employeeId: d.employee_id || '',
       punchId: d.punch_id || '',
       email: d.email || '',
-      phoneNumber: d.phone_number?.trim() || '',
-      selectedDepartment: dept.options?.find(opt => opt.label === d.department)?.value || '',
-      selectedPlant: plant.options?.find(opt => opt.label === d.plant)?.value || '',
+      phoneNumber: d.phone_number || '',
+      selectedDepartment: departOpt || null,
+      selectedPlant: plantOpt || null,
       dateOfJoining: d.date_of_joining || '',
       dateOfBirth: d.date_of_birth || '',
-      selectedGender: d.gender === 'Male' ? '2' : d.gender === 'Female' ? '1' : '',
-      vehicleRoute: route.options?.find(opt => opt.label === d.vehicle_route_id)?.value || '',
-      boardingPoint: boarding.options?.find(opt => opt.label === d.boarding_address)?.value || '',
-      profilePhoto: null,
-      address: d.address?.trim() || '',
-      latitude: lat,
-      longitude: lng,
-    });
+      selectedGender: d.gender ?? '', // already set to '1' or '2'
+      vehicleRoute: routeOpt || null,
+      boardingPoint: boardingOpt || null,
+      address: d.address || '',
+      latitude: d.latitude || d.boarding_latitude || '',
+      longitude: d.longitude || d.boarding_longitude || '',
+      // profilePhoto stays/defaults
+    }));
+    // eslint-disable-next-line
+  }, [rowData, dept.options, plant.options, route.options, boarding.options]);
 
-    if (d.address || "") {
-      setSelectedAddress({
-        label: d.address || "",
-        value: `${lat}-${lng}`,
-        otherData: { display_name: d.address, lat, lon: lng },
-      });
+  // For edit: If boardingPoint not set but has boarding_address in rowData, set when boarding options ready
+  useEffect(() => {
+    if (!formVal.vehicleRoute || !rowData?.rowData?.boarding_address || !boarding.options.length) return;
+    // Try match by label
+    const match = getOptionObj(boarding.options, rowData.rowData.boarding_address, true);
+    if (match) {
+      setFormVal((p) => ({ ...p, boardingPoint: match }));
     }
-  }, [rowData, isEditMode, route.options, dept.options, boarding.options]);
+  }, [formVal.vehicleRoute, boarding.options, rowData?.rowData?.boarding_address]);
 
   const handleAddressSearch = useCallback((_, value) => {
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
@@ -231,6 +257,7 @@ function EmployeeForm() {
         return;
       }
 
+      // Fix: get values from selected option objects (for select inputs)
       const payload = {
         first_name: formVal.firstName,
         last_name: formVal.lastName,
@@ -238,14 +265,14 @@ function EmployeeForm() {
         punch_id: formVal.punchId,
         email: formVal.email,
         phone_number: formVal.phoneNumber,
-        department_id: formVal.selectedDepartment,
-        plant_id: formVal.selectedPlant,
+        department_id: formVal.selectedDepartment ? formVal.selectedDepartment.value : '',
+        plant_id: formVal.selectedPlant ? formVal.selectedPlant.value : '',
         date_of_joining: formVal.dateOfJoining,
         date_of_birth: formVal.dateOfBirth,
         gender: formVal.selectedGender,
-        vehicle_route_id: formVal.vehicleRoute,
+        vehicle_route_id: formVal.vehicleRoute ? formVal.vehicleRoute.value : '',
         address: formVal.address,
-        boarding_address: formVal.boardingPoint,
+        boarding_address: formVal.boardingPoint ? formVal.boardingPoint.value : '',
         profile_img: formVal.profilePhoto?.name || '',
         latitude: lat ? parseFloat(lat) : '',
         longitude: lng ? parseFloat(lng) : '',
@@ -267,8 +294,6 @@ function EmployeeForm() {
     if (!formVal.profilePhoto) return null;
     return typeof formVal.profilePhoto === 'string' ? formVal.profilePhoto : URL.createObjectURL(formVal.profilePhoto);
   }, [formVal.profilePhoto]);
-
-  const getDropdownValue = (opts, val) => opts.find((o) => o.value === val) || null;
 
   const parsedLat = parseFloat(formVal.latitude);
   const parsedLng = parseFloat(formVal.longitude);
@@ -343,18 +368,19 @@ function EmployeeForm() {
               <AutoSelect
                 label='Department'
                 options={dept.options}
-                value={getDropdownValue(dept.options, formVal.selectedDepartment)}
+                value={formVal.selectedDepartment}
                 loading={dept.loading}
-                onChange={(_, v) => setFormVal((p) => ({ ...p, selectedDepartment: v?.value || '' }))}
+                onChange={(_, v) => setFormVal((p) => ({ ...p, selectedDepartment: v }))}
                 required
                 disabled={isViewMode}
               />
+
               <AutoSelect
                 label='Plant'
                 options={plant.options}
-                value={getDropdownValue(plant.options, formVal.selectedPlant)}
+                value={formVal.selectedPlant}
                 loading={plant.loading}
-                onChange={(_, v) => setFormVal((p) => ({ ...p, selectedPlant: v?.value || '' }))}
+                onChange={(_, v) => setFormVal((p) => ({ ...p, selectedPlant: v }))}
                 required
                 disabled={isViewMode}
               />
@@ -381,18 +407,18 @@ function EmployeeForm() {
               <AutoSelect
                 label='Route'
                 options={route.options}
-                value={getDropdownValue(route.options, formVal.vehicleRoute)}
+                value={formVal.vehicleRoute}
                 loading={route.loading}
-                onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v?.value || '' }))}
+                onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v }))}
                 disabled={isViewMode}
               />
-           
+
               <AutoSelect
                 label='Boarding Point'
                 options={boarding.options}
-                value={getDropdownValue(boarding.options, formVal.boardingPoint)}
+                value={formVal.boardingPoint}
                 loading={boarding.loading}
-                onChange={(_, v) => setFormVal((p) => ({ ...p, boardingPoint: v?.value || '' }))}
+                onChange={(_, v) => setFormVal((p) => ({ ...p, boardingPoint: v }))}
                 disabled={isViewMode}
               />
 
@@ -417,10 +443,10 @@ function EmployeeForm() {
                   onDrop={
                     !isViewMode
                       ? (e) => {
-                        e.preventDefault();
-                        if (e.dataTransfer.files?.length)
-                          setFormVal((p) => ({ ...p, profilePhoto: e.dataTransfer.files[0] }));
-                      }
+                          e.preventDefault();
+                          if (e.dataTransfer.files?.length)
+                            setFormVal((p) => ({ ...p, profilePhoto: e.dataTransfer.files[0] }));
+                        }
                       : undefined
                   }
                   onDragOver={!isViewMode ? (e) => e.preventDefault() : undefined}
