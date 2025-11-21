@@ -154,7 +154,12 @@ function EmployeeForm() {
 
     if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
     if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
-    if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_id, true);
+    // if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_id, true);
+    // ROUTE must match by NAME because API gives name
+    if (route.options?.length > 0) {
+      const key = d.vehicle_route_name || d.route?.name || d.vehicle_route_id;
+      routeOpt = route.options.find(o => o.label === key) || null;
+    }
     if (boarding.options?.length > 0) boardingOpt = getOptionObj(boarding.options, d.boarding_address, true);
 
     setFormVal((prev) => ({
@@ -415,8 +420,8 @@ function EmployeeForm() {
                   value={formVal.selectedGender}
                   name='selectedGender'
                   onChange={(e) => setFormVal((prev) => ({ ...prev, selectedGender: e.target.value }))}>
-                  <FormControlLabel value='1' control={<Radio disabled={isViewMode} />} label='Female' />
-                  <FormControlLabel value='2' control={<Radio disabled={isViewMode} />} label='Male' />
+                  <FormControlLabel value='Female' control={<Radio disabled={isViewMode} />} label='Female' />
+                  <FormControlLabel value='Male' control={<Radio disabled={isViewMode} />} label='Male' />
                 </RadioGroup>
               </FormControl>
 
