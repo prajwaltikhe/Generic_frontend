@@ -28,7 +28,7 @@ function formatPlantInTime(data, offset = 0) {
     plantId: d.id,
     name: d.vehicle?.vehicle_name || '-',
     vehicle_id: d.vehicle_id,
-    routeName: d.vehicle_route?.name || '-',
+    routeName: d.route?.name || '-',
     route_id: d.vehicle_route_id,
     dayGeneral: d.day_general_start_time || '-',
     nightGeneral: d.night_general_start_time || '-',
