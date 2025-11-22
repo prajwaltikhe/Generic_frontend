@@ -8,8 +8,8 @@ import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaf
 import { Autocomplete, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
 
 const getOptionObj = (options, value, byLabel = false) => {
-  if (byLabel) return options.find((o) => o.label == value) || null;
-  return options.find((o) => o.value == value) || null;
+  if (byLabel) return options.find((o) => o.label === value) || null;
+  return options.find((o) => o.value === value) || null;
 };
 
 function TextInput({ name, label, type = 'text', required, placeholder, formVal, setFormVal, disabled }) {
