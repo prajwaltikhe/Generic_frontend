@@ -144,44 +144,39 @@ function EmployeeForm() {
   });
 
   useEffect(() => {
-    if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
+  if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
 
-    const d = rowData.rowData;
-    let departOpt = null;
-    let plantOpt = null;
-    let routeOpt = null;
-    let boardingOpt = null;
+  const d = rowData.rowData;
+  let departOpt = null;
+  let plantOpt = null;
+  let routeOpt = null;
+  let boardingOpt = null;
 
-    if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
-    if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
-    // if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_id, true);
-    // ROUTE must match by NAME because API gives name
-    if (route.options?.length > 0) {
-      const key = d.vehicle_route_name || d.route?.name || d.vehicle_route_id;
-      routeOpt = route.options.find(o => o.label === key) || null;
-    }
-    if (boarding.options?.length > 0) boardingOpt = getOptionObj(boarding.options, d.boarding_address, true);
+  if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
+  if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
+  if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
+  if (boarding.options?.length > 0) boardingOpt = getOptionObj(boarding.options, d.boarding_address, true);
 
-    setFormVal((prev) => ({
-      ...prev,
-      firstName: d.first_name || '',
-      lastName: d.last_name || '',
-      employeeId: d.employee_id || '',
-      punchId: d.punch_id || '',
-      email: d.email || '',
-      phoneNumber: d.phone_number || '',
-      selectedDepartment: departOpt || null,
-      selectedPlant: plantOpt || null,
-      dateOfJoining: d.date_of_joining || '',
-      dateOfBirth: d.date_of_birth || '',
-      selectedGender: d.gender ?? '',
-      vehicleRoute: routeOpt || null,
-      boardingPoint: boardingOpt || null,
-      address: d.address || '',
-      latitude: d.latitude || d.boarding_latitude || '',
-      longitude: d.longitude || d.boarding_longitude || '',
-    }));
-  }, [rowData, dept.options, plant.options, route.options, boarding.options]);
+  setFormVal((prev) => ({
+    ...prev,
+    firstName: d.first_name || '',
+    lastName: d.last_name || '',
+    employeeId: d.employee_id || '',
+    punchId: d.punch_id || '',
+    email: d.email || '',
+    phoneNumber: d.phone_number || '',
+    selectedDepartment: departOpt || null,
+    selectedPlant: plantOpt || null,
+    dateOfJoining: d.date_of_joining || '',
+    dateOfBirth: d.date_of_birth || '',
+    selectedGender: d.gender ?? '',
+    vehicleRoute: routeOpt || null,
+    boardingPoint: boardingOpt || null,
+    address: d.address || '',
+    latitude: d.latitude || d.boarding_latitude || '',
+    longitude: d.longitude || d.boarding_longitude || '',
+  }));
+}, [rowData, dept.options, plant.options, route.options, boarding.options]);
 
   useEffect(() => {
     if (!formVal.vehicleRoute || !rowData?.rowData?.boarding_address || !boarding.options.length) return;
