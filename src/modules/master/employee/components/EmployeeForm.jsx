@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { Autocomplete, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
 
+// Helper to find option object in a list
 const getOptionObj = (options, value, byLabel = false) => {
   if (byLabel) return options.find((o) => o.label === value) || null;
   return options.find((o) => o.value === value) || null;
@@ -49,6 +50,7 @@ function AutoSelect({ label, options, value, loading, onChange, required, disabl
         loading={loading}
         value={value}
         onChange={onChange}
+        // Compare option value with current value to handle object equality
         isOptionEqualToValue={(o, v) => o?.value == v?.value}
         getOptionLabel={(o) => o?.label || ''}
         renderInput={(params) => <TextField {...params} size='small' fullWidth />}
@@ -104,7 +106,6 @@ function EmployeeForm() {
   const isViewMode = rowData?.mode === 'view';
   const isEditMode = rowData?.mode === 'edit';
 
-  console.log(rowData);
   const fileInputRef = useRef(null);
   const addressTimeoutRef = useRef(null);
 
@@ -136,6 +137,7 @@ function EmployeeForm() {
     valueSelector: (d) => d.id,
   });
 
+  // Fetches stops when vehicleRoute changes
   const boarding = useDropdownOpt({
     apiUrl: formVal.vehicleRoute ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute.value}/stops` : null,
     dataKey: 'stops',
@@ -143,46 +145,52 @@ function EmployeeForm() {
     valueSelector: (d) => d?.address ?? '',
   });
 
+  /**
+   * INITIALIZATION EFFECT
+   * This runs when the component loads with rowData.
+   * IMPORTANT: We removed 'boarding.options' from the dependency array.
+   * This prevents the form from resetting to DB values when you change the Route.
+   */
   useEffect(() => {
-  if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
+    if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
 
-  const d = rowData.rowData;
-  let departOpt = null;
-  let plantOpt = null;
-  let routeOpt = null;
-  let boardingOpt = null;
+    const d = rowData.rowData;
+    let departOpt = null;
+    let plantOpt = null;
+    let routeOpt = null;
+    
+    // For Boarding Point: Since the value is the address string, we don't need to wait
+    // for the API options to load. We create the object immediately.
+    // This allows us to keep the value even if it doesn't match the new Route's stops.
+    let boardingOpt = d.boarding_address 
+      ? { label: d.boarding_address, value: d.boarding_address } 
+      : null;
 
-  if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
-  if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
-  if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
-  if (boarding.options?.length > 0) boardingOpt = getOptionObj(boarding.options, d.boarding_address, true);
+    if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
+    if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
+    if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
 
-  setFormVal((prev) => ({
-    ...prev,
-    firstName: d.first_name || '',
-    lastName: d.last_name || '',
-    employeeId: d.employee_id || '',
-    punchId: d.punch_id || '',
-    email: d.email || '',
-    phoneNumber: d.phone_number || '',
-    selectedDepartment: departOpt || null,
-    selectedPlant: plantOpt || null,
-    dateOfJoining: d.date_of_joining || '',
-    dateOfBirth: d.date_of_birth || '',
-    selectedGender: d.gender ?? '',
-    vehicleRoute: routeOpt || null,
-    boardingPoint: boardingOpt || null,
-    address: d.address || '',
-    latitude: d.latitude || d.boarding_latitude || '',
-    longitude: d.longitude || d.boarding_longitude || '',
-  }));
-}, [rowData, dept.options, plant.options, route.options, boarding.options]);
-
-  useEffect(() => {
-    if (!formVal.vehicleRoute || !rowData?.rowData?.boarding_address || !boarding.options.length) return;
-    const match = getOptionObj(boarding.options, rowData.rowData.boarding_address, true);
-    if (match) setFormVal((p) => ({ ...p, boardingPoint: match }));
-  }, [formVal.vehicleRoute, boarding.options, rowData?.rowData?.boarding_address]);
+    setFormVal((prev) => ({
+      ...prev,
+      firstName: d.first_name || '',
+      lastName: d.last_name || '',
+      employeeId: d.employee_id || '',
+      punchId: d.punch_id || '',
+      email: d.email || '',
+      phoneNumber: d.phone_number || '',
+      selectedDepartment: departOpt || null,
+      selectedPlant: plantOpt || null,
+      dateOfJoining: d.date_of_joining || '',
+      dateOfBirth: d.date_of_birth || '',
+      selectedGender: d.gender ?? '',
+      vehicleRoute: routeOpt || null,
+      boardingPoint: boardingOpt || null,
+      address: d.address || '',
+      latitude: d.latitude || d.boarding_latitude || '',
+      longitude: d.longitude || d.boarding_longitude || '',
+    }));
+    // Removed boarding.options from dependencies to prevent overwrite on route change
+  }, [rowData, dept.options, plant.options, route.options]); 
 
   const handleAddressSearch = useCallback((_, value) => {
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
@@ -257,6 +265,7 @@ function EmployeeForm() {
         gender: formVal.selectedGender,
         vehicle_route_id: formVal.vehicleRoute ? formVal.vehicleRoute.value : '',
         address: formVal.address,
+        // Send the value of whatever is currently selected (even if it's the old address)
         boarding_address: formVal.boardingPoint ? formVal.boardingPoint.value : '',
         profile_img: formVal.profilePhoto?.name || '',
         latitude: lat ? parseFloat(lat) : '',
@@ -394,6 +403,7 @@ function EmployeeForm() {
                 options={route.options}
                 value={formVal.vehicleRoute}
                 loading={route.loading}
+                // FIX: Only update route, do NOT reset other fields manually
                 onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v }))}
                 disabled={isViewMode}
               />
