@@ -54,20 +54,25 @@ function Feedback() {
   };
 
   const tableData = Array.isArray(filteredData)
-    ? filteredData.map((item) => ({
-        date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD HH:mm:ss') : '-',
-        vehicleNumber: item.vehicle?.vehicle_number || '-',
-        routeDetails: item.route?.name || '-',
-        driverName: item.driver ? [item.driver.first_name, item.driver.last_name].filter(Boolean).join(' ') : '-',
-        driverNumber: item.driver?.phone_number || '-',
-        employeeName: item.employee
-          ? [item.employee.first_name, item.employee.last_name].filter(Boolean).join(' ')
-          : '-',
-        employeeId: item.employee_id || '-',
-        givenScore: typeof item.rating === 'number' ? item.rating.toFixed(1) : '-',
-        feedback: item.message || '-',
-      }))
-    : [];
+  ? filteredData.map((item) => ({
+      date: item.created_at
+        ? moment(item.created_at).format('YYYY-MM-DD HH:mm:ss')
+        : '-',
+      vehicleNumber: item.vehicle?.number || '-',
+      routeDetails: item.route?.name || '-',
+      driverName: item.driver
+        ? [item.driver.first_name, item.driver.last_name].filter(Boolean).join(' ')
+        : '-',
+      driverNumber: item.driver?.phone_number || '-',
+      employeeName: item.employee
+        ? [item.employee.first_name, item.employee.last_name].filter(Boolean).join(' ')
+        : '-',
+      employeeId: item.employee_id || '-',
+      givenScore:
+        typeof item.rating === 'number' ? item.rating.toFixed(1) : '-',
+      feedback: item.message || '-',
+    }))
+  : [];
 
   const handleExport = () =>
     exportToExcel({
