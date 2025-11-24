@@ -44,7 +44,6 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
 
   const status = vehicle?.status ?? 'Unknown';
   const fields = [
-    ['Vehicle Name', 'vehicle_name'],
     ['Vehicle Number', 'vehicle_number'],
     ['Route Name', 'route_name'],
     ['Today Distance', 'today_distance'],
