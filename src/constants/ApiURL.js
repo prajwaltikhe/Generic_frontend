@@ -1,0 +1,35 @@
+export const APIURL = {
+  LOGIN: 'users/login',
+  VERIFY_OTP: 'users/verifyotp',
+
+  VEHICLE: 'vehicle',
+  LASTVEHICLEDATA: 'lastvehicledata',
+  DEPARTMENTS: 'department',
+  PLANTS: 'plant',
+  DRIVER: 'driver',
+  PLAYBACK: 'playback',
+  VEHICLE_ROUTE: 'vehicleRoute',
+  VEHICLE_ROUTE_STOP: 'vehicleRouteStop_id',
+  GEOFENCE: 'geofence',
+  ASSIGNSEAT: 'assignSeat',
+  EMERGENCY: 'alert',
+  DASHBOARDEMERGENCY: 'emergency',
+  EMPLOYEE: 'employe',
+  ANNOUNCEMENT: 'announcement',
+  ROUTECHANGEREQ: 'routeChange',
+  FEEDBACK: 'feedback',
+  PLANTINTIME: 'plantInTime',
+  PUNCHLOGREPORT: 'punchlogreportv2',
+  UPLOAD: 'upload',
+  EMPONBOARD: 'emponboard',
+
+  //DASHBOARD APIS
+  TOTALCOUNT: 'dashboard/totalcount',
+  TOTALONBOARDEMP: 'dashboardemp',
+  DEPARTMENTANALYTICS: 'departmentanalytics',
+  LATEARRIVAL: 'dashboardlatearrival',
+  OVERSPEEDVIOLATION: 'speedviolation',
+  DISTANCECOVER: 'vehicledistance',
+
+  PUNCHINMULTITRACK: 'multitrackpunch',
+};
