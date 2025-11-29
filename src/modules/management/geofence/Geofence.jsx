@@ -90,7 +90,7 @@ function Geofence() {
 
   const handleExport = async () => {
     try {
-      const exportPayload = buildApiPayload(1, 100);
+      const exportPayload = buildApiPayload(1, 500);
       const res = await dispatch(fetchVehicleGeoFence(exportPayload));
       const geofences = res?.payload?.geofences || [];
 
@@ -111,7 +111,7 @@ function Geofence() {
 
   const handleExportPDF = async () => {
     try {
-      const exportPayload = buildApiPayload(1, 100);
+      const exportPayload = buildApiPayload(1, 500);
       const res = await dispatch(fetchVehicleGeoFence(exportPayload));
       const geofences = res?.payload?.geofences || [];
 
