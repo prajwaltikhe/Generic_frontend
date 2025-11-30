@@ -6,23 +6,22 @@ import { ApiService } from '../../../../services';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVehicles } from '../../../../redux/vehiclesSlice';
-import { Button, TextField, Autocomplete } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button, TextField, Autocomplete, Checkbox, Chip } from '@mui/material';
 
 const geofenceTypeOptions = [
   { label: 'In Area', value: 'In Area' },
   { label: 'Out Area', value: 'Out Area' },
   { label: 'Area', value: 'Area' },
 ];
+const selectAllOpt = { label: 'Select All', value: 'SELECT_ALL' };
 
 const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordinates }) => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { state } = useLocation();
-
+  const dispatch = useDispatch(),
+    navigate = useNavigate(),
+    { state } = useLocation();
   const rowData = useMemo(() => state?.rowData || {}, [state]);
   const [isCordsEmpty, setIsCordsEmpty] = useState(false);
-
   const vehicleList = useSelector((s) => s.vehicles?.vehicles || []);
   const [vehicleOptions, setVehicleOptions] = useState([]);
   useEffect(() => {
@@ -31,17 +30,15 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
   useEffect(() => {
     setVehicleOptions(vehicleList?.map?.((v) => ({ label: v.vehicle_name, value: String(v.id) })) || []);
   }, [vehicleList]);
-
   let lat = '',
     lon = '';
   if (Array.isArray(rowData.coordinates)) {
     lon = rowData.coordinates?.[0]?.[0] || '';
     lat = rowData.coordinates?.[0]?.[1] || '';
-  } else if (Array.isArray(cordinates) && cordinates.length > 0) {
+  } else if (Array.isArray(cordinates) && cordinates.length) {
     lat = cordinates[0][0] ?? '';
     lon = cordinates[0][1] ?? '';
   }
-
   const initialValues = {
     bus: rowData.vehicle_id ? [String(rowData.vehicle_id)] : rowData.vehicleID ? [String(rowData.vehicleID)] : [],
     geofenceType: String(rowData.type || rowData.geofenceType || ''),
@@ -52,9 +49,8 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
     longitude: rowData.longitude || lon || '',
     location: rowData.location || '',
   };
-
   const schema = Yup.object({
-    bus: Yup.array().min(1, 'Please select at least one vehicle').required('Vehicle is required'),
+    bus: Yup.array().min(1, 'Please select at least one vehicle').required('Vehicle selection is required'),
     geofenceType: Yup.string().required('Geofence Type is required'),
     geofenceName: Yup.string().required('Geofence Name is required'),
     location: Yup.string().required('Location is required'),
@@ -62,66 +58,103 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
     longitude: Yup.number().typeError('Longitude must be a number').required('Longitude is required'),
   });
 
-  async function handleFormSubmit(values, { resetForm }) {
+  async function handleFormSubmit(v, { resetForm }) {
+    let selectedBus = [];
+    if (Array.isArray(v.bus))
+      selectedBus =
+        v.bus.includes('SELECT_ALL') || v.bus.length === vehicleOptions.length
+          ? vehicleOptions.map((o) => o.value)
+          : v.bus.filter((id) => id !== 'SELECT_ALL' && id);
     const coors =
-      Array.isArray(cordinates) && cordinates.length
-        ? cordinates
-        : Array.isArray(values.coordinates)
-        ? values.coordinates
-        : [];
+      Array.isArray(cordinates) && cordinates.length ? cordinates : Array.isArray(v.coordinates) ? v.coordinates : [];
     if (!coors.length) return setIsCordsEmpty(true);
     setIsCordsEmpty(false);
-    const formatted = coors.map(([la, lo]) => `${la},${lo}`);
     const payload = {
-      vehicle_ids: values.bus.filter(Boolean),
-      type: values.geofenceType,
-      geofence_name: values.geofenceName,
-      location: values.location,
-      longitude: values.longitude,
-      latitude: values.latitude,
-      coordinates: JSON.stringify(formatted),
-      color: values.color,
+      vehicle_ids: selectedBus,
+      type: v.geofenceType,
+      geofence_name: v.geofenceName,
+      location: v.location,
+      longitude: v.longitude,
+      latitude: v.latitude,
+      coordinates: JSON.stringify(coors.map(([la, lo]) => `${la},${lo}`)),
+      color: v.color,
     };
     const res = rowData.id
       ? await ApiService.put(`${APIURL.GEOFENCE}/${rowData.id}`, payload)
       : await ApiService.post(APIURL.GEOFENCE, payload);
+    alert(res.message || (res.success ? 'Success!' : 'Error'));
     if (res.success) {
-      alert(res.message || 'Success!');
       navigate('/management/geofence');
       resetForm();
       handleClear();
-    } else {
-      alert(res.message || 'Error');
     }
   }
+
+  const getVehicleDisplay = (selected, all) =>
+    !Array.isArray(selected) || !selected.length
+      ? []
+      : selected.length === all.length || selected.includes('SELECT_ALL')
+      ? [selectAllOpt]
+      : all.filter((o) => selected.includes(o.value));
+  const getVehicleOptions = (arr) => (arr && arr.length ? [selectAllOpt, ...arr] : []);
+  const handleVehicleChange = (all, setFieldValue, values) => (_, nv) => {
+    const isAll = nv.some((o) => o.value === 'SELECT_ALL');
+    setFieldValue(
+      'bus',
+      isAll
+        ? (values.bus?.length || 0) === all.length || values.bus?.includes('SELECT_ALL')
+          ? []
+          : all.map((o) => o.value)
+        : nv.filter((o) => o.value !== 'SELECT_ALL').map((o) => o.value)
+    );
+  };
 
   return (
     <Formik onSubmit={handleFormSubmit} enableReinitialize initialValues={initialValues} validationSchema={schema}>
       {({ values, errors, touched, handleBlur, handleSubmit, setFieldValue }) => (
         <form onSubmit={handleSubmit}>
-          <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Select Vehicle(s)</label>
+          <FieldBlock label='Select Vehicle(s) *' error={errors.bus} touched={touched.bus}>
             <Autocomplete
               multiple
               disablePortal
-              options={vehicleOptions}
-              isOptionEqualToValue={(o, v) => String(o.value) === String(v.value)}
+              options={getVehicleOptions(vehicleOptions)}
+              isOptionEqualToValue={(a, b) => a.value === b.value}
               getOptionLabel={(o) => o.label}
               size='small'
               className='w-full'
               name='bus'
               id='bus'
-              value={vehicleOptions.filter((opt) => values.bus?.includes(String(opt.value)))}
-              onChange={(_, nv) => setFieldValue('bus', nv?.map((v) => v.value) || [])}
+              value={getVehicleDisplay(values.bus, vehicleOptions)}
+              onChange={handleVehicleChange(vehicleOptions, setFieldValue, values)}
               onBlur={handleBlur}
-              renderInput={(params) => <TextField {...params} label='Select Vehicle(s)' />}
+              renderInput={(params) => <TextField {...params} label='Select Vehicle(s)' required />}
+              renderOption={(props, opt) => (
+                <li {...props} key={opt.value}>
+                  <Checkbox
+                    sx={{ mr: 1 }}
+                    checked={
+                      opt.value === 'SELECT_ALL'
+                        ? Array.isArray(values.bus) &&
+                          (values.bus.length === vehicleOptions.length || values.bus.includes('SELECT_ALL'))
+                        : Array.isArray(values.bus) && values.bus.includes(opt.value)
+                    }
+                  />
+                  {opt.label}
+                </li>
+              )}
+              renderTags={(val, getTagProps) =>
+                val.length > 3
+                  ? [
+                      ...val
+                        .slice(0, 2)
+                        .map((o, i) => <Chip key={o.value} label={o.label} {...getTagProps({ index: i })} />),
+                      <Chip key='more' label={`+${val.length - 2} more`} {...getTagProps({ index: 2 })} />,
+                    ]
+                  : val.map((o, i) => <Chip key={o.value} label={o.label} {...getTagProps({ index: i })} />)
+              }
             />
-            {errors.bus && touched.bus && (
-              <span className='text-red-500'>{typeof errors.bus === 'string' ? errors.bus : errors.bus[0]}</span>
-            )}
-          </div>
-          <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Select Geofence Type</label>
+          </FieldBlock>
+          <FieldBlock label='Select Geofence Type *' error={errors.geofenceType} touched={touched.geofenceType}>
             <Autocomplete
               disablePortal
               options={geofenceTypeOptions}
@@ -134,12 +167,10 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               value={geofenceTypeOptions.find((opt) => opt.value === values.geofenceType) || null}
               onChange={(_, nv) => setFieldValue('geofenceType', nv ? nv.value : '')}
               onBlur={handleBlur}
-              renderInput={(params) => <TextField {...params} label='Select Geofence Type' />}
+              renderInput={(params) => <TextField {...params} label='Select Geofence Type' required />}
             />
-            {errors.geofenceType && touched.geofenceType && <span className='text-red-500'>{errors.geofenceType}</span>}
-          </div>
-          <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Geofence Name</label>
+          </FieldBlock>
+          <FieldBlock label='Geofence Name *' error={errors.geofenceName} touched={touched.geofenceName}>
             <TextField
               placeholder='Geofence Name'
               className='w-full'
@@ -149,11 +180,10 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               value={values.geofenceName}
               onChange={(e) => setFieldValue('geofenceName', e.target.value)}
               onBlur={handleBlur}
+              required
             />
-            {errors.geofenceName && touched.geofenceName && <span className='text-red-500'>{errors.geofenceName}</span>}
-          </div>
-          <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Latitude</label>
+          </FieldBlock>
+          <FieldBlock label='Latitude *' error={errors.latitude} touched={touched.latitude}>
             <TextField
               placeholder='Latitude'
               className='w-full'
@@ -163,11 +193,10 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               value={values.latitude}
               onChange={(e) => setFieldValue('latitude', e.target.value)}
               onBlur={handleBlur}
+              required
             />
-            {errors.latitude && touched.latitude && <span className='text-red-500'>{errors.latitude}</span>}
-          </div>
-          <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Longitude</label>
+          </FieldBlock>
+          <FieldBlock label='Longitude *' error={errors.longitude} touched={touched.longitude}>
             <TextField
               placeholder='Longitude'
               className='w-full'
@@ -177,11 +206,10 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               value={values.longitude}
               onChange={(e) => setFieldValue('longitude', e.target.value)}
               onBlur={handleBlur}
+              required
             />
-            {errors.longitude && touched.longitude && <span className='text-red-500'>{errors.longitude}</span>}
-          </div>
-          <div className='mb-3'>
-            <label className='block mb-2 text-sm font-medium text-gray-900'>Location</label>
+          </FieldBlock>
+          <FieldBlock label='Location *' error={errors.location} touched={touched.location}>
             <TextField
               placeholder='Location'
               className='w-full'
@@ -191,23 +219,18 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               value={values.location}
               onChange={(e) => setFieldValue('location', e.target.value)}
               onBlur={handleBlur}
+              required
             />
-            {errors.location && touched.location && <span className='text-red-500'>{errors.location}</span>}
-          </div>
+          </FieldBlock>
           <ColorPicker selectedColor={selectedColor} onColorChange={onColorChange} handleClear={handleClear} />
           {isCordsEmpty && <span className='text-red-500'>Geofence coordinates cannot be empty</span>}
-          <div className='flex float-end gap-3'>
+          <div className='flex float-end gap-3 mt-6'>
             <Link to='/management/geofence'>
-              <Button
-                type='button'
-                className='bg-gray-400 text-white focus:bg-gray-400 focus:text-white hover:bg-gray-600 hover:text-white mt-6'
-                onClick={handleClear}>
+              <Button type='button' className='bg-gray-400 text-white hover:bg-gray-600' onClick={handleClear}>
                 Back
               </Button>
             </Link>
-            <Button
-              type='submit'
-              className='bg-custom-blue text-white focus:bg-custom-blue focus:text-white hover:bg-blue-800 hover:text-white mt-6'>
+            <Button type='submit' className='bg-custom-blue text-white hover:bg-blue-800'>
               Save
             </Button>
           </div>
@@ -216,5 +239,16 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
     </Formik>
   );
 };
+
+// helper to minimize error rendering/label
+function FieldBlock({ label, error, touched, children }) {
+  return (
+    <div className='mb-3'>
+      <label className='block mb-2 text-sm font-medium text-gray-900'>{label}</label>
+      {children}
+      {error && touched && <span className='text-red-500'>{typeof error === 'string' ? error : error[0]}</span>}
+    </div>
+  );
+}
 
 export default GeofenceCreateForm;
