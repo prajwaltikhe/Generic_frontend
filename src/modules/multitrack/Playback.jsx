@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import RoutingMatching from './RoutingMatching';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import lastVehicleData from '../../services/lastVehicleData';
-import { IconButton, Paper, Slider, Button, TextField, MenuItem } from '@mui/material';
+import { IconButton, Paper, Slider, Button, TextField, Chip, Stack } from '@mui/material';
 import { Menu as MenuIcon, Close as CloseIcon, PlayArrow as PlayIcon, Pause as PauseIcon } from '@mui/icons-material';
 
 export default function Playback() {
@@ -18,6 +18,7 @@ export default function Playback() {
 
   const { state } = useLocation();
   const selectedVehicle = state?.selectedVehicle;
+  console.log(selectedVehicle);
 
   const setShortcutDates = (type) => {
     const d = new Date();
@@ -27,9 +28,9 @@ export default function Playback() {
     setToDate(`${dateStr}T23:59`);
   };
 
-  const handleShortcutChange = (e) => {
-    setShortcut(e.target.value);
-    if (e.target.value === 'today' || e.target.value === 'yesterday') setShortcutDates(e.target.value);
+  const handleShortcutChip = (type) => {
+    setShortcut(type);
+    setShortcutDates(type);
   };
 
   const handlePlay = async () => {
@@ -46,6 +47,7 @@ export default function Playback() {
         }
       );
       if (res.success && res.data.length) {
+        console.log(res);
         setRouteCoordinate(res.data.map((i) => [i.latitude, i.longitude]));
         setIsPlay(true);
       } else alert('No data found');
@@ -67,7 +69,12 @@ export default function Playback() {
         className='w-full h-full z-0'>
         <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' attribution='&copy; OpenStreetMap' />
         {routeCoordinate.length > 0 && (
-          <RoutingMatching coordinates={filteredCoordinate} speed={speed} isPlaying={isPlay} />
+          <RoutingMatching
+            coordinates={filteredCoordinate}
+            speed={speed}
+            isPlaying={isPlay}
+            vehicle_number={selectedVehicle?.vehicle_number}
+          />
         )}
       </MapContainer>
       <div className='absolute top-4 right-4 z-10'>
@@ -100,10 +107,28 @@ export default function Playback() {
           </div>
           <div className='my-2'>
             <label className='text-sm'>Shortcut</label>
-            <TextField select fullWidth size='small' value={shortcut} onChange={handleShortcutChange}>
-              <MenuItem value='today'>Today</MenuItem>
-              <MenuItem value='yesterday'>Yesterday</MenuItem>
-            </TextField>
+            <Stack direction='row' spacing={1} className='mb-1 w-full'>
+              <Chip
+                label='Today'
+                color={shortcut === 'today' ? 'primary' : 'default'}
+                clickable
+                onClick={() => handleShortcutChip('today')}
+                variant={shortcut === 'today' ? 'filled' : 'outlined'}
+                size='small'
+                className='flex-1'
+                style={{ width: '100%' }}
+              />
+              <Chip
+                label='Yesterday'
+                color={shortcut === 'yesterday' ? 'primary' : 'default'}
+                clickable
+                onClick={() => handleShortcutChip('yesterday')}
+                variant={shortcut === 'yesterday' ? 'filled' : 'outlined'}
+                size='small'
+                className='flex-1'
+                style={{ width: '100%' }}
+              />
+            </Stack>
           </div>
           <div className='my-2'>
             <label className='text-sm'>Speed Control</label>

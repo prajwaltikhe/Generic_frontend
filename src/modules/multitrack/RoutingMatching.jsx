@@ -4,41 +4,55 @@ import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
 import { useEffect, useRef } from 'react';
 
-const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
+const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
   const map = useMap();
-  const markerRef = useRef();
-  const intervalRef = useRef();
-  const routeRef = useRef([]);
-  const posRef = useRef(0);
+  const markerRef = useRef(),
+    routingRef = useRef(),
+    intervalRef = useRef();
+  const routeCoords = useRef([]),
+    posRef = useRef(0);
 
+  const getCarIcon = () =>
+    L.icon({
+      iconUrl: typeof car === 'string' ? car : car?.default || '',
+      iconSize: [30, 35],
+      iconAnchor: [15, 34],
+      popupAnchor: [0, -34],
+    });
+
+  // Routing and marker initialization
   useEffect(() => {
-    if (!map || !coordinates?.length || coordinates.length < 2) return;
-    let routing = L.Routing.control({
+    if (!map || coordinates?.length < 2) return;
+    if (routingRef.current) map.removeControl(routingRef.current);
+    if (markerRef.current) map.removeLayer(markerRef.current);
+    routingRef.current = markerRef.current = null;
+
+    const routing = L.Routing.control({
       waypoints: coordinates.map(([lat, lng]) => L.latLng(lat, lng)),
       routeWhileDragging: false,
       addWaypoints: false,
+      fitSelectedRoutes: true,
       createMarker: () => null,
     }).addTo(map);
 
-    const hidePanel = () => {
-      const el = document.querySelector('.leaflet-top.leaflet-right');
-      if (el) el.style.display = 'none';
-    };
+    routingRef.current = routing;
+    const el = document.querySelector('.leaflet-top.leaflet-right');
+    if (el) el.style.display = 'none';
 
-    const onRoute = (e) => {
-      routeRef.current = e.routes[0]?.coordinates || [];
+    routing.on('routesfound', (e) => {
+      routeCoords.current = e.routes[0]?.coordinates || [];
       posRef.current = 0;
-      if (markerRef.current) {
-        map.removeLayer(markerRef.current);
-        markerRef.current = null;
+      if (markerRef.current) map.removeLayer(markerRef.current);
+      if (routeCoords.current.length) {
+        markerRef.current = L.marker(routeCoords.current[0], { icon: getCarIcon() })
+          .addTo(map)
+          .bindPopup('', { closeButton: false, autoClose: false })
+          .openPopup();
       }
-    };
-
-    routing.on('routesfound', onRoute);
-    hidePanel();
+    });
 
     return () => {
-      routing.off('routesfound', onRoute);
+      routing.off('routesfound');
       map.removeControl(routing);
       if (markerRef.current) map.removeLayer(markerRef.current);
       clearInterval(intervalRef.current);
@@ -46,33 +60,40 @@ const RoutingMatching = ({ coordinates, speed, isPlaying }) => {
   }, [map, coordinates]);
 
   useEffect(() => {
-    if (!routeRef.current.length) return;
-    if (markerRef.current == null) {
-      markerRef.current = L.marker(routeRef.current[0], {
-        icon: L.icon({ iconUrl: car, iconSize: [25, 30] }),
-      })
+    const coords = routeCoords.current;
+    if (!coords.length) return;
+
+    const popHtml = (lat, lng) =>
+      `<h1 style="font-size:1rem; font-weight:bold;">${vehicle_number || ''}</h1>
+        <div>Lat: ${lat != null ? lat.toFixed(7) : 'N/A'}</div>
+        <div>Lng: ${lng != null ? lng.toFixed(7) : 'N/A'}</div>`;
+
+    if (!markerRef.current) {
+      const { lat, lng } = coords[0] || {};
+      markerRef.current = L.marker(coords[0], { icon: getCarIcon() })
         .addTo(map)
-        .bindPopup('', { closeButton: false, autoClose: false })
+        .bindPopup(popHtml(lat, lng), { closeButton: false, autoClose: false })
         .openPopup();
-    }
+    } else markerRef.current.setIcon(getCarIcon());
+
     clearInterval(intervalRef.current);
 
     if (isPlaying) {
-      if (posRef.current >= routeRef.current.length) posRef.current = 0;
-      const delay = Math.max(10, 1000 / (speed || 1));
+      if (posRef.current >= coords.length) posRef.current = 0;
+      const delay = Math.max(10, 1000 / Math.max(speed, 1));
       intervalRef.current = setInterval(() => {
-        const coords = routeRef.current;
-        if (posRef.current >= coords.length) return clearInterval(intervalRef.current);
+        if (posRef.current >= coords.length) {
+          clearInterval(intervalRef.current);
+          return;
+        }
         const { lat, lng } = coords[posRef.current];
         markerRef.current.setLatLng([lat, lng]);
-        markerRef.current.setPopupContent(
-          `<div><strong>Lat:</strong> ${lat.toFixed(5)}<br/><strong>Lng:</strong> ${lng.toFixed(5)}</div>`
-        );
+        markerRef.current.setPopupContent(popHtml(lat, lng));
         posRef.current++;
       }, delay);
     }
     return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed, map]);
+  }, [isPlaying, speed, map, vehicle_number]);
 
   return null;
 };
