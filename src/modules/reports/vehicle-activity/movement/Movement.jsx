@@ -5,23 +5,11 @@ import { useEffect, useState } from 'react';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
+import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
-
-const intervalOptions = [
-  { label: '5 Min', value: '5' },
-  { label: '10 Min', value: '10' },
-  { label: '20 Min', value: '20' },
-  { label: '30 Min', value: '30' },
-  { label: '1 Hour', value: '60' },
-  { label: '2 Hour', value: '120' },
-  { label: '4 Hour', value: '240' },
-  { label: '8 Hour', value: '480' },
-  { label: '16 Hour', value: '960' },
-  { label: '24 Hour', value: '1440' },
-];
 
 const columns = [
   { key: 'created_at', header: 'Date & Time', render: (_, r) => moment(r?.created_at).format('YYYY-MM-DD HH:mm:ss') },
@@ -67,33 +55,33 @@ const columns = [
 
 function Movement() {
   const dispatch = useDispatch();
-  const [page, setPage] = useState(0),
-    [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], interval: '', fromDate: '', toDate: '' });
   const [filteredData, setFilteredData] = useState([]);
   const company_id = localStorage.getItem('company_id');
   const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || {});
   const { vehicleActivityData } = useSelector((s) => s?.vehicleActivity || {});
 
-  const buildApiPayload = () => {
-    const payload = { company_id };
-    if (filterData.vehicles?.length) payload.vehicles = JSON.stringify(filterData.vehicles);
-    if (filterData.routes?.length) payload.routes = JSON.stringify(filterData.routes);
-    if (filterData.interval) payload.interval = filterData.interval;
-    if (filterData.fromDate) payload.from_date = filterData.fromDate;
-    if (filterData.toDate) payload.to_date = filterData.toDate;
-    return payload;
-  };
-
   useEffect(() => {
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
+  const buildApiPayload = () => ({
+    company_id,
+    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
+    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
+    ...(filterData.interval && { interval: filterData.interval }),
+    ...(filterData.fromDate && { from_date: filterData.fromDate }),
+    ...(filterData.toDate && { to_date: filterData.toDate }),
+  });
+
   useEffect(() => {
-    if (company_id)
-      dispatch(fetchVehicleActivityData({ company_id, page: page + 1, limit })).then(
-        (res) => res?.payload?.status === 200 && setFilteredData(res?.payload?.data || [])
-      );
+    if (company_id) {
+      dispatch(fetchVehicleActivityData({ page: page + 1, limit })).then((res) => {
+        if (res?.payload?.status === 200) setFilteredData(res?.payload?.data || []);
+      });
+    }
   }, [dispatch, company_id, page, limit]);
 
   const handleExport = () =>

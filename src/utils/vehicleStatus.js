@@ -86,3 +86,16 @@ export const processVehicles = (vehicles) => {
     newDevices: pick('New'),
   };
 };
+
+export const intervalOptions = [
+  { label: '5 Min', value: '5' },
+  { label: '10 Min', value: '10' },
+  { label: '20 Min', value: '20' },
+  { label: '30 Min', value: '30' },
+  { label: '1 Hour', value: '60' },
+  { label: '2 Hour', value: '120' },
+  { label: '4 Hour', value: '240' },
+  { label: '8 Hour', value: '480' },
+  { label: '16 Hour', value: '960' },
+  { label: '24 Hour', value: '1440' },
+];

@@ -1,6 +1,5 @@
-import React from 'react';
-import DashboardCard from './components/DashboardCard';
 import { Grid } from '@mui/material';
+import DashboardCard from './components/DashboardCard';
 import ReportTable from '../../../../components/table/ReportTable';
 
 const columns = [
