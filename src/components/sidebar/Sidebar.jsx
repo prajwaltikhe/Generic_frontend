@@ -32,8 +32,8 @@ const reportsSubMenus = [
     title: 'Geo-fence',
     icon: <ArrowRight style={{ fontSize: '20px' }} />,
     items: [
-      { to: '/report/geo-fence-entry-exit', label: 'Geo-fence Entry Exit' },
-      { to: '/report/geo-fence-violation', label: 'Geo-fence Violation' },
+      { to: '/report/geofence-entry-exit', label: 'Geo-fence Entry Exit' },
+      { to: '/report/route-violation', label: 'Route Violation' },
     ],
   },
 ];

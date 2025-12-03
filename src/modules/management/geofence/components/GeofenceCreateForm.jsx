@@ -50,7 +50,10 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
     location: rowData.location || '',
   };
   const schema = Yup.object({
-    bus: Yup.array().min(1, 'Please select at least one vehicle').required('Vehicle selection is required'),
+    bus: Yup.array()
+      .of(Yup.string())
+      .min(1, 'Please select at least one vehicle')
+      .required('Vehicle selection is required'),
     geofenceType: Yup.string().required('Geofence Type is required'),
     geofenceName: Yup.string().required('Geofence Name is required'),
     location: Yup.string().required('Location is required'),
@@ -126,8 +129,17 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               id='bus'
               value={getVehicleDisplay(values.bus, vehicleOptions)}
               onChange={handleVehicleChange(vehicleOptions, setFieldValue, values)}
-              onBlur={handleBlur}
-              renderInput={(params) => <TextField {...params} label='Select Vehicle(s)' required />}
+              onBlur={() => setFieldValue('bus', values.bus)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label='Select Vehicle(s)'
+                  error={Boolean(errors.bus && touched.bus)}
+                  helperText={
+                    errors.bus && touched.bus ? (typeof errors.bus === 'string' ? errors.bus : errors.bus[0]) : ''
+                  }
+                />
+              )}
               renderOption={(props, opt) => (
                 <li {...props} key={opt.value}>
                   <Checkbox
@@ -167,7 +179,15 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               value={geofenceTypeOptions.find((opt) => opt.value === values.geofenceType) || null}
               onChange={(_, nv) => setFieldValue('geofenceType', nv ? nv.value : '')}
               onBlur={handleBlur}
-              renderInput={(params) => <TextField {...params} label='Select Geofence Type' required />}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label='Select Geofence Type'
+                  required
+                  error={Boolean(errors.geofenceType && touched.geofenceType)}
+                  helperText={errors.geofenceType && touched.geofenceType ? errors.geofenceType : ''}
+                />
+              )}
             />
           </FieldBlock>
           <FieldBlock label='Geofence Name *' error={errors.geofenceName} touched={touched.geofenceName}>
@@ -181,6 +201,8 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               onChange={(e) => setFieldValue('geofenceName', e.target.value)}
               onBlur={handleBlur}
               required
+              error={Boolean(errors.geofenceName && touched.geofenceName)}
+              helperText={errors.geofenceName && touched.geofenceName ? errors.geofenceName : ''}
             />
           </FieldBlock>
           <FieldBlock label='Latitude *' error={errors.latitude} touched={touched.latitude}>
@@ -194,6 +216,8 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               onChange={(e) => setFieldValue('latitude', e.target.value)}
               onBlur={handleBlur}
               required
+              error={Boolean(errors.latitude && touched.latitude)}
+              helperText={errors.latitude && touched.latitude ? errors.latitude : ''}
             />
           </FieldBlock>
           <FieldBlock label='Longitude *' error={errors.longitude} touched={touched.longitude}>
@@ -207,6 +231,8 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               onChange={(e) => setFieldValue('longitude', e.target.value)}
               onBlur={handleBlur}
               required
+              error={Boolean(errors.longitude && touched.longitude)}
+              helperText={errors.longitude && touched.longitude ? errors.longitude : ''}
             />
           </FieldBlock>
           <FieldBlock label='Location *' error={errors.location} touched={touched.location}>
@@ -220,6 +246,8 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
               onChange={(e) => setFieldValue('location', e.target.value)}
               onBlur={handleBlur}
               required
+              error={Boolean(errors.location && touched.location)}
+              helperText={errors.location && touched.location ? errors.location : ''}
             />
           </FieldBlock>
           <ColorPicker selectedColor={selectedColor} onColorChange={onColorChange} handleClear={handleClear} />

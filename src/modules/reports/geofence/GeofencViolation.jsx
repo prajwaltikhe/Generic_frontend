@@ -166,7 +166,7 @@ function GeofencViolation() {
 
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Geo-fence Violation Report</h1>
+      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Route Violation Report</h1>
       <form onSubmit={handleFormSubmit}>
         <FilterOption
           handleExport={handleExport}

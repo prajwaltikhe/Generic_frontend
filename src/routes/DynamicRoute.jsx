@@ -66,8 +66,8 @@ function DynamicRoute() {
         <Route path='new-device' element={<NewDevice />} />
         <Route path='map-history' element={<MapHistory />} />
         {/* <Route path='consolidated' element={<Consolidated />} /> */}
-        <Route path='geo-fence-entry-exit' element={<GeofencEntryExit />} />
-        <Route path='geo-fence-violation' element={<GeofencViolation />} />
+        <Route path='geofence-entry-exit' element={<GeofencEntryExit />} />
+        <Route path='route-violation' element={<GeofencViolation />} />
         <Route path='overspeed' element={<Overspeed />} />
         <Route path='overspeed/view' element={<ViewOverspeed />} />
         <Route path='overspeed/view-violation-map' element={<ViewViolationMap />} />

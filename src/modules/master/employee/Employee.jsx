@@ -94,8 +94,10 @@ function formatEmp(data, offset = 0) {
     gender: emp.gender || '',
     vehicle_route_id: emp?.vehicle_route_name || emp.route?.name || '',
     address: emp.address || '',
-    boarding_latitude: emp.boarding_latitude ?? emp.latitude ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
-    boarding_longitude: emp.boarding_longitude ?? emp.longitude ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
+    boarding_latitude:
+      emp.boarding_latitude ?? emp.latitude ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
+    boarding_longitude:
+      emp.boarding_longitude ?? emp.longitude ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
     boarding_address: emp.boarding_address || '',
     status:
       emp.active === 1 || (typeof emp.status === 'string' && emp.status.trim().toLowerCase() === 'active')
@@ -144,7 +146,7 @@ function Employee() {
       });
     }
     // eslint-disable-next-line
-  }, [dispatch, company_id, page, limit, searchQuery]);
+  }, [dispatch, company_id, page, limit, searchQuery, filterData.department, filterData.employee_id]);
 
   const buildApiPayload = (customLimit) => {
     const payload = {
@@ -152,7 +154,7 @@ function Employee() {
       department: filterData.department || undefined,
       employee_id: filterData.employee_id || undefined,
       search: searchQuery?.trim() || undefined,
-      page: 1,
+      page: page + 1,
       limit: customLimit !== undefined ? customLimit : limit,
     };
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
@@ -180,7 +182,9 @@ function Employee() {
     if (!selectedEmp) return;
     try {
       const newStatus = selectedEmp.status === 'Active' ? 2 : 1;
-      const res = await ApiService.put(`${APIURL.EMPLOYEE}/${selectedEmp.actual_id}`, { active: newStatus });
+      const res = await ApiService.put(`${APIURL.EMPLOYEE}/${selectedEmp.actual_id}`, {
+        active: newStatus,
+      });
       if (res.success) {
         toast.success('Status updated!');
         setIsStatusModalOpen(false);
@@ -194,7 +198,7 @@ function Employee() {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     setPage(0);
-    dispatch(fetchEmployees(buildApiPayload())).then((res) => {
+    dispatch(fetchEmployees({ ...buildApiPayload(), page: 1 })).then((res) => {
       setFilteredData(res?.payload?.employes || []);
       setTotalCount(res?.payload?.pagination?.total || 0);
     });
@@ -220,7 +224,7 @@ function Employee() {
   };
 
   const handleExport = async () => {
-    const res = await dispatch(fetchEmployees(buildApiPayload(totalCount)));
+    const res = await dispatch(fetchEmployees({ ...buildApiPayload(totalCount), page: 1 }));
     const allEmployees = res?.payload?.employes || [];
     exportToExcel({
       columns,
@@ -230,7 +234,7 @@ function Employee() {
   };
 
   const handleExportPDF = async () => {
-    const res = await dispatch(fetchEmployees(buildApiPayload(totalCount)));
+    const res = await dispatch(fetchEmployees({ ...buildApiPayload(totalCount), page: 1 }));
     const allEmployees = res?.payload?.employes || [];
     exportToPDF({
       columns,
@@ -335,10 +339,10 @@ function Employee() {
           page={page}
           rowsPerPage={limit}
           totalCount={totalCount}
-          onPageChange={setPage}
+          onPageChange={(pageNum) => setPage(pageNum)}
           onRowsPerPageChange={(val) => {
             setLimit(val);
-            setPage(1);
+            setPage(0);
           }}
           onEdit={handleEdit}
           onDelete={(row) => handleDelete(row.actual_id)}

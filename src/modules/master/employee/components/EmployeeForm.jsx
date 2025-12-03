@@ -145,12 +145,22 @@ function EmployeeForm() {
     valueSelector: (d) => d?.address ?? '',
   });
 
-  /**
-   * INITIALIZATION EFFECT
-   * This runs when the component loads with rowData.
-   * IMPORTANT: We removed 'boarding.options' from the dependency array.
-   * This prevents the form from resetting to DB values when you change the Route.
-   */
+  useEffect(() => {
+    if (formVal.latitude && formVal.longitude && formVal.address) {
+      setSelectedAddress({
+        label: formVal.address,
+        value: `${formVal.latitude}-${formVal.longitude}`,
+        otherData: {
+          display_name: formVal.address,
+          lat: String(formVal.latitude),
+          lon: String(formVal.longitude),
+        },
+      });
+    } else if (!formVal.latitude && !formVal.longitude) {
+      setSelectedAddress(null);
+    }
+  }, [formVal.latitude, formVal.longitude, formVal.address]);
+
   useEffect(() => {
     if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
 
@@ -158,17 +168,13 @@ function EmployeeForm() {
     let departOpt = null;
     let plantOpt = null;
     let routeOpt = null;
-    
-    // For Boarding Point: Since the value is the address string, we don't need to wait
-    // for the API options to load. We create the object immediately.
-    // This allows us to keep the value even if it doesn't match the new Route's stops.
-    let boardingOpt = d.boarding_address 
-      ? { label: d.boarding_address, value: d.boarding_address } 
-      : null;
+
+    let boardingOpt = d.boarding_address ? { label: d.boarding_address, value: d.boarding_address } : null;
 
     if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
     if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
-    if (route.options?.length > 0) routeOpt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
+    if (route.options?.length > 0)
+      routeOpt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
 
     setFormVal((prev) => ({
       ...prev,
@@ -189,12 +195,14 @@ function EmployeeForm() {
       latitude: d.latitude || d.boarding_latitude || '',
       longitude: d.longitude || d.boarding_longitude || '',
     }));
-    // Removed boarding.options from dependencies to prevent overwrite on route change
-  }, [rowData, dept.options, plant.options, route.options]); 
+  }, [rowData, dept.options, plant.options, route.options]);
 
   const handleAddressSearch = useCallback((_, value) => {
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
-    if (!value) return;
+    if (!value) {
+      setAddressOptions([]);
+      return;
+    }
     addressTimeoutRef.current = setTimeout(async () => {
       const res = await AddressServices.getLocationFromName(value);
       if (Array.isArray(res)) {
@@ -211,6 +219,7 @@ function EmployeeForm() {
 
   const handleAddressChange = useCallback((_, val) => {
     setSelectedAddress(val);
+
     if (val?.otherData) {
       setFormVal((prev) => ({
         ...prev,
@@ -218,7 +227,7 @@ function EmployeeForm() {
         latitude: val.otherData.lat,
         longitude: val.otherData.lon,
       }));
-    } else {
+    } else if (!val) {
       setFormVal((prev) => ({ ...prev, address: '', latitude: '', longitude: '' }));
     }
   }, []);
@@ -229,16 +238,48 @@ function EmployeeForm() {
       const res = await AddressServices.getLocationFromLatLng(lat, lng);
       const addr = Array.isArray(res) && res[0]?.display_name ? res[0].display_name : '';
       setFormVal((prev) => ({ ...prev, latitude: String(lat), longitude: String(lng), address: addr || prev.address }));
-      if (addr) {
-        setSelectedAddress({
-          label: addr,
-          value: `${lat}-${lng}`,
-          otherData: { display_name: addr, lat: String(lat), lon: String(lng) },
-        });
-      }
+
+      setSelectedAddress(
+        addr
+          ? {
+              label: addr,
+              value: `${lat}-${lng}`,
+              otherData: { display_name: addr, lat: String(lat), lon: String(lng) },
+            }
+          : null
+      );
     },
     [isViewMode]
   );
+
+  const handleLatChange = (e) => {
+    const newLat = e.target.value;
+    setFormVal((prev) => ({ ...prev, latitude: newLat }));
+  };
+
+  const handleLngChange = (e) => {
+    const newLng = e.target.value;
+    setFormVal((prev) => ({ ...prev, longitude: newLng }));
+  };
+
+  const handleLatBlur = async () => {
+    if (formVal.latitude && formVal.longitude && isValidLatLng(formVal.latitude, formVal.longitude)) {
+      const res = await AddressServices.getLocationFromLatLng(formVal.latitude, formVal.longitude);
+      const addr = Array.isArray(res) && res[0]?.display_name ? res[0].display_name : '';
+      setFormVal((prev) => ({ ...prev, address: addr || prev.address }));
+      setSelectedAddress(
+        addr
+          ? {
+              label: addr,
+              value: `${formVal.latitude}-${formVal.longitude}`,
+              otherData: { display_name: addr, lat: String(formVal.latitude), lon: String(formVal.longitude) },
+            }
+          : null
+      );
+    }
+  };
+
+  const handleLngBlur = handleLatBlur;
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -265,7 +306,6 @@ function EmployeeForm() {
         gender: formVal.selectedGender,
         vehicle_route_id: formVal.vehicleRoute ? formVal.vehicleRoute.value : '',
         address: formVal.address,
-        // Send the value of whatever is currently selected (even if it's the old address)
         boarding_address: formVal.boardingPoint ? formVal.boardingPoint.value : '',
         profile_img: formVal.profilePhoto?.name || '',
         latitude: lat ? parseFloat(lat) : '',
@@ -292,8 +332,12 @@ function EmployeeForm() {
   const parsedLat = parseFloat(formVal.latitude);
   const parsedLng = parseFloat(formVal.longitude);
   const hasValidCoords = isValidLatLng(parsedLat, parsedLng);
+
   const mapCenter = hasValidCoords ? [parsedLat, parsedLng] : [12.9716, 77.5946];
-  const markerPosition = hasValidCoords ? [parsedLat, parsedLng] : null;
+  const markerPosition =
+    formVal.latitude !== '' && formVal.longitude !== '' && isValidLatLng(formVal.latitude, formVal.longitude)
+      ? [parseFloat(formVal.latitude), parseFloat(formVal.longitude)]
+      : null;
 
   return (
     <div className='w-full p-2'>
@@ -494,7 +538,8 @@ function EmployeeForm() {
                   size='small'
                   name='latitude'
                   value={formVal.latitude}
-                  onChange={(e) => setFormVal((p) => ({ ...p, latitude: e.target.value }))}
+                  onChange={handleLatChange}
+                  onBlur={handleLatBlur}
                   disabled={isViewMode}
                   fullWidth
                 />
@@ -505,7 +550,8 @@ function EmployeeForm() {
                   size='small'
                   name='longitude'
                   value={formVal.longitude}
-                  onChange={(e) => setFormVal((p) => ({ ...p, longitude: e.target.value }))}
+                  onChange={handleLngChange}
+                  onBlur={handleLngBlur}
                   disabled={isViewMode}
                   fullWidth
                 />

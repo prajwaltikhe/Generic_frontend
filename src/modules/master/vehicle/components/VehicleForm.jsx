@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
-import { useEffect, useState } from 'react';
 import { APIURL } from '../../../../constants';
+import { useEffect, useMemo, useState } from 'react';
 import { Autocomplete, TextField } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDropdownOpt } from '../../../../hooks/useDropdownOpt';
@@ -10,22 +10,21 @@ import { createVehicle, fetchVehicles, updateVehicle } from '../../../../redux/v
 function VehicleForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
-  const rowData = location.state;
-  const isViewMode =
-    location.pathname === '/master/vehicle/view' ||
-    (rowData && (rowData.action === 'VIEW' || rowData.action === 'view'));
+  const { state: rowData, pathname } = useLocation();
+  const isView = pathname === '/master/vehicle/view' || (rowData?.action || '').toLowerCase() === 'view';
 
-  const initialFormVal = {
-    selectedDriver: '',
-    vehicleName: '',
-    vehicleNumber: '',
-    simNumber: '',
-    imeiNumber: '',
-    vehicleOverspeed: '',
-    seats: '',
-  };
-
+  const initialFormVal = useMemo(
+    () => ({
+      selectedDriver: '',
+      vehicleName: '',
+      vehicleNumber: '',
+      simNumber: '',
+      imeiNumber: '',
+      vehicleOverspeed: '',
+      seats: '',
+    }),
+    []
+  );
   const [formVal, setFormVal] = useState(initialFormVal);
 
   const {
@@ -35,51 +34,51 @@ function VehicleForm() {
     refetch,
   } = useDropdownOpt({
     apiUrl: APIURL.DRIVER,
-    query: { page: 1, limit: 10, search: '' },
+    query: { page: 1, limit: 100, search: '' },
     labelSelector: (d) => `${d.first_name} ${d.last_name}`,
     dataKey: 'drivers',
     valueSelector: (d) => d.id,
   });
 
   useEffect(() => {
-    if (rowData) {
-      setFormVal({
-        selectedDriver: rowData.selectedDriver || rowData.driverID || '',
-        vehicleName: rowData.vehicleName || rowData.busName || '',
-        vehicleNumber: rowData.vehicleNumber || rowData.busNumber || '',
-        simNumber: rowData.simNumber || '',
-        imeiNumber: rowData.imeiNumber || '',
-        vehicleOverspeed: rowData.speedLimit !== undefined ? rowData.speedLimit : '',
-        seats: rowData.seatCount !== undefined ? rowData.seatCount : '',
-      });
+    if (!rowData) return setFormVal(initialFormVal);
+    let selectedDriver = rowData.selectedDriver || rowData.driverID || '';
+    if ((rowData.action || '').toLowerCase() === 'edit' && rowData.driverName && driverOptions?.length) {
+      const found = driverOptions.find(
+        (opt) => (opt.label || '').trim().toLowerCase() === (rowData.driverName || '').trim().toLowerCase()
+      );
+      if (found) selectedDriver = found.value;
     }
-  }, [rowData]);
+    setFormVal({
+      selectedDriver,
+      vehicleName: rowData.vehicleName || rowData.busName || '',
+      vehicleNumber: rowData.vehicleNumber || rowData.busNumber || '',
+      simNumber: rowData.simNumber || '',
+      imeiNumber: rowData.imeiNumber || '',
+      vehicleOverspeed: rowData.speedLimit ?? '',
+      seats: rowData.seatCount ?? '',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowData, driverOptions, initialFormVal]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormVal((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleChange = (e) => setFormVal((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
-
-    const payload = {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const p = {
       vehicle_driver_id: formVal.selectedDriver,
       vehicle_name: formVal.vehicleName,
       vehicle_number: formVal.vehicleNumber,
       sim_number: formVal.simNumber,
       imei_number: formVal.imeiNumber,
-      speed_limit: parseInt(formVal.vehicleOverspeed),
-      seats: parseInt(formVal.seats),
+      speed_limit: +formVal.vehicleOverspeed,
+      seats: +formVal.seats,
       vehicle_status_id: 1,
     };
-
     try {
-      if (rowData && rowData.actual_id) {
-        await dispatch(updateVehicle({ id: rowData.actual_id, payload })).unwrap();
-      } else {
-        await dispatch(createVehicle(payload)).unwrap();
-      }
+      rowData?.actual_id
+        ? await dispatch(updateVehicle({ id: rowData.actual_id, payload: p })).unwrap()
+        : await dispatch(createVehicle(p)).unwrap();
       dispatch(fetchVehicles({ page: 1, limit: 10 }));
       toast.success('Vehicle saved successfully!');
       setFormVal(initialFormVal);
@@ -89,53 +88,43 @@ function VehicleForm() {
     }
   };
 
+  const v = (key, alt) => (isView ? rowData?.[key] ?? rowData?.[alt] ?? '' : formVal[key]);
+
   return (
     <div className='w-full h-full p-2'>
       <div className='flex justify-between items-center'>
         <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicle</h1>
       </div>
-      <form onSubmit={handleFormSubmit}>
+      <form onSubmit={handleSubmit}>
         <div className='grid grid-col-1 gap-3'>
           <div className='bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]'>
             <h2 className='text-lg p-3 text-gray-700'>Vehicle Detail</h2>
             <hr className='border border-gray-300' />
             <div className='p-5'>
               <div className='grid grid-col-1 md:grid-cols-2 gap-3'>
+                {/* Driver */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     Select Vehicle Driver <span className='text-red-500'>*</span>
                   </label>
-                  {isViewMode ? (
+                  {isView ? (
                     <TextField size='small' fullWidth disabled value={rowData?.driverName || ''} label='Driver Name' />
                   ) : (
                     <Autocomplete
-                      disabled={isViewMode}
                       disablePortal
                       options={driverOptions}
                       loading={loading}
                       value={driverOptions.find((opt) => opt.value === formVal.selectedDriver) || null}
-                      onChange={(event, newValue) => {
-                        setFormVal((prev) => ({
-                          ...prev,
-                          selectedDriver: newValue ? newValue.value : '',
-                        }));
-                      }}
-                      isOptionEqualToValue={(option, value) => option.value === value}
-                      getOptionLabel={(option) => option?.label || ''}
+                      onChange={(_, n) => setFormVal((f) => ({ ...f, selectedDriver: n ? n.value : '' }))}
+                      isOptionEqualToValue={(o, v) => o?.value === v?.value}
+                      getOptionLabel={(opt) => opt?.label || ''}
                       size='small'
                       renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label='Select Vehicle Driver'
-                          size='small'
-                          fullWidth
-                          value={driverOptions.find((opt) => opt.value === formVal.selectedDriver) || null}
-                        />
+                        <TextField {...params} label='Select Vehicle Driver' size='small' fullWidth />
                       )}
                     />
                   )}
-
-                  {error && !isViewMode && (
+                  {error && !isView && (
                     <p className='text-red-500 text-sm mt-1'>
                       Failed to load drivers.{' '}
                       <button
@@ -146,122 +135,109 @@ function VehicleForm() {
                     </p>
                   )}
                 </div>
-
+                {/* Name */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     Vehicle Name <span className='text-red-500'>*</span>
                   </label>
                   <TextField
                     size='small'
-                    disabled={isViewMode}
+                    disabled={isView}
                     type='text'
                     name='vehicleName'
-                    id='vehicleName'
                     fullWidth
                     required
                     placeholder='Vehicle Name'
-                    value={isViewMode ? rowData?.vehicleName || '' : formVal.vehicleName}
+                    value={v('vehicleName', 'busName')}
                     onChange={handleChange}
                   />
                 </div>
-
+                {/* Number */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     Vehicle Number <span className='text-red-500'>*</span>
                   </label>
                   <TextField
                     size='small'
+                    disabled={isView}
                     type='text'
                     name='vehicleNumber'
-                    id='vehicleNumber'
-                    disabled={isViewMode}
                     fullWidth
-                    placeholder='Vehicle Number'
                     required
-                    value={isViewMode ? rowData?.vehicleNumber || '' : formVal.vehicleNumber}
+                    placeholder='Vehicle Number'
+                    value={v('vehicleNumber', 'busNumber')}
                     onChange={handleChange}
                   />
                 </div>
-
+                {/* SIM Number */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     SIM No <span className='text-red-500'>*</span>
                   </label>
                   <TextField
                     size='small'
+                    disabled={isView}
                     type='text'
-                    disabled={isViewMode}
                     name='simNumber'
-                    id='simNumber'
                     fullWidth
-                    placeholder='SIM No'
                     required
-                    value={isViewMode ? rowData?.simNumber || '' : formVal.simNumber}
+                    placeholder='SIM No'
+                    value={v('simNumber')}
                     onChange={handleChange}
                   />
                 </div>
-
+                {/* IMEI */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     IMEI Number <span className='text-red-500'>*</span>
                   </label>
                   <TextField
                     size='small'
+                    disabled={isView}
                     type='text'
                     name='imeiNumber'
-                    id='imeiNumber'
                     fullWidth
-                    disabled={isViewMode}
-                    placeholder='IMEI Number'
                     required
-                    value={isViewMode ? rowData?.imeiNumber || '' : formVal.imeiNumber}
+                    placeholder='IMEI Number'
+                    value={v('imeiNumber')}
                     onChange={handleChange}
                   />
                 </div>
-
+                {/* Overspeed */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     Vehicle Overspeed <span className='text-red-500'>*</span>
                   </label>
                   <TextField
                     size='small'
+                    disabled={isView}
                     type='number'
                     name='vehicleOverspeed'
-                    id='vehicleOverspeed'
                     fullWidth
-                    placeholder='Vehicle Overspeed'
                     required
-                    disabled={isViewMode}
-                    value={
-                      isViewMode
-                        ? rowData?.speedLimit !== undefined
-                          ? rowData.speedLimit
-                          : ''
-                        : formVal.vehicleOverspeed
-                    }
+                    placeholder='Vehicle Overspeed'
+                    value={isView ? rowData?.speedLimit ?? '' : formVal.vehicleOverspeed}
                     onChange={handleChange}
                   />
                 </div>
-
+                {/* Seats */}
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>
                     Seats <span className='text-red-500'>*</span>
                   </label>
                   <TextField
                     size='small'
+                    disabled={isView}
                     type='number'
                     name='seats'
-                    id='seats'
                     fullWidth
-                    placeholder='Seats'
                     required
-                    disabled={isViewMode}
-                    value={isViewMode ? (rowData?.seatCount !== undefined ? rowData.seatCount : '') : formVal.seats}
+                    placeholder='Seats'
+                    value={isView ? rowData?.seatCount ?? '' : formVal.seats}
                     onChange={handleChange}
                   />
                 </div>
-
-                {isViewMode && (
+                {isView && (
                   <>
                     <div>
                       <label className='block mb-2 text-sm font-medium text-gray-900'>Driver Email</label>
@@ -309,20 +285,17 @@ function VehicleForm() {
                 )}
               </div>
               <div className='flex justify-end gap-4 mt-4'>
-                {!isViewMode && (
+                {!isView && (
                   <button
                     type='submit'
                     className='text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
                     Save
                   </button>
                 )}
-
                 <button
                   type='button'
                   className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'
-                  onClick={() => {
-                    navigate('/master/vehicle');
-                  }}>
+                  onClick={() => navigate('/master/vehicle')}>
                   Back
                 </button>
               </div>
