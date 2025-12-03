@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { APIURL } from '../../../constants';
 import { ApiService } from '../../../services';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import { useDispatch, useSelector } from 'react-redux';
 import StatusDropdown from './components/statusDropdown';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
 import CommonTable from '../../../components/table/CommonTable';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const statusOptions = [
   { id: '1b13dd9a-e5ec-43d2-8676-a5811c194a25', name: 'Accepted' },
@@ -21,10 +21,7 @@ const getStatusLabel = (value) => statusOptions.find((opt) => opt.id === value)?
 
 const columns = [
   { key: 'id', header: 'Sr No' },
-  {
-    key: 'employee_name',
-    header: 'Employee Name',
-  },
+  { key: 'employee_name', header: 'Employee Name' },
   { key: 'old_vehicle_route_name', header: 'Old Vehicle Route Name' },
   { key: 'new_vehicle_route_name', header: 'New Vehicle Route Name' },
   { key: 'old_stop_address', header: 'Old Stop Address' },
@@ -35,11 +32,7 @@ const columns = [
     render: (_, row, onStatusChange) => (
       <div style={{ minWidth: 150 }}>
         <StatusDropdown
-          row={{
-            ...row.raw,
-            statusValue: row.statusValue,
-            status: row.statusName,
-          }}
+          row={{ ...row.raw, statusValue: row.statusValue, status: row.statusName }}
           onStatusChange={onStatusChange}
           statusOptions={statusOptions}
         />
@@ -54,34 +47,32 @@ const columns = [
 function formatRouteChange(data, offset = 0) {
   return data.map((d, idx) => ({
     id: offset + idx + 1,
-    routeChangeId: d.id,
-    employee_name: `${d.first_name || ''} ${d.last_name || ''}`.trim() || '-',
-    old_vehicle_route_name: d.old_vehicle_route_name || '-',
-    new_vehicle_route_name: d.new_vehicle_route_name || '-',
-    old_stop_address: d.old_stop_address || '-',
-    new_stop_address: d.new_stop_address || '-',
-    statusValue: d.route_change_request_status_id,
+    employee_name: `${d.first_name || ''} ${d.last_name || ''}`.trim() || d.first_name || d.last_name || '-',
+    old_vehicle_route_name: d.old_vehicle_route_name ?? '-',
+    new_vehicle_route_name: d.new_vehicle_route_name ?? '-',
+    old_stop_address: d.old_stop_address ?? '-',
+    new_stop_address: d.new_stop_address ?? '-',
+    route_change_request_status_id: d.route_change_request_status_id ?? '-',
+    statusValue: d.route_change_request_status_id ?? '-',
     statusName: getStatusLabel(d.route_change_request_status_id),
-    approved_by_name: d.approved_by_name || '-',
+    approved_by_name: d.approved_by_name ?? '-',
     created_at: d.created_at ? dayjs(d.created_at).format('YYYY-MM-DD') : '-',
     approved_at: d.approved_at ? dayjs(d.approved_at).format('YYYY-MM-DD') : '-',
     raw: d,
   }));
 }
 
-function RouteChange() {
+export default function RouteChange() {
   const dispatch = useDispatch();
   const fileInputRef = useRef();
   const company_id = localStorage.getItem('company_id');
-
-  const { routes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes);
-
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes);
+  const [page, setPage] = useState(0),
+    [limit, setLimit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0),
+    [searchQuery, setSearchQuery] = useState('');
+  const [file, setFile] = useState(null),
+    [loading, setLoading] = useState(false);
   const [filterData, setFilterData] = useState({ fromDate: '', toDate: '', routes: [], vehicles: [] });
   const [filteredData, setFilteredData] = useState([]);
 
@@ -89,51 +80,43 @@ function RouteChange() {
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
-  const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
-    company_id,
-    ...(filterData.fromDate && { start: filterData.fromDate }),
-    ...(filterData.toDate && { end: filterData.toDate }),
-    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
-    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
-    ...(searchQuery?.trim() && { search: searchQuery.trim() }),
-    page: customPage,
-    limit: customLimit,
-  });
+  const buildApiPayload = useCallback(
+    (customPage = page + 1, customLimit = limit) => ({
+      company_id,
+      ...(filterData.fromDate && { start: filterData.fromDate }),
+      ...(filterData.toDate && { end: filterData.toDate }),
+      ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
+      ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
+      ...(searchQuery?.trim() && { search: searchQuery.trim() }),
+      page: customPage,
+      limit: customLimit,
+    }),
+    [company_id, filterData, page, limit, searchQuery]
+  );
 
-  useEffect(() => {
-    fetchRouteChanges();
-    // eslint-disable-next-line
-  }, [page, limit, searchQuery]);
-
-  const fetchRouteChanges = async () => {
+  const fetchRouteChanges = useCallback(async () => {
     setLoading(true);
     try {
       const res = await ApiService.get(APIURL.ROUTECHANGEREQ, buildApiPayload());
-      if (res?.success) {
-        const list = Array.isArray(res.data?.routeChanges) ? res.data.routeChanges : [];
-        setFilteredData(list);
-        setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
-      } else {
-        setFilteredData([]);
-        setTotalCount(0);
-      }
+      const list = Array.isArray(res.data?.routeChanges) ? res.data.routeChanges : [];
+      setFilteredData(list);
+      setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
     } catch {
       setFilteredData([]);
       setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildApiPayload]);
+
+  useEffect(() => {
+    fetchRouteChanges(); // eslint-disable-line
+  }, [page, limit, searchQuery, fetchRouteChanges]);
 
   const handleStatusUpdate = (routeChangeReqID, newStatusValue) => {
     setFilteredData((prev) =>
       prev.map((row) =>
-        row.id === routeChangeReqID
-          ? {
-              ...row,
-              route_change_request_status_id: newStatusValue,
-            }
-          : row
+        row.id === routeChangeReqID ? { ...row, route_change_request_status_id: newStatusValue } : row
       )
     );
   };
@@ -143,7 +126,6 @@ function RouteChange() {
     setPage(0);
     fetchRouteChanges();
   };
-
   const handleFormReset = () => {
     setFilterData({ fromDate: '', toDate: '', routes: [], vehicles: [] });
     setSearchQuery('');
@@ -153,10 +135,8 @@ function RouteChange() {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!file) return toast.error('Please select a file');
-
     const formData = new FormData();
     formData.append('file', file);
-
     try {
       const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=route_change`, formData);
       if (res.success) {
@@ -164,57 +144,38 @@ function RouteChange() {
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         fetchRouteChanges();
-      } else {
-        toast.error(res.message || 'Upload failed');
-      }
-    } catch (error) {
+      } else toast.error(res.message || 'Upload failed');
+    } catch {
       toast.error('Upload failed.');
     }
   };
 
-  const handleExport = async () => {
+  const getAllColumns = () => columns.map(({ render, ...col }) => col);
+
+  const handleExportCommon = async (type) => {
     try {
-      const exportPayload = buildApiPayload(1, 100);
+      const exportPayload = buildApiPayload(1, 1000);
       const res = await ApiService.get(APIURL.ROUTECHANGEREQ, exportPayload);
       const list = Array.isArray(res.data?.routeChanges) ? res.data.routeChanges : [];
-
-      if (!list.length) {
-        toast.error('No data available to export.');
-        return;
+      if (!list.length) return toast.error(`No data available to export.`);
+      const rows = buildExportRows({ columns: getAllColumns(), data: formatRouteChange(list) });
+      if (type === 'excel') {
+        exportToExcel({ columns: getAllColumns(), rows, fileName: 'route_change_requests.xlsx' });
+      } else {
+        exportToPDF({
+          columns: getAllColumns(),
+          rows,
+          fileName: 'route_change_requests.pdf',
+          orientation: 'landscape',
+        });
       }
-
-      exportToExcel({
-        columns,
-        rows: buildExportRows({ columns, data: formatRouteChange(list) }),
-        fileName: 'route_change_requests.xlsx',
-      });
-    } catch (err) {
-      toast.error('Export failed');
+    } catch {
+      toast.error(`Export${type === 'pdf' ? ' PDF' : ''} failed`);
     }
   };
 
-  const handleExportPDF = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.ROUTECHANGEREQ, exportPayload);
-      const list = Array.isArray(res.data?.routeChanges) ? res.data.routeChanges : [];
-
-      if (!list.length) {
-        toast.error('No data available to export.');
-        return;
-      }
-
-      exportToPDF({
-        columns,
-        rows: buildExportRows({ columns, data: formatRouteChange(list) }),
-        fileName: 'route_change_requests.pdf',
-        orientation: 'landscape',
-      });
-    } catch (err) {
-      toast.error('Export PDF failed');
-    }
-  };
-
+  const handleExport = () => handleExportCommon('excel');
+  const handleExportPDF = () => handleExportCommon('pdf');
   const handleSample = () =>
     exportToExcel({
       columns: [
@@ -254,7 +215,6 @@ function RouteChange() {
           vehicles={routes}
         />
       </form>
-
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         <CommonTable
           columns={columns.map((c) =>
@@ -277,5 +237,3 @@ function RouteChange() {
     </div>
   );
 }
-
-export default RouteChange;
