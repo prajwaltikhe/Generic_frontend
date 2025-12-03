@@ -1,10 +1,10 @@
 import moment from 'moment';
 import tabs from '../components/Tab';
 import { toast } from 'react-toastify';
-import { useEffect, useState } from 'react';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
@@ -12,106 +12,162 @@ import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
 
 const columns = [
-  { key: 'created_at', header: 'Date & Time', render: (_, r) => moment(r?.created_at).format('YYYY-MM-DD HH:mm:ss') },
-  { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => (r?.vehicle_type || '').trim() },
-  { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => (r?.vehicle_number || '').trim() },
   {
-    key: 'Vehicle_Route',
-    header: 'Route Details',
-    render: (_, r) => (r?.Vehicle_Route?.route_number || r?.Vehicle_Route?.route_name || '').trim(),
+    key: 'date_time',
+    header: 'Date & Time',
+    render: (_, r) => (r?.date_time ? moment(r.date_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
   },
+  { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type || '-' },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number || '-' },
+  { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details || '-' },
+  { key: 'driver_name', header: 'Driver Name', render: (_, r) => r?.driver_name || '-' },
+  { key: 'driver_contact_number', header: 'Driver Contact Number', render: (_, r) => r?.driver_contact_number || '-' },
+  { key: 'source', header: 'Source', render: (_, r) => r?.source || '-' },
+  { key: 'destination', header: 'Destination', render: (_, r) => r?.destination || '-' },
   {
-    key: 'vehicle_driver',
-    header: 'Driver Name',
-    render: (_, r) => `${r?.vehicle_driver?.first_name || ''} ${r?.vehicle_driver?.last_name || ''}`.trim(),
+    key: 'employee_onboard',
+    header: 'Employee Count',
+    render: (_, r) => (typeof r?.employee_onboard === 'number' ? r.employee_onboard : '-'),
   },
-  { key: 'driverContact', header: 'Driver Contact Number', render: (_, r) => r?.vehicle_driver?.phone_number || '' },
-  { key: 'source', header: 'Source', render: (_, r) => r?.source || '' },
-  { key: 'destination', header: 'Destination', render: (_, r) => r?.destination || '' },
-  { key: 'employCount', header: 'Employee Count', render: (_, r) => r?.employCount || '' },
-  { key: 'top_speed', header: 'Speed', render: (_, r) => r?.top_speed || '' },
+  { key: 'speed', header: 'Speed', render: (_, r) => r?.speed ?? '-' },
+  { key: 'start_lat_long', header: 'Start Lat-Long', render: (_, r) => r?.start_lat_long || '-' },
+  { key: 'end_lat_long', header: 'End Lat-Long', render: (_, r) => r?.end_lat_long || '-' },
+  { key: 'trip_distance', header: 'Trip Distance', render: (_, r) => r?.trip_distance ?? '-' },
+  { key: 'total_distance', header: 'Covered Distance', render: (_, r) => r?.total_distance ?? '-' },
+  { key: 'start_odometer', header: 'Start Odometer', render: (_, r) => r?.start_odometer ?? '-' },
+  { key: 'end_odometer', header: 'End Odometer', render: (_, r) => r?.end_odometer ?? '-' },
+  { key: 'total_distance_2', header: 'Total Distance', render: (_, r) => r?.total_distance ?? '-' },
+  { key: 'top_speed', header: 'Top Speed', render: (_, r) => r?.top_speed ?? '-' },
   {
-    key: 'start_lat_long',
-    header: 'Start Lat-Long',
-    render: (_, r) => `${r?.start_latitude || ''} - ${r?.start_longitude || ''}`,
+    key: 'total_running_duration',
+    header: 'Total Running Duration',
+    render: (_, r) => r?.total_running_duration ?? '-',
   },
+  { key: 'total_idle_duration', header: 'Total Idle Duration', render: (_, r) => r?.total_idle_duration ?? '-' },
+  { key: 'total_parked_duration', header: 'Total Parked Duration', render: (_, r) => r?.total_parked_duration ?? '-' },
+  { key: 'no_of_parking', header: 'No. of Parking', render: (_, r) => r?.no_of_parking ?? '-' },
   {
-    key: 'end_lat_long',
-    header: 'End Lat-Long',
-    render: (_, r) => `${r?.end_latitude || ''} - ${r?.end_longitude || ''}`,
+    key: 'total_offline_duration',
+    header: 'Total Offline Duration',
+    render: (_, r) => r?.total_offline_duration ?? '-',
   },
-  { key: 'tripDistance', header: 'Trip Distance', render: (_, r) => r?.tripDistance || '' },
-  { key: 'total_distance', header: 'Covered Distance', render: (_, r) => r?.total_distance || '' },
-  { key: 'start_odometer', header: 'Start Odometer', render: (_, r) => r?.start_odometer || '' },
-  { key: 'end_odometer', header: 'End Odometer', render: (_, r) => r?.end_odometer || '' },
-  { key: 'total_distance_2', header: 'Total Distance', render: (_, r) => r?.total_distance || '' },
-  { key: 'top_speed_2', header: 'Top Speed', render: (_, r) => r?.top_speed || '' },
-  { key: 'total_running_time', header: 'Total Running Duration', render: (_, r) => r?.total_running_time || '' },
-  { key: 'total_ideal_time', header: 'Total Idle Duration', render: (_, r) => r?.total_ideal_time || '' },
-  { key: 'total_parked_time', header: 'Total Parked Duration', render: (_, r) => r.total_parked_time || '' },
-  { key: 'parking', header: 'No. of Parking', render: (_, r) => r.parking || '' },
-  { key: 'offlineDuration', header: 'Total Offline Duration', render: (_, r) => r.offlineDuration || '' },
 ];
+
+const mapActivityRow = (data) =>
+  !data
+    ? []
+    : (Array.isArray(data) ? data : [data]).map((row) => {
+        const r = row?.report || {};
+        return {
+          date_time: r.date_time ?? null,
+          vehicle_type: r.vehicle_type ?? null,
+          vehicle_number: r.vehicle_number ?? null,
+          route_details: r.route_details ?? null,
+          driver_name: r.driver_name ?? null,
+          driver_contact_number: r.driver_contact_number ?? null,
+          source: r.source
+            ? r.source
+                .split(',')
+                .map((v) => Number.parseFloat(v).toFixed(7))
+                .join(',')
+            : null,
+          destination: r.destination
+            ? r.destination
+                .split(',')
+                .map((v) => Number.parseFloat(v).toFixed(7))
+                .join(',')
+            : null,
+          employee_onboard: row.employee_onboard ?? '-',
+          speed: r.speed ?? '-',
+          start_lat_long: r.start_lat_long ?? null,
+          end_lat_long: r.end_lat_long ?? null,
+          trip_distance: r.trip_distance ?? '-',
+          total_distance: r.total_distance ?? '-',
+          start_odometer: r.start_odometer ?? null,
+          end_odometer: r.end_odometer ?? null,
+          total_distance_2: r.total_distance ?? '-',
+          top_speed: r.top_speed ?? '-',
+          total_running_duration: r.total_running_duration ?? '-',
+          total_idle_duration: r.total_idle_duration ?? '-',
+          total_parked_duration: r.total_parked_duration ?? '-',
+          no_of_parking: r.no_of_parking ?? '-',
+          total_offline_duration: r.total_offline_duration ?? '-',
+        };
+      });
+
+const initialFilter = { vehicles: [], routes: [], interval: '', fromDate: '', toDate: '' };
 
 function Idle() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
-  const [filterData, setFilterData] = useState({ vehicles: [], routes: [], interval: '', fromDate: '', toDate: '' });
+  const [total, setTotal] = useState(0);
+  const [filterData, setFilterData] = useState(initialFilter);
+  const [isLoading, setIsLoading] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
   const company_id = localStorage.getItem('company_id');
+
+  const dataFilter = useRef(filterData);
   const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || {});
-  const { vehicleActivityData } = useSelector((s) => s?.vehicleActivity || {});
 
   useEffect(() => {
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
-  const buildApiPayload = () => ({
-    company_id,
-    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
-    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
-    ...(filterData.interval && { interval: filterData.interval }),
-    ...(filterData.fromDate && { from_date: filterData.fromDate }),
-    ...(filterData.toDate && { to_date: filterData.toDate }),
-  });
+  const buildApiPayload = useCallback(
+    (overrides = {}) => {
+      const d = dataFilter.current;
+      return {
+        company_id,
+        ...(d.vehicles?.length && { vehicles: JSON.stringify(d.vehicles) }),
+        ...(d.routes?.length && { routes: JSON.stringify(d.routes) }),
+        ...(d.interval && { interval: d.interval }),
+        ...(d.fromDate && { from_date: d.fromDate }),
+        ...(d.toDate && { to_date: d.toDate }),
+        ...overrides,
+      };
+    },
+    [company_id]
+  );
 
   useEffect(() => {
-    if (company_id) {
-      dispatch(fetchVehicleActivityData({ page: page + 1, limit })).then((res) => {
-        if (res?.payload?.status === 200) setFilteredData(res?.payload?.data || []);
-      });
-    }
-  }, [dispatch, company_id, page, limit]);
-
-  const handleExport = () =>
-    exportToExcel({
-      columns,
-      rows: buildExportRows({ columns, data: filteredData }),
-      fileName: 'idle_report.xlsx',
-    });
-
-  const handleExportPDF = () =>
-    exportToPDF({
-      columns,
-      rows: buildExportRows({ columns, data: filteredData }),
-      fileName: 'idle_report.pdf',
-      orientation: 'landscape',
-    });
+    if (!company_id) return;
+    setIsLoading(true);
+    dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit }))).finally(() => setIsLoading(false));
+  }, [company_id, page, limit, buildApiPayload, dispatch]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    dispatch(fetchVehicleActivityData({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-      if (res?.payload?.status === 200) {
-        toast.success(res?.payload?.message);
-        setFilteredData(res?.payload?.data);
-      } else toast.error(res?.payload?.message);
+    dataFilter.current = filterData;
+    setPage(0);
+    setIsLoading(true);
+    dispatch(fetchVehicleActivityData(buildApiPayload({ page: 1, limit }))).then((res) => {
+      setIsLoading(false);
+      if (res?.payload?.success) {
+        setFilteredData(res.payload.data);
+        setTotal(res.payload?.totalVehicles);
+        toast.success(res.payload.message || 'Success');
+      } else {
+        toast.error(res?.payload?.message || 'Failed to fetch data');
+      }
     });
   };
 
   const handleFormReset = () => {
-    setFilterData({ vehicles: [], routes: [], interval: '', fromDate: '', toDate: '' });
+    setFilterData(initialFilter);
+    dataFilter.current = initialFilter;
+    setPage(0);
+    setIsLoading(true);
+    company_id
+      ? dispatch(fetchVehicleActivityData({ company_id, page: 1, limit })).finally(() => setIsLoading(false))
+      : setIsLoading(false);
   };
+
+  const exportConf = { columns, rows: buildExportRows({ columns, data: mapActivityRow(filteredData) }) };
+  const handleExport = () => exportToExcel({ ...exportConf, fileName: 'idle_report.xlsx' });
+  const handleExportPDF = () => exportToPDF({ ...exportConf, fileName: 'idle_report.pdf', orientation: 'landscape' });
+
+  const tableData = mapActivityRow(filteredData);
 
   return (
     <div className='w-full h-full p-2'>
@@ -130,17 +186,20 @@ function Idle() {
           vehicles={routes}
           routes={routes}
           intervals={intervalOptions}
+          filteredData={tableData}
+          setFilteredData={setFilteredData}
         />
       </form>
       <ReportTable
         columns={columns}
-        data={filteredData}
+        data={tableData}
         page={page}
         setPage={setPage}
         limit={limit}
         setLimit={setLimit}
         limitOptions={[10, 15, 20, 25, 30]}
-        totalCount={vehicleActivityData?.pagination?.total}
+        totalCount={total}
+        loading={isLoading}
       />
     </div>
   );

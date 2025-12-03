@@ -7,7 +7,7 @@ export const fetchVehicleActivityData = createAsyncThunk(
     try {
       const response = await ApiService.get('report/vehicleactivity', params);
       if (!response.success) return rejectWithValue(response.message || 'Failed to fetch vehicle activity data');
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
