@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { APIURL } from '../../../../constants';
 import { ApiService } from '../../../../services';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Autocomplete, TextField } from '@mui/material';
 import { useAuth } from '../../../../context/AuthContext';
 
@@ -14,28 +14,36 @@ const columns = [
 
 function AnnouncementForm() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { state: editData, pathname } = useLocation();
-
+  const navigate = useNavigate();
   const isView = pathname.includes('view');
-  const [title, setTitle] = useState(editData?.title || '');
-  const [mssg, setMssg] = useState(editData?.message || '');
-  const [empData, setEmpData] = useState([]);
-  const [selectedValue, setSelectedValue] = useState(
-    editData?.employees
-      ? editData.employees.map((emp) => ({
-          label: `${emp.first_name} ${emp.last_name}`,
-          value: emp.id,
-        }))
-      : []
+
+  const [title, setTitle] = useState(editData?.title ?? '');
+  const [message, setMessage] = useState(editData?.message ?? '');
+  const [employeeOptions, setEmployeeOptions] = useState([]);
+  const [selectedEmployees, setSelectedEmployees] = useState(
+    editData?.employees?.map((emp) => ({
+      label: [emp.first_name, emp.last_name].filter(Boolean).join(' '),
+      value: emp.id,
+    })) ?? []
   );
-  const senderName = editData?.senderName || user?.name || '';
+
+  const senderName = editData?.senderName ?? 'Super Admin';
 
   useEffect(() => {
-    ApiService.get(APIURL.EMPLOYEE)
-      .then((res) =>
-        res.success ? setEmpData(res.data.employes) : alert(res.message || 'Failed to fetch employee data')
-      )
+    ApiService.get(`${APIURL.EMPLOYEE}?limit=3000`)
+      .then((res) => {
+        if (res?.success && Array.isArray(res.data?.employes)) {
+          setEmployeeOptions(
+            res.data.employes.map((emp) => ({
+              label: [emp.first_name, emp.last_name].filter(Boolean).join(' '),
+              value: emp.id,
+            }))
+          );
+        } else {
+          alert(res?.message || 'Failed to fetch employee data');
+        }
+      })
       .catch(() => alert('Something went wrong while fetching employee data'));
   }, []);
 
@@ -43,36 +51,42 @@ function AnnouncementForm() {
     e.preventDefault();
     const payload = {
       title,
-      sender_id: user?.id || user,
-      message: mssg,
-      employee_ids: selectedValue.map((item) => item.value),
+      sender_id: user,
+      message,
+      employee_ids: selectedEmployees.map((item) => item.value),
     };
-    const res = editData?.id
-      ? await ApiService.put(`${APIURL.ANNOUNCEMENT}/${editData.id}`, payload)
-      : await ApiService.post(APIURL.ANNOUNCEMENT, payload);
-    res.success ? navigate('/management/announcement') : alert(res.message || 'Something went wrong.');
+    const apiFn = editData?.id
+      ? ApiService.put(`${APIURL.ANNOUNCEMENT}/${editData.id}`, payload)
+      : ApiService.post(APIURL.ANNOUNCEMENT, payload);
+
+    const res = await apiFn;
+    if (res?.success) {
+      navigate('/management/announcement');
+    } else {
+      alert(res?.message || 'Something went wrong.');
+    }
   };
 
   const employeeNames =
-    selectedValue.length > 0 ? selectedValue.map((emp) => emp.label).join(', ') : editData?.employeeName || '-';
+    selectedEmployees.length > 0 ? selectedEmployees.map((emp) => emp.label).join(', ') : editData?.employeeName || '-';
 
   return (
     <div className='bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]'>
-      <h1 className='text-2xl font-bold p-3 text-[#07163d]'>{editData ? 'Edit Announcement' : 'Send Announcement'}</h1>
+      <h1 className='text-2xl font-bold p-3 text-[#07163d]'>
+        {editData ? (isView ? 'View Announcement' : 'Edit Announcement') : 'Send Announcement'}
+      </h1>
       <p className='mx-3 mb-2'>
         <span className='text-red-500'>*</span> indicates required field
       </p>
       <hr className='border border-gray-300' />
       <div className='p-5'>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete='off'>
           <div className='grid lg:grid-cols-2 md:grid-cols-2 sm:grid-cols-1 gap-4'>
-            {/* Announcement Title */}
             <div>
               <label className='block mb-2 text-sm font-medium text-gray-900'>
                 {columns[0].header} <span className='text-red-500'>*</span>
               </label>
               <TextField
-                type='text'
                 id='title'
                 name='title'
                 fullWidth
@@ -81,23 +95,16 @@ function AnnouncementForm() {
                 size='small'
                 placeholder='Enter Title'
                 required
-                disabled={!!editData && isView}
+                disabled={isView}
+                inputProps={{ maxLength: 255 }}
               />
             </div>
-            {/* Sender Name */}
             <div>
-              <label className='block mb-2 text-sm font-medium text-gray-900'>{columns[1].header}</label>
-              <TextField
-                type='text'
-                id='senderName'
-                name='senderName'
-                fullWidth
-                value={senderName}
-                size='small'
-                disabled
-              />
+              <label className='block mb-2 text-sm font-medium text-gray-900'>
+                {columns[1].header} <span className='text-red-500'>*</span>
+              </label>
+              <TextField id='senderName' name='senderName' fullWidth value={senderName} size='small' disabled />
             </div>
-            {/* Employee Name */}
             <div>
               <label className='block mb-2 text-sm font-medium text-gray-900'>
                 {columns[2].header} <span className='text-red-500'>*</span>
@@ -108,40 +115,39 @@ function AnnouncementForm() {
                 <Autocomplete
                   multiple
                   disablePortal
-                  options={empData.map((item) => ({
-                    label: `${item.first_name} ${item.last_name}`,
-                    value: item.id,
-                  }))}
-                  isOptionEqualToValue={(option, value) => option.value === value.value}
+                  options={employeeOptions}
+                  isOptionEqualToValue={(o, v) => o.value === v.value}
                   getOptionLabel={(option) => option.label}
                   size='small'
-                  renderInput={(params) => <TextField {...params} label='Select User' />}
-                  onChange={(_, val) => setSelectedValue(val)}
-                  value={selectedValue}
+                  renderInput={(params) => <TextField {...params} label='Select Employee' required />}
+                  onChange={(_, val) => setSelectedEmployees(val)}
+                  value={selectedEmployees}
                 />
               )}
             </div>
-            {/* Message */}
             <div>
               <label className='block mb-2 text-sm font-medium text-gray-900'>
                 {columns[3].header} <span className='text-red-500'>*</span>
               </label>
               {isView ? (
-                <TextField value={mssg} fullWidth size='small' multiline rows={4} disabled />
+                <TextField value={message} fullWidth size='small' multiline rows={4} disabled />
               ) : (
-                <textarea
+                <TextField
                   id='message'
-                  rows='4'
-                  className='block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  name='message'
+                  fullWidth
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  size='small'
                   placeholder='Write your messages here...'
-                  value={mssg}
-                  onChange={(e) => setMssg(e.target.value)}
+                  multiline
+                  minRows={4}
                   required
+                  inputProps={{ maxLength: 1000 }}
                 />
               )}
             </div>
           </div>
-          {/* Actions at the end */}
           <div className='flex justify-end gap-4 mt-8'>
             {!isView && (
               <button
@@ -150,13 +156,12 @@ function AnnouncementForm() {
                 Save
               </button>
             )}
-            <Link to='/management/announcements'>
-              <button
-                type='button'
-                className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
-                Back
-              </button>
-            </Link>
+            <button
+              type='button'
+              className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'
+              onClick={() => navigate('/management/announcements')}>
+              Back
+            </button>
           </div>
         </form>
       </div>
