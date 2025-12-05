@@ -14,10 +14,10 @@ import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/expo
 const columns = [
   { key: 'id', header: 'Sr No' },
   { key: 'title', header: 'Announcement Title' },
-  { key: 'senderName', header: 'Sender Name' },
-  { key: 'employeeName', header: 'Employee Name' },
+  { key: 'sender_name', header: 'Sender Name' },
+  { key: 'route_name', header: 'Vehicle Route' },
   { key: 'message', header: 'Message' },
-  { key: 'createdOn', header: 'Created On' },
+  { key: 'created_at', header: 'Created On' },
 ];
 
 function formatAnnouncement(data, offset = 0) {
@@ -25,10 +25,10 @@ function formatAnnouncement(data, offset = 0) {
     id: offset + idx + 1,
     announcementId: d.id,
     title: d.title || '-',
-    senderName: d.senderName || '-',
-    employeeName: d.employeeName || '-',
+    sender_name: d.sender_name || '-',
+    route_name: d.route_name || '-',
     message: d.message || '-',
-    createdOn: d.created_at ? dayjs(d.created_at).format('YYYY-MM-DD hh:mm A') : '-',
+    created_at: d.created_at ? dayjs(d.created_at).format('YYYY-MM-DD hh:mm A') : '-',
     raw: d,
   }));
 }
@@ -82,7 +82,7 @@ function Announcement() {
         setFilteredData([]);
         setTotalCount(0);
       }
-    } catch {
+    } catch (error) {
       setFilteredData([]);
       setTotalCount(0);
     } finally {
@@ -117,9 +117,9 @@ function Announcement() {
         setFile(null);
         fetchAnnouncements();
       } else {
-        toast.error(res.message || 'Upload failed');
+        toast.error(res.message || 'File upload failed.');
       }
-    } catch {
+    } catch (error) {
       toast.error('Upload failed.');
     }
   };
@@ -134,8 +134,9 @@ function Announcement() {
         rows: buildExportRows({ columns, data: formatAnnouncement(list) }),
         fileName: 'announcements.xlsx',
       });
-    } catch {
-      toast.error('Export failed');
+      toast.success('Export to Excel successful.');
+    } catch (error) {
+      toast.error('Export to Excel failed.');
     }
   };
 
@@ -150,23 +151,16 @@ function Announcement() {
         fileName: 'announcements.pdf',
         orientation: 'landscape',
       });
-    } catch {
-      toast.error('Export PDF failed');
+      toast.success('Export to PDF successful.');
+    } catch (error) {
+      toast.error('Export PDF failed.');
     }
   };
 
-  const handleSample = () =>
-    exportToExcel({
-      columns: [
-        { key: 'title', header: 'Title' },
-        { key: 'sender_id', header: 'Sender ID' },
-        { key: 'employee_id', header: 'Employee ID' },
-        { key: 'message', header: 'Message' },
-        { key: 'route_id', header: 'Route ID' },
-      ],
-      rows: [{}],
-      fileName: 'announcement_import_sample.xlsx',
-    });
+  const handleSample = () => {
+    exportToExcel({ columns, rows: [{}], fileName: 'announcement_import_sample.xlsx' });
+    toast.success('Sample Excel downloaded.');
+  };
 
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
@@ -176,19 +170,17 @@ function Announcement() {
         toast.success('Announcement deleted successfully!');
         if (filteredData.length === 1 && page > 0) setPage(page - 1);
         else fetchAnnouncements();
-        window.location.reload();
       } else {
-        toast.error('Failed to delete announcement.');
+        toast.error(response?.message || 'Failed to delete announcement.');
       }
-    } catch {
-      toast.error('An error occurred while deleting.');
+    } catch (error) {
+      toast.error('An error occurred while deleting announcement.');
     }
   };
 
   const handleEdit = (row) => {
     navigate('/management/announcement/edit', { state: row.raw });
   };
-
   const handleView = (row) => {
     navigate('/management/announcement/view', { state: row.raw });
   };
@@ -240,6 +232,7 @@ function Announcement() {
           onRowsPerPageChange={(val) => {
             setLimit(val);
             setPage(0);
+            toast.info('Rows per page changed.');
           }}
           loading={loading}
         />
