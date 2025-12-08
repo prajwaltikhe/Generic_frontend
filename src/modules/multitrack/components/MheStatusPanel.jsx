@@ -102,7 +102,7 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
             ))}
           </div>
           <div className='flex flex-wrap justify-center gap-3 mt-4 w-full'>
-            <Link to={`/report/${status || ''}`}>
+            <Link to={status === 'New' ? '/report/new-device' : `/report/${status || ''}`}>
               <Btn>Reports</Btn>
             </Link>
             <Link to={`/management/vehicle-route`}>
