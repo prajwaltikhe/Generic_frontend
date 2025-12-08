@@ -13,31 +13,47 @@ import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/e
 
 const columns = [
   {
-    key: 'date_time',
+    key: 'updated_at',
     header: 'Date & Time',
-    render: (_, r) => (r?.date_time ? moment(r.date_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    render: (_, r) => (r?.updated_at ? moment(r.updated_at).format('YYYY-MM-DD HH:mm:ss') : '-'),
   },
-  { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type || '-' },
-  { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number || '-' },
-  { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details || '-' },
-  { key: 'driver_name', header: 'Driver Name', render: (_, r) => r?.driver_name || '-' },
-  { key: 'driver_contact_number', header: 'Driver Contact Number', render: (_, r) => r?.driver_contact_number || '-' },
-  { key: 'source', header: 'Source', render: (_, r) => r?.source || '-' },
-  { key: 'destination', header: 'Destination', render: (_, r) => r?.destination || '-' },
+  { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type ?? 'Bus' },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number ?? '-' },
+  { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details ?? '-' },
+  { key: 'driver_name', header: 'Driver Name', render: (_, r) => r?.driver_name ?? '-' },
+  { key: 'driver_contact_number', header: 'Driver Contact Number', render: (_, r) => r?.driver_contact_number ?? '-' },
+  { key: 'source', header: 'Source', render: (_, r) => r?.source ?? '-' },
+  { key: 'destination', header: 'Destination', render: (_, r) => r?.destination ?? '-' },
   {
-    key: 'employee_onboard',
+    key: 'employee_count',
     header: 'Employee Count',
-    render: (_, r) => (typeof r?.employee_onboard === 'number' ? r.employee_onboard : '-'),
+    render: (_, r) => (typeof r?.employee_count === 'number' ? r.employee_count : '-'),
   },
-  { key: 'speed', header: 'Speed', render: (_, r) => r?.speed ?? '-' },
-  { key: 'start_lat_long', header: 'Start Lat-Long', render: (_, r) => r?.start_lat_long || '-' },
-  { key: 'end_lat_long', header: 'End Lat-Long', render: (_, r) => r?.end_lat_long || '-' },
-  { key: 'trip_distance', header: 'Trip Distance', render: (_, r) => r?.trip_distance ?? '-' },
-  { key: 'total_distance', header: 'Covered Distance', render: (_, r) => r?.total_distance ?? '-' },
+  { key: 'speed', header: 'Speed', render: (_, r) => (typeof r?.speed === 'number' ? r.speed : '-') },
+  { key: 'start_lat_long', header: 'Start Lat-Long', render: (_, r) => r?.start_lat_long ?? '-' },
+  { key: 'end_lat_long', header: 'End Lat-Long', render: (_, r) => r?.end_lat_long ?? '-' },
+  {
+    key: 'trip_distance',
+    header: 'Trip Distance',
+    render: (_, r) => (typeof r?.trip_distance === 'number' ? r.trip_distance : r?.trip_distance ?? '-'),
+  },
+  {
+    key: 'covered_distance',
+    header: 'Covered Distance',
+    render: (_, r) => (typeof r?.covered_distance === 'number' ? r.covered_distance : r?.covered_distance ?? '-'),
+  },
   { key: 'start_odometer', header: 'Start Odometer', render: (_, r) => r?.start_odometer ?? '-' },
   { key: 'end_odometer', header: 'End Odometer', render: (_, r) => r?.end_odometer ?? '-' },
-  { key: 'total_distance_2', header: 'Total Distance', render: (_, r) => r?.total_distance ?? '-' },
-  { key: 'top_speed', header: 'Top Speed', render: (_, r) => r?.top_speed ?? '-' },
+  {
+    key: 'total_distance',
+    header: 'Total Distance',
+    render: (_, r) => (typeof r?.total_distance === 'number' ? r.total_distance : r?.total_distance ?? '-'),
+  },
+  {
+    key: 'top_speed',
+    header: 'Top Speed',
+    render: (_, r) => (typeof r?.top_speed === 'number' ? r.top_speed : r?.top_speed ?? '-'),
+  },
   {
     key: 'total_running_duration',
     header: 'Total Running Duration',
@@ -45,7 +61,11 @@ const columns = [
   },
   { key: 'total_idle_duration', header: 'Total Idle Duration', render: (_, r) => r?.total_idle_duration ?? '-' },
   { key: 'total_parked_duration', header: 'Total Parked Duration', render: (_, r) => r?.total_parked_duration ?? '-' },
-  { key: 'no_of_parking', header: 'No. of Parking', render: (_, r) => r?.no_of_parking ?? '-' },
+  {
+    key: 'no_of_parking',
+    header: 'No. of Parking',
+    render: (_, r) => (typeof r?.no_of_parking === 'number' ? r.no_of_parking : r?.no_of_parking ?? '-'),
+  },
   {
     key: 'total_offline_duration',
     header: 'Total Offline Duration',
@@ -57,10 +77,10 @@ const mapActivityRow = (data) =>
   !data
     ? []
     : (Array.isArray(data) ? data : [data]).map((row) => {
-        const r = row?.report || {};
+        const r = row?.report || row || {};
         return {
-          date_time: r.date_time ?? null,
-          vehicle_type: r.vehicle_type ?? null,
+          updated_at: r.updated_at ?? null,
+          vehicle_type: r.vehicle_type ?? 'Bus',
           vehicle_number: r.vehicle_number ?? null,
           route_details: r.route_details ?? null,
           driver_name: r.driver_name ?? null,
@@ -68,30 +88,41 @@ const mapActivityRow = (data) =>
           source: r.source
             ? r.source
                 .split(',')
-                .map((v) => Number.parseFloat(v).toFixed(7))
+                .map((v) => {
+                  const n = Number.parseFloat(v);
+                  return isNaN(n) ? v : n.toFixed(7);
+                })
                 .join(',')
             : null,
           destination: r.destination
             ? r.destination
                 .split(',')
-                .map((v) => Number.parseFloat(v).toFixed(7))
+                .map((v) => {
+                  const n = Number.parseFloat(v);
+                  return isNaN(n) ? v : n.toFixed(7);
+                })
                 .join(',')
             : null,
-          employee_onboard: row.employee_onboard ?? '-',
-          speed: r.speed ?? '-',
+          employee_count:
+            typeof r.employee_count === 'number'
+              ? r.employee_count
+              : typeof row.employee_count === 'number'
+              ? row.employee_count
+              : 0,
+          speed: typeof r.speed === 'number' ? r.speed : 0,
           start_lat_long: r.start_lat_long ?? null,
           end_lat_long: r.end_lat_long ?? null,
-          trip_distance: r.trip_distance ?? '-',
-          total_distance: r.total_distance ?? '-',
+          trip_distance: typeof r.trip_distance === 'number' ? r.trip_distance : 0,
+          covered_distance: typeof r.covered_distance === 'number' ? r.covered_distance : 0,
           start_odometer: r.start_odometer ?? null,
           end_odometer: r.end_odometer ?? null,
-          total_distance_2: r.total_distance ?? '-',
-          top_speed: r.top_speed ?? '-',
-          total_running_duration: r.total_running_duration ?? '-',
-          total_idle_duration: r.total_idle_duration ?? '-',
-          total_parked_duration: r.total_parked_duration ?? '-',
-          no_of_parking: r.no_of_parking ?? '-',
-          total_offline_duration: r.total_offline_duration ?? '-',
+          total_distance: typeof r.total_distance === 'number' ? r.total_distance : 0,
+          top_speed: typeof r.top_speed === 'number' ? r.top_speed : 0,
+          total_running_duration: r.total_running_duration ?? '0h 0m 0s',
+          total_idle_duration: r.total_idle_duration ?? '0h 0m 0s',
+          total_parked_duration: r.total_parked_duration ?? '0h 0m 0s',
+          no_of_parking: typeof r.no_of_parking === 'number' ? r.no_of_parking : 0,
+          total_offline_duration: r.total_offline_duration ?? '0h 0m 0s',
         };
       });
 
