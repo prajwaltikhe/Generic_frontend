@@ -7,34 +7,19 @@ import ReportTable from '../../../../components/table/ReportTable';
 import { fetchVehicleMissingInflux } from '../../../../redux/vehicleActivitySlice';
 
 const columns = [
-  { key: 'vehicleType', header: 'Vehicle Type', render: (_ignored, row) => row.vehicleType || '-' },
+  { key: 'vehicle_type', header: 'Vehicle Type', render: (_ignored, row) => row.vehicle_type || 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_ignored, row) => row.vehicle_number || '-' },
-  {
-    key: 'vehicle_driver_name',
-    header: 'Driver Name',
-    render: (_ignored, row) => {
-      const firstName = row?.vehicle_driver?.first_name || '';
-      const lastName = row?.vehicle_driver?.last_name || '';
-      const fullName = `${firstName} ${lastName}`.trim();
-      return fullName || '-';
-    },
-  },
-  {
-    key: 'vehicle_driver',
-    header: 'Driver Number',
-    render: (_ignored, row) => row?.vehicle_driver?.phone_number || '-',
-  },
-  { key: 'routeDetails', header: 'Route Details', render: (_ignored, row) => row.vehicle_route || '-' },
+  { key: 'driver_name', header: 'Driver Name', render: (_ignored, row) => row.driver_name || '-' },
+  { key: 'driver_number', header: 'Driver Number', render: (_ignored, row) => row.driver_number || '-' },
+  { key: 'route_details', header: 'Route Details', render: (_ignored, row) => row.route_details || '-' },
   { key: 'imei_number', header: 'IMEI Number', render: (_ignored, row) => row.imei_number || '-' },
   { key: 'sim_number', header: 'Sim Number', render: (_ignored, row) => row.sim_number || '-' },
   {
     key: 'installation_date',
     header: 'Installation Date',
-    render: (_ignored, row) => {
-      const createdDate = row.created_at;
-      return createdDate ? moment(createdDate).format('DD-MM-YYYY hh:mm A') : '-';
-    },
+    render: (_, row) => (row.installation_date ? moment(row.installation_date).format('DD-MM-YYYY hh:mm A') : '-'),
   },
+  { key: 'reason', header: 'Reason', render: (_ignored, row) => row.reason || '-' },
 ];
 
 function NewDevice() {
@@ -42,7 +27,7 @@ function NewDevice() {
   const dispatch = useDispatch();
 
   const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(15);
   const [vehicleData, setVehicleData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -52,9 +37,10 @@ function NewDevice() {
       if (company_id) {
         setLoading(true);
         const response = await dispatch(fetchVehicleMissingInflux({ company_id, page: page, limit }));
-        if (response?.payload?.status === 200) {
-          setVehicleData(response.payload?.data?.vehicles || []);
-          setTotalCount(response.payload?.data?.total || 0);
+        console.log(response);
+        if (response?.payload?.success) {
+          setVehicleData(response.payload?.data || []);
+          setTotalCount(response.payload?.total || 0);
         } else {
           setVehicleData([]);
           setTotalCount(0);
