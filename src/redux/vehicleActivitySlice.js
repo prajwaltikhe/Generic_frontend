@@ -16,12 +16,13 @@ export const fetchVehicleActivityData = createAsyncThunk(
 
 export const fetchVehicleMissingInflux = createAsyncThunk(
   'vehicle_missing_influx/fetchVehicleMissingInflux',
-  async ({ company_id, page, limit }, thunkAPI) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get('vehicle_missing_influx', { company_id, page, limit });
+      const response = await ApiService.get('reports/newdevice', params);
+      if (!response.success) return rejectWithValue(response.message || 'Failed to fetch vehicle activity data');
       return response;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Something went wrong');
     }
   }
 );
