@@ -1,6 +1,5 @@
-import React from 'react';
-import ReportTable from '../../../components/table/ReportTable';
 import { Link } from 'react-router-dom';
+import ReportTable from '../../../components/table/ReportTable';
 
 const columns = [
   { key: 'routeName', header: 'Vehicle Type' },

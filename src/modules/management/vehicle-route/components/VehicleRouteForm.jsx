@@ -1,12 +1,12 @@
 import L from 'leaflet';
 import AutoFlyTo from './AutoFly';
-import { APIURL } from '../../../../constants';
 import AddIcon from '@mui/icons-material/Add';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { APIURL } from '../../../../constants';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { FormControlLabel, Radio, Button } from '@mui/material';
 import { AddressServices, ApiService } from '../../../../services';
-import { FormControlLabel, Radio, Button, IconButton } from '@mui/material';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Autocomplete, TextField, FormControl, RadioGroup } from '@mui/material';
 
@@ -17,8 +17,11 @@ const customIcon = new L.Icon({
 });
 
 const shifts = [
-  { id: '2f7d76b8-87a9-4dc1-822a-a39e99b314e9', name: 'Night' },
-  { id: '1b0b7594-c88c-470b-a956-f8f79918fd36', name: 'Day' },
+  { id: '1b0b7594-c88c-470b-a956-f8f79918fd36', name: 'Day General Shift' },
+  { id: '2f7d76b8-87a9-4dc1-822a-a39e99b314e9', name: 'Night General Shift' },
+  { id: '3', name: 'First Shift' },
+  { id: '4', name: 'Second Shift' },
+  { id: '5', name: 'Third Shift' },
 ];
 
 const FitBounds = ({ stopPoints }) => {
@@ -420,11 +423,10 @@ const VehicleRouteForm = () => {
 
         {/* Stops Section */}
         <div className='bg-white p-4 rounded-lg border-t-4 border-[#07163d] shadow-sm'>
-          <h2 className='text-lg font-semibold mb-4 text-gray-800'>Route Stops</h2>
+          <h2 className='text-lg font-semibold mb-2 text-gray-800'>Route Stops</h2>
 
           {/* Shift Selection */}
           <div className='mb-4'>
-            <label className='block mb-2 text-sm font-semibold text-gray-900'>Shift *</label>
             {isViewMode ? (
               <TextField
                 size='small'
@@ -597,7 +599,7 @@ const VehicleRouteForm = () => {
         {/* Map Section */}
         <div className='bg-white p-4 rounded-lg border-t-4 border-[#07163d] shadow-sm'>
           <h2 className='text-lg font-semibold mb-4 text-gray-800'>Route Map</h2>
-          <div className='h-[400px] w-full rounded-lg overflow-hidden border'>
+          <div className='h-[350px] w-full rounded-lg overflow-hidden border'>
             <MapContainer center={initialCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
               <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
               {stopPoints.map((s, idx) =>

@@ -1,18 +1,21 @@
 import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
-import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState, useCallback } from 'react';
+import FilterOption from '../../../components/FilterOption';
 import CustomTab from '../vehicle-activity/components/CustomTab';
 import ReportTable from '../../../components/table/ReportTable';
-import FilterOption from '../../../components/FilterOption';
-import { fetchVehicleArrivalData } from '../../../redux/vehicleReportSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicleArrivalData } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const tabs = [
-  { name: 'First Shift', path: '/report/vehicle-arrival-time/1' },
-  { name: 'Second Shift', path: '/report/vehicle-arrival-time/2' },
-  { name: 'Third Shift', path: '/report/vehicle-arrival-time/3' },
+  { name: 'Day General Shift', path: '/report/vehicle-arrival-time/1' },
+  { name: 'Night General Shift', path: '/report/vehicle-arrival-time/2' },
+  { name: 'First Shift', path: '/report/vehicle-arrival-time/3' },
+  { name: 'Second Shift', path: '/report/vehicle-arrival-time/4' },
+  { name: 'Third Shift', path: '/report/vehicle-arrival-time/5' },
 ];
 
 const statusOptions = [
@@ -27,11 +30,7 @@ const columns = [
     header: 'Date',
     render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-'),
   },
-  {
-    key: 'vehicle_number',
-    header: 'Vehicle Number',
-    render: (_v, row) => row?.vehicle?.vehicle_number || '-',
-  },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, row) => row?.vehicle?.vehicle_number || '-' },
   {
     key: 'route_details',
     header: 'Route Details',
@@ -105,6 +104,7 @@ const columns = [
 
 function VehicalArrivalTime() {
   const dispatch = useDispatch();
+  const location = useLocation();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '', status: 'all' });
@@ -118,26 +118,27 @@ function VehicalArrivalTime() {
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
-  useEffect(() => {
-    if (company_id)
-      dispatch(fetchVehicleArrivalData({ company_id, page: page + 1, limit })).then((res) => {
-        if (res?.payload?.status === 200) {
-          setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
-        }
-      });
-  }, [dispatch, company_id, page, limit]);
-
-  const buildApiPayload = () => {
+  const buildApiPayload = useCallback(() => {
     const payload = { company_id };
+    const pathSegments = location.pathname.split('/');
+    const currentPath = pathSegments[pathSegments.length - 1];
+
+    if (!isNaN(currentPath)) payload.shift_id = currentPath;
+
     if (filterData.vehicles?.length) payload.vehicles = JSON.stringify(filterData.vehicles);
     if (filterData.routes?.length) payload.routes = JSON.stringify(filterData.routes);
     if (filterData.fromDate) payload.from_date = filterData.fromDate;
     if (filterData.toDate) payload.to_date = filterData.toDate;
     if (filterData.status && filterData.status !== 'all') payload.status = filterData.status;
-    payload.page = page + 1;
-    payload.limit = limit;
     return payload;
-  };
+  }, [company_id, location.pathname, filterData]);
+
+  useEffect(() => {
+    if (company_id)
+      dispatch(fetchVehicleArrivalData({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
+        if (res?.payload?.status === 200) setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
+      });
+  }, [dispatch, company_id, page, limit, buildApiPayload]);
 
   const handleExport = () =>
     exportToExcel({

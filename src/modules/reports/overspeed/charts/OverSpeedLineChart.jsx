@@ -1,14 +1,14 @@
-import Chart from 'react-apexcharts';
 import moment from 'moment';
+import Chart from 'react-apexcharts';
 
 const OverSpeedChart = ({ data }) => {
   const rawData = Array.isArray(data) ? data : data?.data || [];
   const vehicleMap = {};
 
   rawData.forEach((item) => {
-    const v = item?.vehicle?.vehicle_number || item?.vehicle_number || 'Unknown Vehicle';
-    if (item?.entry_time)
-      (vehicleMap[v] = vehicleMap[v] || []).push({ x: moment(item.entry_time).toDate(), y: item?.max_speed || 0 });
+    const v = item?.vehicle_number;
+    const time = item?.date_time;
+    if (time) (vehicleMap[v] = vehicleMap[v] || []).push({ x: moment(time).toDate(), y: item?.max_speed || 0 });
   });
   const keys = Object.keys(vehicleMap);
   const series = keys.map((v, i) => ({
@@ -18,7 +18,7 @@ const OverSpeedChart = ({ data }) => {
   }));
 
   const allDates = rawData
-    .map((i) => i?.entry_time)
+    .map((i) => i?.date_time)
     .filter(Boolean)
     .map((d) => new Date(d));
   const minDate = allDates.length ? Math.min(...allDates) : undefined;
@@ -37,16 +37,12 @@ const OverSpeedChart = ({ data }) => {
     yaxis: { title: { text: 'Speed (km/h)' }, min: 0, labels: { formatter: (val) => Math.round(val) } },
     markers: { size: 6, hover: { size: 8 } },
     stroke: { curve: 'smooth', width: 3 },
-    legend: { position: 'bottom', horizontalAlign: 'center', fontSize: 14, markers: { width: 16, height: 16 } },
     tooltip: { x: { format: 'dd MMM yyyy HH:mm' }, y: { formatter: (val) => `${val} km/h` } },
     grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
   };
   return (
-    <div className='p-2'>
-      <Chart options={options} series={series} type='line' height={350} />
-      {!series.length && (
-        <div style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>No overspeed data available.</div>
-      )}
+    <div className='pt-2 px-1'>
+      <Chart options={options} series={series} type='line' height={300} />
     </div>
   );
 };

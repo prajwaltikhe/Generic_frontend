@@ -10,45 +10,50 @@ import { fetchOverSpeedReport } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'vehicle_name', header: 'Vehicle Name', render: (_, r) => r?.vehicle_name || '-' },
+  {
+    key: 'date_time',
+    header: 'Date / Time',
+    render: (_, r) => (r?.date_time ? moment(r.date_time).format('YYYY-MM-DD hh:mm:ss A') : '-'),
+  },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number || '-' },
-  { key: 'route_number', header: 'Route Number', render: (_, r) => r?.route_number ?? '-' },
-  { key: 'entry_speed', header: 'Entry Speed', render: (_, r) => r?.entry_speed ?? '-' },
-  {
-    key: 'entry_time',
-    header: 'Entry Time',
-    render: (_, r) => (r?.entry_time ? moment(r.entry_time).format('YYYY-MM-DD hh:mm:ss A') : '-'),
-  },
-  { key: 'exit_speed', header: 'Exit Speed', render: (_, r) => r?.exit_speed ?? '-' },
-  {
-    key: 'exit_time',
-    header: 'Exit Time',
-    render: (_, r) => (r?.exit_time ? moment(r.exit_time).format('YYYY-MM-DD hh:mm:ss A') : '-'),
-  },
+  { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details || '-' },
+  { key: 'driver_name', header: 'Driver Name', render: (_, r) => r?.driver_name || '-' },
+  { key: 'driver_contact_number', header: 'Driver Contact', render: (_, r) => r?.driver_contact_number || '-' },
   { key: 'max_speed', header: 'Max Speed', render: (_, r) => r?.max_speed ?? '-' },
-  { key: 'speed_duration', header: 'Speed Duration', render: (_, r) => r?.speed_duration ?? '-' },
-  { key: 'max_speed_distance', header: 'Max Speed Distance', render: (_, r) => r?.max_speed_distance ?? '-' },
+  { key: 'no_of_over_speed', header: 'No. of Over Speed', render: (_, r) => r?.no_of_over_speed ?? '-' },
+  {
+    key: 'max_over_speed_duration',
+    header: 'Max Over Speed Duration',
+    render: (_, r) => r?.max_over_speed_duration ?? '-',
+  },
+  { key: 'total_distance', header: 'Total Distance', render: (_, r) => r?.total_distance ?? '-' },
   {
     key: 'location',
     header: 'Location',
-    render: (_, r) =>
-      r?.latitude && r?.longitude ? `${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}` : '-',
+    render: (_, r) => {
+      if (!r?.max_overspeed_lat_long) return '-';
+      const parts = r.max_overspeed_lat_long.split(',');
+      if (parts.length < 2) return r.max_overspeed_lat_long;
+      return `${Number(parts[0]).toFixed(6)}, ${Number(parts[1]).toFixed(6)}`;
+    },
   },
   {
     key: 'gmap',
     header: 'Google-Map',
-    render: (_, r) =>
-      r?.latitude && r?.longitude ? (
+    render: (_, r) => {
+      if (!r?.max_overspeed_lat_long) return '';
+      const parts = r.max_overspeed_lat_long.split(',');
+      if (parts.length < 2) return '';
+      return (
         <a
-          href={`https://maps.google.com/?q=${r.latitude},${r.longitude}`}
+          href={`https://maps.google.com/?q=${parts[0]},${parts[1]}`}
           target='_blank'
           className='text-blue-700'
           rel='noopener noreferrer'>
           Google-Map
         </a>
-      ) : (
-        ''
-      ),
+      );
+    },
   },
 ];
 
@@ -82,7 +87,7 @@ function Overspeed() {
       });
     }
     // eslint-disable-next-line
-  }, [company_id, page, limit, filterData]);
+  }, [company_id, page, limit]);
 
   const handleExport = () =>
     exportToExcel({

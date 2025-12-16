@@ -81,7 +81,8 @@ function DynamicRoute() {
         <Route path='vehicle-arrival-time/1' element={<VehicalArrivalTime />} />
         <Route path='vehicle-arrival-time/2' element={<VehicalArrivalTime />} />
         <Route path='vehicle-arrival-time/3' element={<VehicalArrivalTime />} />
-        <Route path='vehicle-arrival-time/3' element={<VehicalArrivalTime />} />
+        <Route path='vehicle-arrival-time/4' element={<VehicalArrivalTime />} />
+        <Route path='vehicle-arrival-time/5' element={<VehicalArrivalTime />} />
         {/* <Route path='stoppage-report' element={<Stopage />} />3 */}
       </Route>
       <Route path='/master'>

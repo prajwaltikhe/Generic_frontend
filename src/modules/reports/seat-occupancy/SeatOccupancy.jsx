@@ -9,7 +9,16 @@ import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'date', header: 'Date', render: (v) => (v ? moment(v).format('YYYY-MM-DD') : '-') },
+  {
+    key: 'date',
+    header: 'Date',
+    render: (v) => {
+      if (!v) return '-';
+      if (typeof v === 'string' && v.toLowerCase().includes(' to ')) return v;
+      const m = moment(v);
+      return m.isValid() ? m.format('YYYY-MM-DD') : v;
+    },
+  },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (v) => v || '-' },
   { key: 'route_detail', header: 'Route Detail', render: (v) => v || '-' },
   { key: 'driver_name', header: 'Driver Name', render: (v) => v || '-' },
@@ -40,12 +49,13 @@ function SeatOccupancy() {
 
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchSeatOccupancyReport({ company_id, page: page + 1, limit })).then((res) => {
+      dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
         if (res?.payload?.success)
           setFilteredData(Array.isArray(res.payload.data?.reports) ? res.payload.data.reports : []);
       });
     }
-  }, [dispatch, company_id, page, limit]);
+    // eslint-disable-next-line
+  }, [company_id, page, limit]);
 
   const buildApiPayload = () => {
     const payload = { company_id };
@@ -58,20 +68,32 @@ function SeatOccupancy() {
     return payload;
   };
 
-  const handleExport = () =>
-    exportToExcel({
-      columns,
-      rows: buildExportRows({ columns, data: filteredData }),
-      fileName: 'seat_occupancy_report.xlsx',
-    });
+  const handleExport = async () => {
+    const res = await dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: 1, limit: totalCount || 10000 }));
+    if (res?.payload?.success) {
+      exportToExcel({
+        columns,
+        rows: buildExportRows({ columns, data: res.payload.data?.reports || [] }),
+        fileName: 'seat_occupancy_report.xlsx',
+      });
+    } else {
+      toast.error('Failed to export data');
+    }
+  };
 
-  const handleExportPDF = () =>
-    exportToPDF({
-      columns,
-      rows: buildExportRows({ columns, data: filteredData }),
-      fileName: 'seat_occupancy_report.pdf',
-      orientation: 'landscape',
-    });
+  const handleExportPDF = async () => {
+    const res = await dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: 1, limit: totalCount || 10000 }));
+    if (res?.payload?.success) {
+      exportToPDF({
+        columns,
+        rows: buildExportRows({ columns, data: res.payload.data?.reports || [] }),
+        fileName: 'seat_occupancy_report.pdf',
+        orientation: 'landscape',
+      });
+    } else {
+      toast.error('Failed to export data');
+    }
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -89,9 +111,7 @@ function SeatOccupancy() {
     setFilterData({ vehicles: [], routes: [], fromDate: '', toDate: '' });
   };
 
-  const tableData = Array.isArray(filteredData)
-    ? filteredData.map((item) => ({ ...item, date: item.date ? moment(item.date).format('YYYY-MM-DD') : '-' }))
-    : [];
+  const tableData = Array.isArray(filteredData) ? filteredData : [];
 
   const totalCount =
     seatOccupancyReportData?.payload?.data?.pagination?.total ||
