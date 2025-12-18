@@ -61,18 +61,20 @@ function Overspeed() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '' });
   const [filteredData, setFilteredData] = useState([]);
   const company_id = localStorage.getItem('company_id');
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes);
   const { speedOverReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
-  const buildApiPayload = () => {
+  const buildApiPayload = (customLimit) => {
     const payload = { company_id };
     if (filterData.vehicles?.length) payload.vehicles = JSON.stringify(filterData.vehicles);
     if (filterData.routes?.length) payload.routes = JSON.stringify(filterData.routes);
     if (filterData.fromDate) payload.from_date = filterData.fromDate;
     if (filterData.toDate) payload.to_date = filterData.toDate;
+    if (customLimit !== undefined) payload.limit = customLimit;
     return payload;
   };
 
@@ -84,33 +86,39 @@ function Overspeed() {
     if (company_id) {
       dispatch(fetchOverSpeedReport({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
         setFilteredData([].concat(res?.payload?.overspeedData || []));
+        setTotalCount(res?.payload?.pagination?.total || 0);
       });
     }
     // eslint-disable-next-line
   }, [company_id, page, limit]);
 
-  const handleExport = () =>
+  const handleExport = async () => {
+    const res = await dispatch(fetchOverSpeedReport({ ...buildApiPayload(totalCount), page: 1 }));
+    const allData = res?.payload?.overspeedData || [];
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: filteredData }),
+      rows: buildExportRows({ columns, data: allData }),
       fileName: 'overspeed_report.xlsx',
     });
+  };
 
-  const handleExportPDF = () =>
+  const handleExportPDF = async () => {
+    const res = await dispatch(fetchOverSpeedReport({ ...buildApiPayload(totalCount), page: 1 }));
+    const allData = res?.payload?.overspeedData || [];
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: filteredData }),
+      rows: buildExportRows({ columns, data: allData }),
       fileName: 'overspeed_report.pdf',
       orientation: 'landscape',
     });
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     dispatch(fetchOverSpeedReport({ ...buildApiPayload(), page: 1, limit })).then((res) => {
-      if (res?.payload?.status === 200) {
+      if (res?.payload) {
         toast.success(res?.payload?.message);
-        setPage(0);
-        setFilteredData([].concat(res?.payload?.overspeedData || []));
+        setFilteredData(res?.payload?.overspeedData || []);
       } else {
         toast.error(res?.payload?.message || 'Failed to fetch report');
       }
