@@ -35,16 +35,16 @@ const columns = [
   { key: 'duration', header: 'Duration', render: (_, r) => r?.duration ?? '-' },
   { key: 'lat_long', header: 'Lat-Long', render: (_, r) => r?.lat_long ?? '-' },
   {
-    key: 'gmap',
+    key: 'g_map',
     header: 'G-Map',
     render: (_, r) =>
       r?.lat_long ? (
         <a
-          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.lat_long)}`}
+          href={`https://www.google.com/maps/search/?api=1&query=${r.lat_long}`}
           target='_blank'
           rel='noopener noreferrer'
           style={{ color: '#007bff', textDecoration: 'underline' }}>
-          Open
+          View
         </a>
       ) : (
         '-'
@@ -57,7 +57,9 @@ function formatOfflineRows(data, offset = 0) {
   return (Array.isArray(data) ? data : [data]).map((row, idx) => {
     const r = row?.report || row || {};
     let lat_long = r.lat_long;
-    if (!lat_long && r.start_lat_long && r.end_lat_long) lat_long = `${r.start_lat_long} - ${r.end_lat_long}`;
+    if (!lat_long && r.source && r.destination)
+      lat_long = `${parseFloat(r.source).toFixed(7)} - ${parseFloat(r.destination).toFixed(7)}`;
+
     return {
       id: offset + idx + 1,
       updated_at: r.updated_at ?? null,
@@ -68,9 +70,12 @@ function formatOfflineRows(data, offset = 0) {
       driver_contact_number: r.driver_contact_number ?? null,
       start_time: r.start_time ?? null,
       end_time: r.end_time ?? null,
-      duration: r.duration ?? '-',
-      lat_long: lat_long ?? '-',
-      gmap: lat_long ?? '-',
+      duration: r.duration ?? r.total_idle_duration ?? null,
+      lat_long: lat_long ?? null,
+      g_map:
+        lat_long && lat_long.includes(',') && !lat_long.includes('-')
+          ? `https://www.google.com/maps/search/?api=1&query=${lat_long}`
+          : '-',
     };
   });
 }

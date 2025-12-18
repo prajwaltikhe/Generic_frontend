@@ -42,7 +42,8 @@ const columns = [
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${r.lat_long}`}
           target='_blank'
-          rel='noopener noreferrer'>
+          rel='noopener noreferrer'
+          style={{ color: '#007bff', textDecoration: 'underline' }}>
           View
         </a>
       ) : (
@@ -55,6 +56,10 @@ function formatIdleRows(data, offset = 0) {
   if (!data) return [];
   return (Array.isArray(data) ? data : [data]).map((row, idx) => {
     const r = row?.report || row || {};
+    let lat_long = r.lat_long;
+    if (!lat_long && r.source && r.destination)
+      lat_long = `${parseFloat(r.source).toFixed(7)} - ${parseFloat(r.destination).toFixed(7)}`;
+
     return {
       id: offset + idx + 1,
       updated_at: r.updated_at ?? null,
@@ -65,9 +70,12 @@ function formatIdleRows(data, offset = 0) {
       driver_contact_number: r.driver_contact_number ?? null,
       start_time: r.start_time ?? null,
       end_time: r.end_time ?? null,
-      duration: r.duration ?? null,
-      lat_long: r.lat_long ?? null,
-      g_map: r.lat_long ?? null,
+      duration: r.duration ?? r.total_idle_duration ?? null,
+      lat_long: lat_long ?? null,
+      g_map:
+        lat_long && lat_long.includes(',') && !lat_long.includes('-')
+          ? `https://www.google.com/maps/search/?api=1&query=${lat_long}`
+          : '-',
     };
   });
 }
