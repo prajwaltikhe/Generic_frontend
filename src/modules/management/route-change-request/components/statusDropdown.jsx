@@ -7,7 +7,7 @@ export default function StatusDropdown({ row, onStatusChange, statusOptions }) {
   const handleChange = async (_, newValue) => {
     if (!newValue) return;
     try {
-      const res = await ApiService.put(`${APIURL.ROUTECHANGEREQ}/${row.route_change_request_status_id}`, {
+      const res = await ApiService.put(`${APIURL.ROUTECHANGEREQ}/${row.id}`, {
         route_change_request_status_id: newValue.id,
       });
       res.success
