@@ -113,12 +113,8 @@ export default function RouteChange() {
     fetchRouteChanges(); // eslint-disable-line
   }, [page, limit, searchQuery, fetchRouteChanges]);
 
-  const handleStatusUpdate = (routeChangeReqID, newStatusValue) => {
-    setFilteredData((prev) =>
-      prev.map((row) =>
-        row.id === routeChangeReqID ? { ...row, route_change_request_status_id: newStatusValue } : row
-      )
-    );
+  const handleStatusUpdate = () => {
+    fetchRouteChanges();
   };
 
   const handleFormSubmit = (e) => {
