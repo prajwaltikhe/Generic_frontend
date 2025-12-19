@@ -145,7 +145,7 @@ export default function AnnouncementForm() {
                   getOptionLabel={(o) => o?.label || ''}
                   filterSelectedOptions
                   onChange={handleRouteChange}
-                  renderInput={(params) => <TextField {...params} label='Select Vehicle Routes' required />}
+                  renderInput={(params) => <TextField {...params} label='Select Vehicle Routes' />}
                   renderTags={(val, getTagProps) =>
                     val.length > 5
                       ? [
