@@ -21,45 +21,20 @@ const columns = [
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number ?? '-' },
   { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details ?? '-' },
   { key: 'driver_name', header: 'Driver Name', render: (_, r) => r?.driver_name ?? '-' },
-  { key: 'driver_contact_number', header: 'Driver Contact Number', render: (_, r) => r?.driver_contact_number ?? '-' },
+  { key: 'driver_contact_number', header: 'Contact Number', render: (_, r) => r?.driver_contact_number ?? '-' },
   {
-    key: 'start_time',
-    header: 'Start Time',
-    render: (_, r) => (r?.start_time ? moment(r.start_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'total_offline_duration',
+    header: 'Total Offline Duration',
+    render: (_, r) => r?.total_offline_duration ?? '-',
   },
-  {
-    key: 'end_time',
-    header: 'End Time',
-    render: (_, r) => (r?.end_time ? moment(r.end_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
-  },
-  { key: 'duration', header: 'Duration', render: (_, r) => r?.duration ?? '-' },
-  { key: 'lat_long', header: 'Lat-Long', render: (_, r) => r?.lat_long ?? '-' },
-  {
-    key: 'g_map',
-    header: 'G-Map',
-    render: (_, r) =>
-      r?.lat_long ? (
-        <a
-          href={`https://www.google.com/maps/search/?api=1&query=${r.lat_long}`}
-          target='_blank'
-          rel='noopener noreferrer'
-          style={{ color: '#007bff', textDecoration: 'underline' }}>
-          View
-        </a>
-      ) : (
-        '-'
-      ),
-  },
+  { key: 'max_offline_duration', header: 'Max Offline Duration', render: (_, r) => r?.max_offline_duration ?? '-' },
+  { key: 'no_of_offline', header: 'No of Offline', render: (_, r) => r?.no_of_offline ?? '-' },
 ];
 
 function formatOfflineRows(data, offset = 0) {
   if (!data) return [];
   return (Array.isArray(data) ? data : [data]).map((row, idx) => {
     const r = row?.report || row || {};
-    let lat_long = r.lat_long;
-    if (!lat_long && r.source && r.destination)
-      lat_long = `${parseFloat(r.source).toFixed(7)} - ${parseFloat(r.destination).toFixed(7)}`;
-
     return {
       id: offset + idx + 1,
       updated_at: r.updated_at ?? null,
@@ -68,14 +43,9 @@ function formatOfflineRows(data, offset = 0) {
       route_details: r.route_details ?? null,
       driver_name: r.driver_name ?? null,
       driver_contact_number: r.driver_contact_number ?? null,
-      start_time: r.start_time ?? null,
-      end_time: r.end_time ?? null,
-      duration: r.duration ?? r.total_idle_duration ?? null,
-      lat_long: lat_long ?? null,
-      g_map:
-        lat_long && lat_long.includes(',') && !lat_long.includes('-')
-          ? `https://www.google.com/maps/search/?api=1&query=${lat_long}`
-          : '-',
+      total_offline_duration: r.total_offline_duration ?? null,
+      max_offline_duration: r.max_offline_duration ?? null,
+      no_of_offline: r.no_of_offline ?? null,
     };
   });
 }
