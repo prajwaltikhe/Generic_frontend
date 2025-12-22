@@ -1,3 +1,4 @@
+import moment from 'moment-timezone';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPlants } from '../../../redux/plantSlice';
@@ -8,13 +9,23 @@ import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import { fetchDestinationArrivalFemale, fetchAllEmployeeDetails } from '../../../redux/employeeSlice';
 
+const toStr = (v) => (v == null || (typeof v === 'string' && v.trim() === '') ? '-' : v);
+
+const getLatLng = (i) => {
+  const lat = i.latitude,
+    lng = i.longitude;
+  if (lat && lng && lat !== 'null' && lng !== 'null' && !isNaN(+lat) && !isNaN(+lng))
+    return { latLong: `${lat}, ${lng}`, gmap: `https://maps.google.com/?q=${lat},${lng}` };
+  return { latLong: '-', gmap: '' };
+};
+
 const columns = [
   { key: 'dateTime', header: 'Date' },
   { key: 'vehicleNo', header: 'Vehicle No.' },
   { key: 'routeNo', header: 'Route Details' },
   { key: 'driverName', header: 'Driver Name' },
   { key: 'contactNumber', header: 'Driver Contact Number' },
-  { key: 'employeeName', header: 'Employee Name' },
+  { key: 'employeeName', header: 'Female Employee Name' },
   { key: 'employeeId', header: 'Employee ID' },
   { key: 'plant', header: 'Plant' },
   { key: 'department', header: 'Department' },
@@ -22,13 +33,9 @@ const columns = [
   {
     key: 'gmap',
     header: 'G-Map',
-    render: (value, row) =>
-      row?.latLong ? (
-        <a
-          href={`https://maps.google.com/?q=${row.latLong}`}
-          target='_blank'
-          className='text-blue-700 underline'
-          rel='noopener noreferrer'>
+    render: (_v, row) =>
+      row?.gmap ? (
+        <a href={row.gmap} target='_blank' className='text-blue-700 underline' rel='noopener noreferrer'>
           G-Map
         </a>
       ) : (
@@ -68,6 +75,23 @@ function DestinationArrivalFemale() {
     if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3000 }));
   }, [dispatch]);
 
+  const mapResponseData = (data) => {
+    if (!Array.isArray(data)) return [];
+    return data.map((i) => ({
+      dateTime: i.arrival_time ? moment(i.arrival_time).format('YYYY-MM-DD') : '-',
+      vehicleNo: toStr(i.vehicle_number),
+      routeNo: toStr(i.route_name),
+      driverName: toStr(i.driver_name),
+      contactNumber: toStr(i.driver_phone),
+      employeeName: toStr(i.female_employee_name),
+      employeeId: toStr(i.employee_id),
+      plant: toStr(i.plant_name),
+      department: toStr(i.department_name),
+      ...getLatLng(i),
+      arrivalTime: i.arrival_time ? moment(i.arrival_time).format('HH:mm:ss') : '-',
+    }));
+  };
+
   const buildApiPayload = () => {
     const { fromDate, toDate, departments, employees, routes, vehicles, plants } = filterData;
     const company_id = localStorage.getItem('company_id');
@@ -86,8 +110,9 @@ function DestinationArrivalFemale() {
 
   useEffect(() => {
     dispatch(fetchDestinationArrivalFemale({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.data || []));
-      setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
+      console.log(res);
+      setFilteredData(mapResponseData(res?.payload?.arrivals));
+      setTotalCount(res?.payload?.pagination?.total || 0);
     });
     // eslint-disable-next-line
   }, [page, limit]);
@@ -96,8 +121,8 @@ function DestinationArrivalFemale() {
     e.preventDefault();
     setPage(0);
     dispatch(fetchDestinationArrivalFemale({ ...buildApiPayload(), page: 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.data || []));
-      setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
+      setFilteredData(mapResponseData(res?.payload?.arrivals));
+      setTotalCount(res?.payload?.pagination?.total || 0);
     });
   };
 
@@ -115,8 +140,9 @@ function DestinationArrivalFemale() {
     setPage(0);
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchDestinationArrivalFemale({ company_id, page: 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.data || []));
-      setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
+      console.log(res);
+      setFilteredData(mapResponseData(res?.payload?.arrivals));
+      setTotalCount(res?.payload?.pagination?.total || 0);
     });
   };
 

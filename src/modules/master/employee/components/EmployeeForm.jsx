@@ -142,7 +142,7 @@ function EmployeeForm() {
     apiUrl: formVal.vehicleRoute ? `${APIURL.VEHICLE_ROUTE}/${formVal.vehicleRoute.value}/stops` : null,
     dataKey: 'stops',
     labelSelector: (d) => d?.address ?? '',
-    valueSelector: (d) => d?.address ?? '',
+    valueSelector: (d) => d?.id ?? '',
   });
 
   useEffect(() => {
@@ -196,6 +196,14 @@ function EmployeeForm() {
       longitude: d.longitude || d.boarding_longitude || '',
     }));
   }, [rowData, dept.options, plant.options, route.options]);
+
+  useEffect(() => {
+    if (boarding.options?.length && formVal.boardingPoint) {
+      const match = getOptionObj(boarding.options, formVal.boardingPoint.label, true);
+      if (match && (match.value !== formVal.boardingPoint.value || !formVal.boardingPoint.data))
+        setFormVal((prev) => ({ ...prev, boardingPoint: match }));
+    }
+  }, [boarding.options, formVal.boardingPoint]);
 
   const handleAddressSearch = useCallback((_, value) => {
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
@@ -307,6 +315,8 @@ function EmployeeForm() {
         vehicle_route_id: formVal.vehicleRoute ? formVal.vehicleRoute.value : '',
         address: formVal.address,
         boarding_address: formVal.boardingPoint ? formVal.boardingPoint.value : '',
+        boarding_latitude: formVal.boardingPoint?.data?.latitude ?? rowData?.rowData?.boarding_latitude ?? '',
+        boarding_longitude: formVal.boardingPoint?.data?.longitude ?? rowData?.rowData?.boarding_longitude ?? '',
         profile_img: formVal.profilePhoto?.name || '',
         latitude: lat ? parseFloat(lat) : '',
         longitude: lng ? parseFloat(lng) : '',
@@ -447,8 +457,7 @@ function EmployeeForm() {
                 options={route.options}
                 value={formVal.vehicleRoute}
                 loading={route.loading}
-                // FIX: Only update route, do NOT reset other fields manually
-                onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v }))}
+                onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v, boardingPoint: null }))}
                 disabled={isViewMode}
               />
 

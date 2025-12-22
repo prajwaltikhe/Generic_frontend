@@ -141,6 +141,7 @@ function Employee() {
   useEffect(() => {
     if (company_id) {
       dispatch(fetchEmployees(buildApiPayload())).then((res) => {
+        console.log(res);
         setFilteredData(res?.payload?.employes || []);
         setTotalCount(res?.payload?.pagination?.total || res?.payload?.employes?.length || 0);
       });

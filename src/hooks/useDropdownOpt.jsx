@@ -32,6 +32,7 @@ export const useDropdownOpt = ({
       const opt = rawData.map((item) => ({
         label: labelSelector(item),
         value: valueSelector(item),
+        data: item,
       }));
 
       const uniqOpt = Array.from(new Map(opt.map((o) => [o.value, o])).values());

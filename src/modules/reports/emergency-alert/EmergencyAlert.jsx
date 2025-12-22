@@ -56,7 +56,7 @@ function getDriver(i) {
 function getEmployee(i) {
   const employe = i.employe,
     name = employe?.name?.trim() || '-',
-    id = employe?.id?.trim() || i.employee_id?.trim() || '-';
+    id = employe?.employee_id?.trim() || '-';
   return { employee_name: name, employee_id: id };
 }
 
