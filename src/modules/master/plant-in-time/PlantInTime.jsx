@@ -15,9 +15,9 @@ const columns = [
   { key: 'routeName', header: 'Route Name' },
   { key: 'dayGeneral', header: 'Day General' },
   { key: 'nightGeneral', header: 'Night General' },
-  { key: 'firstGeneral', header: 'First General' },
-  { key: 'secondGeneral', header: 'Second General' },
-  { key: 'thirdGeneral', header: 'Third General' },
+  { key: 'firstShift', header: 'First Shift' },
+  { key: 'secondShift', header: 'Second Shift' },
+  { key: 'thirdShift', header: 'Third Shift' },
   { key: 'updatedBy', header: 'Updated By' },
   { key: 'updatedOn', header: 'Updated On' },
 ];
@@ -26,15 +26,15 @@ function formatPlantInTime(data, offset = 0) {
   return data.map((d, idx) => ({
     id: offset + idx + 1,
     plantId: d.id,
-    name: d.vehicle?.vehicle_name || '-',
+    name: d.vehicle?.vehicle_number || '-',
     vehicle_id: d.vehicle_id,
     routeName: d.route?.name || '-',
     route_id: d.vehicle_route_id,
-    dayGeneral: d.day_general_start_time || '-',
-    nightGeneral: d.night_general_start_time || '-',
-    firstGeneral: d.first_shift_start_time || '-',
-    secondGeneral: d.second_shift_start_time || '-',
-    thirdGeneral: d.third_shift_start_time || '-',
+    dayGeneral: `${d.day_general_start_time} - ${d.day_general_end_time}` || '-',
+    nightGeneral: `${d.night_general_start_time} - ${d.night_general_end_time}` || '-',
+    firstShift: `${d.first_shift_start_time} - ${d.first_shift_end_time}` || '-',
+    secondShift: `${d.second_shift_start_time} - ${d.second_shift_end_time}` || '-',
+    thirdShift: `${d.third_shift_start_time} - ${d.third_shift_end_time}` || '-',
     updatedBy: 'Admin-1',
     updatedOn: d.updated_at ? dayjs(d.updated_at).format('YYYY-MM-DD') : '-',
   }));
@@ -70,6 +70,7 @@ function PlantInTime() {
     try {
       const res = await ApiService.get(APIURL.PLANTINTIME, buildApiPayload());
       if (res?.success) {
+        console.log(res);
         setFilteredData(res.data || []);
         setTotalCount(res.pagination?.total ?? res.data?.length ?? 0);
       } else {
@@ -188,10 +189,15 @@ function PlantInTime() {
         { key: 'vehicle_id', header: 'Vehicle ID' },
         { key: 'vehicle_route_id', header: 'Vehicle Route ID' },
         { key: 'day_general_start_time', header: 'Day General Start Time' },
+        { key: 'day_general_end_time', header: 'Day General End Time' },
         { key: 'night_general_start_time', header: 'Night General Start Time' },
+        { key: 'night_general_end_time', header: 'Night General End Time' },
         { key: 'first_shift_start_time', header: 'First Shift Start Time' },
+        { key: 'first_shift_end_time', header: 'First Shift End Time' },
         { key: 'second_shift_start_time', header: 'Second Shift Start Time' },
+        { key: 'second_shift_end_time', header: 'Second Shift End Time' },
         { key: 'third_shift_start_time', header: 'Third Shift Start Time' },
+        { key: 'third_shift_end_time', header: 'Third Shift End Time' },
       ],
       rows: [{}],
       fileName: 'plant_in_time_import_sample.xlsx',
