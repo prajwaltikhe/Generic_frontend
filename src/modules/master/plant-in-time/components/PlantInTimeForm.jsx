@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useFormik } from 'formik';
+import { toast } from 'react-toastify';
 import { APIURL } from '../../../../constants';
 import { ApiService } from '../../../../services';
 import { useSelector, useDispatch } from 'react-redux';
@@ -30,7 +31,6 @@ function PlantInTimeForm() {
   const isView = mode === 'view';
   const companyId = localStorage.getItem('company_id');
   const dispatch = useDispatch();
-  console.log(rowData);
 
   const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || []);
 
@@ -78,10 +78,14 @@ function PlantInTimeForm() {
           mode === 'edit' && rowData
             ? await ApiService.put(`${APIURL.PLANTINTIME}/${rowData.plantId}`, payload)
             : await ApiService.post(APIURL.PLANTINTIME, payload);
-        if (res.success) navigate('/master/plant-in-time');
-        else alert(res.message || 'Something went wrong.');
+        if (res.success) {
+          toast.success(res.message || 'Plant in Time saved successfully!');
+          navigate('/master/plant-in-time');
+        } else {
+          toast.error(res.message || 'Something went wrong.');
+        }
       } catch {
-        alert('Something went wrong.');
+        toast.error('Something went wrong.');
       }
     },
   });
