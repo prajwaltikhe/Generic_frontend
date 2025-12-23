@@ -43,7 +43,7 @@ const reportsLinks = [
   { to: '/report/employees-on-board', label: 'Employees on board' },
   { to: '/report/destination-arrival-female', label: 'Destination Arrival-Female' },
   { to: '/report/punch-timelog', label: 'Punch Timelog' },
-  { to: '/report/vehicle-arrival-time/1', label: 'Vehicle Arrival Time' },
+  { to: '/report/vehicle-arrival-time/2f7d76b8-87a9-4dc1-822a-a39e99b314e9', label: 'Vehicle Arrival Time' },
   { to: '/report/seat-occupancy', label: 'Seat Occupancy' },
   { to: '/report/emergency-alert', label: 'Emergency alert' },
   { to: '/report/feedback', label: 'Feedback' },

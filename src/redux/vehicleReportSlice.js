@@ -57,7 +57,7 @@ export const fetchVehicleArrivalData = createAsyncThunk(
   'vehicleReport/fetchVehicleArrivalData',
   async (params, thunkAPI) => {
     try {
-      const response = await ApiService.get('vehicleroutereport', params);
+      const response = await ApiService.get('reports/vehicleArrival', params);
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);

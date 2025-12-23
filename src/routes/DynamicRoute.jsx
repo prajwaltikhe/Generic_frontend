@@ -35,7 +35,6 @@ import Idle from '../modules/reports/vehicle-activity/idle/Idle';
 import NewDevice from '../modules/reports/vehicle-activity/new-device/NewDevice';
 import Offline from '../modules/reports/vehicle-activity/offline/Offline';
 import MapHistory from '../modules/reports/vehicle-activity/map-history/MapHistory';
-// import Consolidated from '../modules/reports/vehicle-activity/consolidated/Consolidated';
 import EmployeeOnboard from '../modules/reports/employee-onboard/EmployeeOnboard';
 import Multitrack from '../modules/multitrack/Multitrack';
 import Overspeed from '../modules/reports/overspeed/Overspeed';
@@ -43,7 +42,6 @@ import ViewOverspeed from '../modules/reports/overspeed/ViewOverspeed';
 import ViewViolationMap from '../modules/reports/overspeed/ViewViolationMap';
 import PunchTimelog from '../modules/reports/punch-timelog/PunchTimelog';
 import VehicalArrivalTime from '../modules/reports/vehical-arrival-time/VehicalArrivalTime';
-// import Stopage from '../modules/reports/vehical-arrival-time/Stopage';
 import Profile from '../modules/profile/Profile';
 import EmployeePunchDetails from '../modules/multitrack/EmployeePunchDetails';
 import Playback from '../modules/multitrack/Playback';
@@ -78,12 +76,7 @@ function DynamicRoute() {
         <Route path='emergency-alert' element={<EmergencyAlertReport />} />
 
         <Route path='punch-timelog' element={<PunchTimelog />} />
-        <Route path='vehicle-arrival-time/1' element={<VehicalArrivalTime />} />
-        <Route path='vehicle-arrival-time/2' element={<VehicalArrivalTime />} />
-        <Route path='vehicle-arrival-time/3' element={<VehicalArrivalTime />} />
-        <Route path='vehicle-arrival-time/4' element={<VehicalArrivalTime />} />
-        <Route path='vehicle-arrival-time/5' element={<VehicalArrivalTime />} />
-        {/* <Route path='stoppage-report' element={<Stopage />} />3 */}
+        <Route path='vehicle-arrival-time/:shiftId' element={<VehicalArrivalTime />} />
       </Route>
       <Route path='/master'>
         <Route path='plants' element={<Plant />} />

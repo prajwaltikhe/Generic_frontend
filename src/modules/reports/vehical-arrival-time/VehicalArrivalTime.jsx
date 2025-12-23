@@ -2,104 +2,27 @@ import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useEffect, useState, useCallback } from 'react';
 import FilterOption from '../../../components/FilterOption';
-import CustomTab from '../vehicle-activity/components/CustomTab';
 import ReportTable from '../../../components/table/ReportTable';
+import CustomTab from '../vehicle-activity/components/CustomTab';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchVehicleArrivalData } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
-const tabs = [
-  { name: 'Day General Shift', path: '/report/vehicle-arrival-time/1' },
-  { name: 'Night General Shift', path: '/report/vehicle-arrival-time/2' },
-  { name: 'First Shift', path: '/report/vehicle-arrival-time/3' },
-  { name: 'Second Shift', path: '/report/vehicle-arrival-time/4' },
-  { name: 'Third Shift', path: '/report/vehicle-arrival-time/5' },
+const shifts = [
+  { id: '2f7d76b8-87a9-4dc1-822a-a39e99b314e9', name: 'Night General Shift' },
+  { id: '1b0b7594-c88c-470b-a956-f8f79918fd36', name: 'Day General Shift' },
+  { id: 'ba9c950e-26d6-469d-9743-79ef8944e59a', name: 'First Shift' },
+  { id: '723349b1-747e-4852-b37c-df8fb8849c7c', name: 'Second Shift' },
+  { id: '29630493-b9d8-4358-8cde-2a606e50cf3a', name: 'Third Shift' },
 ];
 
 const statusOptions = [
   { label: 'All Status', value: 'all' },
-  { label: 'On Time', value: 'on_time' },
-  { label: 'Late Arrival', value: 'late' },
-];
-
-const columns = [
-  {
-    key: 'date',
-    header: 'Date',
-    render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-'),
-  },
-  { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, row) => row?.vehicle?.vehicle_number || '-' },
-  {
-    key: 'route_details',
-    header: 'Route Details',
-    render: (_v, row) => row?.route_details || row?.vehicle_route?.name || '-',
-  },
-  {
-    key: 'driver_name',
-    header: 'Driver Name',
-    render: (_v, row) => {
-      const driver = row?.vehicle?.vehicle_driver || row?.vehicle_route?.vehicle?.vehicle_driver || {};
-      const first = driver?.first_name || driver?.name || '';
-      const last = driver?.last_name || '';
-      return `${first} ${last}`.trim() || '-';
-    },
-  },
-  {
-    key: 'driver_number',
-    header: 'Driver Number',
-    render: (_v, row) => {
-      const driver = row?.vehicle?.vehicle_driver || row?.vehicle_route?.vehicle?.vehicle_driver || {};
-      return driver?.phone_number || '-';
-    },
-  },
-  {
-    key: 'target_arrival_time',
-    header: 'Target Arrival Time',
-    render: (_v, row) => {
-      const stops = row?.vehicle_route?.Vehicle_Route_Stops?.[0] || {};
-      return stops.shifts?.start_time ? moment(stops.shifts.start_time, 'HH:mm:ss').format('HH:mm') : '-';
-    },
-  },
-  {
-    key: 'actual_arrival_time',
-    header: 'Actual Arrival Time',
-    render: (_v, row) => {
-      const stops = row?.vehicle_route?.Vehicle_Route_Stops?.[0] || {};
-      return stops.shifts?.end_time ? moment(stops.shifts.end_time, 'HH:mm:ss').format('HH:mm') : '-';
-    },
-  },
-  {
-    key: 'lat_long',
-    header: 'Lat-Long',
-    render: (_v, row) => {
-      const stops = row?.vehicle_route?.Vehicle_Route_Stops?.[0] || {};
-      const lat = stops.latitude;
-      const lng = stops.longitude;
-      return lat && lng ? `${lat}, ${lng}` : '-';
-    },
-  },
-  {
-    key: 'gmap',
-    header: 'G-Map',
-    render: (_v, row) => {
-      const stops = row?.vehicle_route?.Vehicle_Route_Stops?.[0] || {};
-      const lat = stops.latitude;
-      const lng = stops.longitude;
-      return lat && lng ? (
-        <a
-          href={`https://maps.google.com/?q=${lat},${lng}`}
-          target='_blank'
-          rel='noopener noreferrer'
-          style={{ color: '#2563eb', textDecoration: 'underline' }}>
-          View
-        </a>
-      ) : (
-        '-'
-      );
-    },
-  },
+  { label: 'On Time', value: 'ON_TIME' },
+  { label: 'Late Arrival', value: 'LATE' },
+  { label: 'Early Arrival', value: 'EARLY' },
 ];
 
 function VehicalArrivalTime() {
@@ -114,16 +37,83 @@ function VehicalArrivalTime() {
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
 
+  const tabs = useMemo(
+    () => shifts.map((shift) => ({ name: shift.name, path: `/report/vehicle-arrival-time/${shift.id}` })),
+    []
+  );
+
+  const currentPathId = location.pathname.split('/').pop();
+
+  const columns = useMemo(() => {
+    return [
+      {
+        key: 'date',
+        header: 'Date',
+        render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-'),
+      },
+      { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, row) => row?.vehicle_number || '-' },
+      { key: 'route_details', header: 'Route Details', render: (_v, row) => row?.route_name || '-' },
+      { key: 'driver_name', header: 'Driver Name', render: (_v, row) => row?.driver_name || '-' },
+      { key: 'driver_number', header: 'Driver Number', render: (_v, row) => row?.driver_number || '-' },
+      {
+        key: 'target_arrival_time',
+        header: 'Target Arrival Time',
+        render: (_v, row) => row?.target_arrival_time || '-',
+      },
+      {
+        key: 'actual_arrival_time',
+        header: 'Actual Arrival Time',
+        render: (_v, row) => row?.actual_arrival_time || '-',
+      },
+      {
+        key: 'lat_long',
+        header: 'Lat-Long',
+        render: (_v, row) => {
+          let val = row?.lat_long;
+          if (val) {
+            val = val.replace('{', '').replace('}', '');
+            const parts = val.split(',');
+            if (parts.length === 2) return `${parts[1]}, ${parts[0]}`;
+            return val;
+          }
+          return '-';
+        },
+      },
+      {
+        key: 'gmap',
+        header: 'G-Map',
+        render: (_v, row) => {
+          let val = row?.lat_long;
+          if (val) {
+            val = val.replace('{', '').replace('}', '');
+            const parts = val.split(',');
+            if (parts.length === 2) {
+              const lat = parts[1];
+              const lng = parts[0];
+              return (
+                <a
+                  href={`https://maps.google.com/?q=${lat},${lng}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                  View
+                </a>
+              );
+            }
+          }
+          return '-';
+        },
+      },
+    ];
+  }, []);
+
   useEffect(() => {
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
   }, [dispatch, company_id]);
 
   const buildApiPayload = useCallback(() => {
     const payload = { company_id };
-    const pathSegments = location.pathname.split('/');
-    const currentPath = pathSegments[pathSegments.length - 1];
-
-    if (!isNaN(currentPath)) payload.shift_id = currentPath;
+    if (currentPathId && shifts.some((s) => s.id === currentPathId)) payload.shift_id = currentPathId;
 
     if (filterData.vehicles?.length) payload.vehicles = JSON.stringify(filterData.vehicles);
     if (filterData.routes?.length) payload.routes = JSON.stringify(filterData.routes);
@@ -131,12 +121,12 @@ function VehicalArrivalTime() {
     if (filterData.toDate) payload.to_date = filterData.toDate;
     if (filterData.status && filterData.status !== 'all') payload.status = filterData.status;
     return payload;
-  }, [company_id, location.pathname, filterData]);
+  }, [company_id, currentPathId, filterData]);
 
   useEffect(() => {
     if (company_id)
       dispatch(fetchVehicleArrivalData({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-        if (res?.payload?.status === 200) setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
+        if (res?.payload?.success) setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
       });
   }, [dispatch, company_id, page, limit, buildApiPayload]);
 
@@ -158,7 +148,7 @@ function VehicalArrivalTime() {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     dispatch(fetchVehicleArrivalData(buildApiPayload())).then((res) => {
-      if (res?.payload?.status === 200) {
+      if (res?.payload?.success) {
         toast.success(res?.payload?.message);
         setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
       } else {
@@ -176,7 +166,7 @@ function VehicalArrivalTime() {
   return (
     <div className='w-full h-full p-2'>
       <CustomTab tabs={tabs} />
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehical Arrival Time Report</h1>
+      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehical Arrival Time Report (Total: {totalCount})</h1>
       <form onSubmit={handleFormSubmit}>
         <FilterOption
           handleExport={handleExport}
