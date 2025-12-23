@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { TextField, Grid, Box, Button, Paper, Divider } from '@mui/material';
+import { toast } from 'react-toastify';
 import { APIURL } from '../../../../constants';
 import { ApiService } from '../../../../services';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { TextField, Grid, Box, Button, Paper, Divider } from '@mui/material';
 
 const FeedbackFrom = () => {
   const navigate = useNavigate();
@@ -16,8 +17,10 @@ const FeedbackFrom = () => {
     e.preventDefault();
     const res = await ApiService.put(`${APIURL.FEEDBACK}/${data.id}`, { action });
     if (res?.success) {
-      alert(res.message);
+      toast.success(res.message || 'Feedback updated successfully!');
       navigate('/management/feedbacks');
+    } else {
+      toast.error(res?.message || 'Something went wrong.');
     }
   };
 

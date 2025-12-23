@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import { TextField } from '@mui/material';
 import { APIURL } from '../../../../constants';
 import { ApiService } from '../../../../services';
@@ -16,8 +17,12 @@ function EmergencyAlertForm() {
       { action_taken: action },
       { company_id: localStorage.getItem('company_id') }
     );
-    if (res.success) navigate('/management/emergency-alerts');
-    else alert(res.message || 'Something went wrong.');
+    if (res.success) {
+      toast.success('Emergency alert updated successfully!');
+      navigate('/management/emergency-alerts');
+    } else {
+      toast.error(res.message || 'Something went wrong.');
+    }
   };
 
   return (

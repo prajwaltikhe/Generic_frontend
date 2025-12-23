@@ -82,7 +82,7 @@ function Announcement() {
         setFilteredData([]);
         setTotalCount(0);
       }
-    } catch (error) {
+    } catch {
       setFilteredData([]);
       setTotalCount(0);
     } finally {
@@ -119,7 +119,7 @@ function Announcement() {
       } else {
         toast.error(res.message || 'File upload failed.');
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload failed.');
     }
   };
@@ -135,7 +135,7 @@ function Announcement() {
         fileName: 'announcements.xlsx',
       });
       toast.success('Export to Excel successful.');
-    } catch (error) {
+    } catch {
       toast.error('Export to Excel failed.');
     }
   };
@@ -152,7 +152,7 @@ function Announcement() {
         orientation: 'landscape',
       });
       toast.success('Export to PDF successful.');
-    } catch (error) {
+    } catch {
       toast.error('Export PDF failed.');
     }
   };
@@ -173,7 +173,7 @@ function Announcement() {
       } else {
         toast.error(response?.message || 'Failed to delete announcement.');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred while deleting announcement.');
     }
   };

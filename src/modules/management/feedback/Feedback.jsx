@@ -139,7 +139,7 @@ function Feedback() {
         rows: buildExportRows({ columns, data: formatFeedback(list) }),
         fileName: 'feedbacks.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -161,7 +161,7 @@ function Feedback() {
         fileName: 'feedbacks.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

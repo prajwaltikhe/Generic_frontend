@@ -156,7 +156,6 @@ function Movement() {
     dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit }))).then((res) => {
       setIsLoading(false);
       if (res?.payload?.success) {
-        console.log(res.payload);
         setFilteredData(res.payload.data);
         setTotalCount(res.payload?.pagination?.total || 0);
       } else {

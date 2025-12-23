@@ -104,7 +104,7 @@ function Geofence() {
         rows: buildExportRows({ columns, data: formatGeofence(geofences) }),
         fileName: 'geofence.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -126,7 +126,7 @@ function Geofence() {
         fileName: 'geofence.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

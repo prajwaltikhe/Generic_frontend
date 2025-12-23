@@ -110,7 +110,7 @@ export default function RouteChange() {
   }, [buildApiPayload]);
 
   useEffect(() => {
-    fetchRouteChanges(); // eslint-disable-line
+    fetchRouteChanges();
   }, [page, limit, searchQuery, fetchRouteChanges]);
 
   const handleStatusUpdate = () => {
@@ -146,7 +146,7 @@ export default function RouteChange() {
     }
   };
 
-  const getAllColumns = () => columns.map(({ render, ...col }) => col);
+  const getAllColumns = () => columns.map(({ key, header }) => ({ key, header }));
 
   const handleExportCommon = async (type) => {
     try {

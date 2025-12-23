@@ -7,7 +7,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AddressServices, ApiService } from '../../../../services';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
-
 const customIcon = new L.Icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
   iconSize: [32, 32],
@@ -39,7 +38,8 @@ const DriverForm = () => {
   const location = useLocation();
   const { state: rowData } = location;
   const isViewMode = rowData?.mode === 'view';
-  const isEditMode = rowData?.mode === 'edit';
+  // isEditMode can be used in future if needed
+  const _ = rowData?.mode === 'edit'; // eslint-disable-line
   const readOnly = isViewMode;
   const showSaveButton = !readOnly;
 
@@ -156,7 +156,7 @@ const DriverForm = () => {
           toast.error(res.message || 'Failed to create driver.');
         }
       }
-    } catch (error) {
+    } catch {
       toast.error('Something went wrong. Please try again.');
     }
   };
@@ -342,14 +342,11 @@ const DriverForm = () => {
                     <div
                       className={
                         'flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg ' +
-                        (readOnly
-                          ? 'bg-gray-100 cursor-not-allowed'
-                          : 'cursor-pointer bg-gray-50 hover:bg-gray-100')
+                        (readOnly ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer bg-gray-50 hover:bg-gray-100')
                       }
                       onClick={() => !readOnly && fileInputRef.current && fileInputRef.current.click()}
                       onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                    >
+                      onDragOver={handleDragOver}>
                       <div className='flex flex-col items-center justify-center pt-5 pb-6'>
                         <svg
                           className='w-8 h-8 mb-4 text-gray-500'
@@ -422,7 +419,13 @@ const DriverForm = () => {
                     isOptionEqualToValue={(option, value) => option.value === value?.value}
                     getOptionLabel={(option) => option.label}
                     size='small'
-                    renderInput={(params) => <TextField {...params} label='Address' InputProps={{ ...params.InputProps, readOnly: readOnly }} />}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label='Address'
+                        InputProps={{ ...params.InputProps, readOnly: readOnly }}
+                      />
+                    )}
                     onInputChange={
                       readOnly
                         ? undefined

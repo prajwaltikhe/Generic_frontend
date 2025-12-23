@@ -54,14 +54,17 @@ function formatDriver(data, offset = 0) {
     address: driver.address || '',
     punchId: driver.punch_id || '',
     drivingLicenceNo: driver.driving_licence || '',
-    drivingLicenceIssueDate: driver.driving_licence_issue_date ? dayjs(driver.driving_licence_issue_date).format('YYYY-MM-DD') : '',
-    drivingLicenceExpiryDate: driver.driving_licence_expire_date ? dayjs(driver.driving_licence_expire_date).format('YYYY-MM-DD') : '',
+    drivingLicenceIssueDate: driver.driving_licence_issue_date
+      ? dayjs(driver.driving_licence_issue_date).format('YYYY-MM-DD')
+      : '',
+    drivingLicenceExpiryDate: driver.driving_licence_expire_date
+      ? dayjs(driver.driving_licence_expire_date).format('YYYY-MM-DD')
+      : '',
     latitude: driver.latitude !== undefined && driver.latitude !== null ? Number(driver.latitude).toFixed(7) : '',
     longitude: driver.longitude !== undefined && driver.longitude !== null ? Number(driver.longitude).toFixed(7) : '',
     createdAt: driver.created_at ? dayjs(driver.created_at).format('YYYY-MM-DD HH:mm') : '',
     status:
-      driver.active === 1 ||
-      (typeof driver.status === 'string' && driver.status.trim().toLowerCase() === 'active')
+      driver.active === 1 || (typeof driver.status === 'string' && driver.status.trim().toLowerCase() === 'active')
         ? 'Active'
         : 'Inactive',
     profilePhoto: driver.profile_photo || driver.profilePhoto || '',
@@ -183,7 +186,7 @@ function Driver() {
         rows: buildExportRows({ columns, data: formatDriver(drivers) }),
         fileName: 'driver_master.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -199,7 +202,7 @@ function Driver() {
         fileName: 'driver_master.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

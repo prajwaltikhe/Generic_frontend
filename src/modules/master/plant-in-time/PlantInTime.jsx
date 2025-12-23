@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { APIURL } from '../../../constants';
 import { ApiService } from '../../../services';
-import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import CommonSearch from '../../../components/CommonSearch';
 import FilterOptions from '../../../components/FilterOption';
 import CommanTable from '../../../components/table/CommonTable';
-import CommonSearch from '../../../components/CommonSearch';
+import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
   { key: 'id', header: 'Sr No' },
@@ -30,11 +30,26 @@ function formatPlantInTime(data, offset = 0) {
     vehicle_id: d.vehicle_id,
     routeName: d.route?.name || '-',
     route_id: d.vehicle_route_id,
-    dayGeneral: `${d.day_general_start_time} - ${d.day_general_end_time}` || '-',
-    nightGeneral: `${d.night_general_start_time} - ${d.night_general_end_time}` || '-',
-    firstShift: `${d.first_shift_start_time} - ${d.first_shift_end_time}` || '-',
-    secondShift: `${d.second_shift_start_time} - ${d.second_shift_end_time}` || '-',
-    thirdShift: `${d.third_shift_start_time} - ${d.third_shift_end_time}` || '-',
+    dayGeneral:
+      d.day_general_start_time && d.day_general_end_time
+        ? `${d.day_general_start_time} - ${d.day_general_end_time}`
+        : '-',
+    nightGeneral:
+      d.night_general_start_time && d.night_general_end_time
+        ? `${d.night_general_start_time} - ${d.night_general_end_time}`
+        : '-',
+    firstShift:
+      d.first_shift_start_time && d.first_shift_end_time
+        ? `${d.first_shift_start_time} - ${d.first_shift_end_time}`
+        : '-',
+    secondShift:
+      d.second_shift_start_time && d.second_shift_end_time
+        ? `${d.second_shift_start_time} - ${d.second_shift_end_time}`
+        : '-',
+    thirdShift:
+      d.third_shift_start_time && d.third_shift_end_time
+        ? `${d.third_shift_start_time} - ${d.third_shift_end_time}`
+        : '-',
     updatedBy: 'Admin-1',
     updatedOn: d.updated_at ? dayjs(d.updated_at).format('YYYY-MM-DD') : '-',
   }));
@@ -70,7 +85,6 @@ function PlantInTime() {
     try {
       const res = await ApiService.get(APIURL.PLANTINTIME, buildApiPayload());
       if (res?.success) {
-        console.log(res);
         setFilteredData(res.data || []);
         setTotalCount(res.pagination?.total ?? res.data?.length ?? 0);
       } else {
@@ -135,7 +149,7 @@ function PlantInTime() {
       } else {
         toast.error(res.message || 'Upload failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload failed.');
     }
   };
@@ -156,7 +170,7 @@ function PlantInTime() {
         rows: buildExportRows({ columns, data: formatPlantInTime(data) }),
         fileName: 'plant_in_time.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -178,7 +192,7 @@ function PlantInTime() {
         fileName: 'plant_in_time.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

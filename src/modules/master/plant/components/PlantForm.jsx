@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useDispatch, useSelector } from 'react-redux';
-
 import { createPlant, updatePlant } from '../../../../redux/plantSlice';
 
 const PlantForm = ({ action, onClose, data, fetchData }) => {
@@ -34,13 +34,12 @@ const PlantForm = ({ action, onClose, data, fetchData }) => {
       } else if (action === 'EDIT') {
         await dispatch(updatePlant({ plantID: selectedPlant.id, payload })).unwrap();
       }
-
+      toast.success(`Plant ${action === 'CREATE' ? 'created' : 'updated'} successfully!`);
       setFormValues({ name: '' });
       await fetchData();
       onClose();
-    } catch (error) {
-      console.error('Submission error:', error);
-      alert(error || 'Something went wrong. Please try again.');
+    } catch {
+      toast.error('Something went wrong. Please try again.');
     }
   };
 

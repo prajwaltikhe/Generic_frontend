@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useDispatch, useSelector } from 'react-redux';
 import { createDepartment, updateDepartment } from '../../../../redux/departmentSlice';
 
@@ -37,11 +38,11 @@ const DepartmentForm = ({ action, onClose, data, fetchData }) => {
       } else if (action === 'EDIT' && selectedDepartment?.id) {
         await dispatch(updateDepartment({ id: selectedDepartment?.id, payload })).unwrap();
       }
+      toast.success(`Department ${action === 'CREATE' ? 'created' : 'updated'} successfully!`);
       await fetchData();
       onClose();
-    } catch (error) {
-      console.error('Submission error:', error);
-      alert('An unexpected error occurred.');
+    } catch {
+      toast.error('An unexpected error occurred.');
     }
   };
 

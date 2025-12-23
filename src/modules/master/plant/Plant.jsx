@@ -78,7 +78,7 @@ function Plant() {
       } else {
         toast.error('Failed to delete plant');
       }
-    } catch (err) {
+    } catch {
       toast.error('Delete failed.');
     }
   };
@@ -107,7 +107,7 @@ function Plant() {
       } else {
         toast.error(res.message || 'Upload failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload failed.');
     }
   };
@@ -128,7 +128,7 @@ function Plant() {
         rows: buildExportRows({ columns, data: formatPlant(plants) }),
         fileName: 'plants.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -150,7 +150,7 @@ function Plant() {
         fileName: 'plants.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

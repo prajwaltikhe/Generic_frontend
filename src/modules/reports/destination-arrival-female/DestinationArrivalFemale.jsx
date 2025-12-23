@@ -110,7 +110,6 @@ function DestinationArrivalFemale() {
 
   useEffect(() => {
     dispatch(fetchDestinationArrivalFemale({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-      console.log(res);
       setFilteredData(mapResponseData(res?.payload?.arrivals));
       setTotalCount(res?.payload?.pagination?.total || 0);
     });
@@ -140,7 +139,6 @@ function DestinationArrivalFemale() {
     setPage(0);
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchDestinationArrivalFemale({ company_id, page: 1, limit })).then((res) => {
-      console.log(res);
       setFilteredData(mapResponseData(res?.payload?.arrivals));
       setTotalCount(res?.payload?.pagination?.total || 0);
     });

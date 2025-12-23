@@ -135,13 +135,12 @@ function Employee() {
       dispatch(fetchEmployees({ company_id, department: filterData.department, limit: 3000, page: 1 })).then((res) =>
         setAllEmployeeOptions(res?.payload?.employes || [])
       );
-    // eslint-disable-next-line
+     
   }, [dispatch, company_id, filterData.department]);
 
   useEffect(() => {
     if (company_id) {
       dispatch(fetchEmployees(buildApiPayload())).then((res) => {
-        console.log(res);
         setFilteredData(res?.payload?.employes || []);
         setTotalCount(res?.payload?.pagination?.total || res?.payload?.employes?.length || 0);
       });

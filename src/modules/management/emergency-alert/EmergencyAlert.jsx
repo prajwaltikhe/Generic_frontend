@@ -140,7 +140,7 @@ function EmergencyAlert() {
       } else {
         toast.error(res.message || 'Upload failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload failed.');
     }
   };
@@ -161,7 +161,7 @@ function EmergencyAlert() {
         rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
         fileName: 'emergency_alerts.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -183,7 +183,7 @@ function EmergencyAlert() {
         fileName: 'emergency_alerts.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
 import { Formik } from 'formik';
+import { toast } from 'react-toastify';
 import ColorPicker from './ColorPicker';
 import { APIURL } from '../../../../constants';
 import { ApiService } from '../../../../services';
@@ -85,11 +86,13 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
     const res = rowData.id
       ? await ApiService.put(`${APIURL.GEOFENCE}/${rowData.id}`, payload)
       : await ApiService.post(APIURL.GEOFENCE, payload);
-    alert(res.message || (res.success ? 'Success!' : 'Error'));
     if (res.success) {
+      toast.success(rowData.id ? 'Geofence updated successfully!' : 'Geofence created successfully!');
       navigate('/management/geofence');
       resetForm();
       handleClear();
+    } else {
+      toast.error(res.message || 'Something went wrong.');
     }
   }
 

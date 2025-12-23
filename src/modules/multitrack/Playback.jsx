@@ -18,7 +18,6 @@ export default function Playback() {
 
   const { state } = useLocation();
   const selectedVehicle = state?.selectedVehicle;
-  console.log(selectedVehicle);
 
   const setShortcutDates = (type) => {
     const d = new Date();
@@ -47,7 +46,6 @@ export default function Playback() {
         }
       );
       if (res.success && res.data.length) {
-        console.log(res);
         setRouteCoordinate(res.data.map((i) => [i.latitude, i.longitude]));
         setIsPlay(true);
       } else alert('No data found');

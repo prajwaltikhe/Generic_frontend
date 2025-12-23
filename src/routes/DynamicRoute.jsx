@@ -45,8 +45,6 @@ import VehicalArrivalTime from '../modules/reports/vehical-arrival-time/VehicalA
 import Profile from '../modules/profile/Profile';
 import EmployeePunchDetails from '../modules/multitrack/EmployeePunchDetails';
 import Playback from '../modules/multitrack/Playback';
-import RouteStopPoint from '../modules/management/route-stop-point/RouteStopPoint';
-import RouteStopPointForm from '../modules/management/route-stop-point/RouteStopPointForm';
 
 function DynamicRoute() {
   return (
@@ -117,8 +115,6 @@ function DynamicRoute() {
         <Route path='vehicle-route/create' element={<VehicleRouteForm />} />
         <Route path='vehicle-route/view' element={<VehicleRouteForm />} />
         <Route path='vehicle-route/edit' element={<VehicleRouteForm />} />
-        <Route path='vehicle-stop-point' element={<RouteStopPoint />} />
-        <Route path='vehicle-stop-point/create' element={<RouteStopPointForm />} />
         <Route path='geofence' element={<Geofence />} />
         <Route path='geofence/create' element={<GeofenceCreate />} />
         <Route path='geofence/view' element={<GeofenceCreate />} />

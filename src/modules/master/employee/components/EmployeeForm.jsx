@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { toast } from 'react-toastify';
 import { APIURL } from '../../../../constants';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDropdownOpt } from '../../../../hooks/useDropdownOpt';
@@ -7,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { Autocomplete, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
 
-// Helper to find option object in a list
 const getOptionObj = (options, value, byLabel = false) => {
   if (byLabel) return options.find((o) => o.label === value) || null;
   return options.find((o) => o.value === value) || null;
@@ -296,7 +296,7 @@ function EmployeeForm() {
       const lng = formatLatLng(formVal.longitude);
 
       if (!isValidLatLng(lat, lng)) {
-        alert('Invalid Latitude/Longitude');
+        toast.error('Invalid Latitude/Longitude');
         return;
       }
 
@@ -328,8 +328,12 @@ function EmployeeForm() {
         : APIURL.EMPLOYEE;
 
       const res = isEditMode ? await ApiService.put(url, payload) : await ApiService.post(url, payload);
-      if (res?.success) navigate('/master/employee');
-      else alert(res?.message || 'Error saving employee');
+      if (res?.success) {
+        toast.success(`Employee ${isEditMode ? 'updated' : 'created'} successfully!`);
+        navigate('/master/employee');
+      } else {
+        toast.error(res?.message || 'Error saving employee');
+      }
     },
     [formVal, isEditMode, rowData, companyID, navigate]
   );

@@ -110,7 +110,7 @@ function Department() {
       } else {
         toast.error(res.message || 'Upload failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload failed.');
     }
   };
@@ -131,7 +131,7 @@ function Department() {
         rows: buildExportRows({ columns, data: formatDepartment(departments) }),
         fileName: 'departments.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -153,7 +153,7 @@ function Department() {
         fileName: 'departments.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

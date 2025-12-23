@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { APIURL } from '../../../../constants';
 import { ApiService } from '../../../../services';
 import { useSelector, useDispatch } from 'react-redux';
-import { Autocomplete, TextField, Checkbox, Chip, ListItemText } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { Autocomplete, TextField, Checkbox, Chip, ListItemText } from '@mui/material';
 
 const cols = ['Announcement Title', 'Sender Name', 'Vehicle Route', 'Message'];
 const SELECT_ALL_VALUE = '__all__';
@@ -66,7 +66,7 @@ export default function AnnouncementForm() {
       } else {
         toast.error(res?.message || 'Something went wrong.');
       }
-    } catch (err) {
+    } catch {
       toast.error('An error occurred while saving the announcement.');
     }
   };

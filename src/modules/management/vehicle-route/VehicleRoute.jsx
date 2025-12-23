@@ -139,7 +139,7 @@ function VehicleRoute() {
       } else {
         toast.error(res.message || 'Upload failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload failed.');
     }
   };
@@ -160,7 +160,7 @@ function VehicleRoute() {
         rows: buildExportRows({ columns, data: formatVehicleRoute(routes) }),
         fileName: 'vehicle_route.xlsx',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -182,7 +182,7 @@ function VehicleRoute() {
         fileName: 'vehicle_route.pdf',
         orientation: 'landscape',
       });
-    } catch (err) {
+    } catch {
       toast.error('Export PDF failed');
     }
   };

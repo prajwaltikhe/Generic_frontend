@@ -82,7 +82,7 @@ export default function EmployeePunchDetails() {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line
+     
   }, [fetchData]);
 
   const handleExport = async () => {
