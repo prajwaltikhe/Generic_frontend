@@ -12,8 +12,11 @@ import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const shifts = [
-  { id: '2f7d76b8-87a9-4dc1-822a-a39e99b314e9', name: 'Night' },
-  { id: '1b0b7594-c88c-470b-a956-f8f79918fd36', name: 'Day' },
+  { id: '2f7d76b8-87a9-4dc1-822a-a39e99b314e9', name: 'Night General Shift' },
+  { id: '1b0b7594-c88c-470b-a956-f8f79918fd36', name: 'Day General Shift' },
+  { id: 'ba9c950e-26d6-469d-9743-79ef8944e59a', name: 'First Shift' },
+  { id: '723349b1-747e-4852-b37c-df8fb8849c7c', name: 'Second Shift' },
+  { id: '29630493-b9d8-4358-8cde-2a606e50cf3a', name: 'Third Shift' },
 ];
 
 const getShiftName = (shiftId) => shifts.find((s) => s.id === shiftId)?.name || '-';
