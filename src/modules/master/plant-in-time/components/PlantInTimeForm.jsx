@@ -30,6 +30,7 @@ function PlantInTimeForm() {
   const isView = mode === 'view';
   const companyId = localStorage.getItem('company_id');
   const dispatch = useDispatch();
+  console.log(rowData);
 
   const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || []);
 
@@ -44,16 +45,16 @@ function PlantInTimeForm() {
       ? {
           vehicle: rowData.vehicle_id || '',
           route: rowData.route_id || '',
-          dayGenStartTime: rowData.dayGeneral || '',
-          dayGenEndTime: rowData.dayGeneralEnd || '',
-          nightGenStartTime: rowData.nightGeneral || '',
-          nightGenEndTime: rowData.nightGeneralEnd || '',
-          firstShiftStartTime: rowData.firstGeneral || '',
-          firstShiftEndTime: rowData.firstGeneralEnd || '',
-          secondShiftStartTime: rowData.secondGeneral || '',
-          secondShiftEndTime: rowData.secondGeneralEnd || '',
-          thirdShiftStartTime: rowData.thirdGeneral || '',
-          thirdShiftEndTime: rowData.thirdGeneralEnd || '',
+          dayGenStartTime: (rowData.dayGeneral || '').split(' - ')[0] || '',
+          dayGenEndTime: (rowData.dayGeneral || '').split(' - ')[1] || '',
+          nightGenStartTime: (rowData.nightGeneral || '').split(' - ')[0] || '',
+          nightGenEndTime: (rowData.nightGeneral || '').split(' - ')[1] || '',
+          firstShiftStartTime: (rowData.firstShift || '').split(' - ')[0] || '',
+          firstShiftEndTime: (rowData.firstShift || '').split(' - ')[1] || '',
+          secondShiftStartTime: (rowData.secondShift || '').split(' - ')[0] || '',
+          secondShiftEndTime: (rowData.secondShift || '').split(' - ')[1] || '',
+          thirdShiftStartTime: (rowData.thirdShift || '').split(' - ')[0] || '',
+          thirdShiftEndTime: (rowData.thirdShift || '').split(' - ')[1] || '',
         }
       : initialForm,
     onSubmit: async (values) => {
