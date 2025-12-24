@@ -98,7 +98,7 @@ function formatEmp(data, offset = 0) {
       emp.boarding_latitude ?? emp.latitude ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
     boarding_longitude:
       emp.boarding_longitude ?? emp.longitude ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
-    boarding_address: emp.boarding_address || '',
+    boarding_address: emp.boarding_address_Stop || '',
     status:
       emp.active === 1 || (typeof emp.status === 'string' && emp.status.trim().toLowerCase() === 'active')
         ? 'Active'
@@ -135,7 +135,6 @@ function Employee() {
       dispatch(fetchEmployees({ company_id, department: filterData.department, limit: 3000, page: 1 })).then((res) =>
         setAllEmployeeOptions(res?.payload?.employes || [])
       );
-     
   }, [dispatch, company_id, filterData.department]);
 
   useEffect(() => {
