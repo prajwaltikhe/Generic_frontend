@@ -19,9 +19,9 @@ export const fetchGeofenceType = createAsyncThunk('geofence/geofenceTypeData', a
   }
 });
 
-export const fetchGeoToGeoFence = createAsyncThunk('geofence/geoToGeoFence', async (params, thunkAPI) => {
+export const fetchRouteViolation = createAsyncThunk('geofence/fetchRouteViolation', async (params, thunkAPI) => {
   try {
-    const res = await ApiService.get('geofencetogeofence', params);
+    const res = await ApiService.get('route-violation-summary', params);
     return res;
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
@@ -29,12 +29,11 @@ export const fetchGeoToGeoFence = createAsyncThunk('geofence/geoToGeoFence', asy
 });
 
 const initialState = {
-  GeoToGeoReportData: [],
   GeoFenceVehicleReport: [],
   geofenceType: [],
-  geoToGeoFence: [],
   geofences: [],
   vehicleGeoFence: [],
+  routeViolation: [],
   selectedGeofence: null,
   loading: false,
   error: null,
@@ -92,15 +91,15 @@ const geofenceSliceReducer = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(fetchGeoToGeoFence.pending, (state) => {
+      .addCase(fetchRouteViolation.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchGeoToGeoFence.fulfilled, (state, action) => {
+      .addCase(fetchRouteViolation.fulfilled, (state, action) => {
         state.loading = false;
-        state.GeoToGeoReportData = action.payload;
+        state.routeViolation = action.payload;
       })
-      .addCase(fetchGeoToGeoFence.rejected, (state, action) => {
+      .addCase(fetchRouteViolation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

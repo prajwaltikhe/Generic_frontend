@@ -27,7 +27,7 @@ import FeedbackReport from '../modules/reports/feedback/Feedback';
 import EmergencyAlertReport from '../modules/reports/emergency-alert/EmergencyAlert';
 import SeatOccupancyReport from '../modules/reports/seat-occupancy/SeatOccupancy';
 import GeofencEntryExit from '../modules/reports/geofence/GeofencEntryExit';
-import GeofencViolation from '../modules/reports/geofence/GeofencViolation';
+import RouteViolation from '../modules/reports/geofence/RouteViolation';
 import DestinationArrivalFemale from '../modules/reports/destination-arrival-female/DestinationArrivalFemale';
 import Movement from '../modules/reports/vehicle-activity/movement/Movement';
 import Parked from '../modules/reports/vehicle-activity/parked/Parked';
@@ -63,7 +63,7 @@ function DynamicRoute() {
         <Route path='map-history' element={<MapHistory />} />
         {/* <Route path='consolidated' element={<Consolidated />} /> */}
         <Route path='geofence-entry-exit' element={<GeofencEntryExit />} />
-        <Route path='route-violation' element={<GeofencViolation />} />
+        <Route path='route-violation' element={<RouteViolation />} />
         <Route path='overspeed' element={<Overspeed />} />
         <Route path='overspeed/view' element={<ViewOverspeed />} />
         <Route path='overspeed/view-violation-map' element={<ViewViolationMap />} />
