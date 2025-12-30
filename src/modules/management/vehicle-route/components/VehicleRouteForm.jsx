@@ -3,12 +3,12 @@ import AutoFlyTo from './AutoFly';
 import AddIcon from '@mui/icons-material/Add';
 import { APIURL } from '../../../../constants';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useRef, useMemo } from 'react';
-import { FormControlLabel, Radio, Button } from '@mui/material';
 import { AddressServices, ApiService } from '../../../../services';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Autocomplete, TextField, FormControl, RadioGroup } from '@mui/material';
+import { FormControlLabel, Radio, Button, CircularProgress } from '@mui/material';
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
@@ -88,11 +88,12 @@ const VehicleRouteForm = () => {
   const location = useLocation();
   const addressTimeoutRefs = useRef({});
 
-  const rowData = useMemo(() => location.state?.rowData || {}, [location.state?.rowData]);
-
   const companyID = localStorage.getItem('company_id');
   const isViewMode = location.pathname.includes('/view');
+  const initialRowData = location.state?.rowData || {};
 
+  const [rowData, setRowData] = useState(initialRowData);
+  const [isLoading, setIsLoading] = useState(!initialRowData?.name && !!initialRowData?.route_name);
   const [vehicles, setVehicles] = useState([]);
   const [routeName, setRouteName] = useState('');
   const [addressSearchResults, setAddressSearchResults] = useState({});
@@ -103,6 +104,23 @@ const VehicleRouteForm = () => {
     { id: Date.now(), address: '', latitude: '', longitude: '', time: '', returnTime: '', distance: '' },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const searchKey = initialRowData?.route_name;
+    if (!searchKey || initialRowData?.name) return;
+
+    (async () => {
+      try {
+        const res = await ApiService.get(`${APIURL.VEHICLE_ROUTE}?search=${encodeURIComponent(searchKey)}`);
+        const routes = res?.data?.routes || [];
+        if (routes.length > 0) setRowData(routes[0]);
+      } catch (err) {
+        console.error('Failed to fetch route:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [initialRowData?.route_name, initialRowData?.name, companyID]);
 
   useEffect(() => {
     const fetchVehicles = async () => {
@@ -342,6 +360,14 @@ const VehicleRouteForm = () => {
     stopPoints.length && stopPoints[0]?.latitude && stopPoints[0]?.longitude
       ? [parseFloat(stopPoints[0].latitude), parseFloat(stopPoints[0].longitude)]
       : [22.71, 75.85];
+
+  if (isLoading) {
+    return (
+      <div className='p-4 flex items-center justify-center min-h-[400px]'>
+        <CircularProgress size={28} />
+      </div>
+    );
+  }
 
   return (
     <div className='p-4'>

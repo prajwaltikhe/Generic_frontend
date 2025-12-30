@@ -105,7 +105,7 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
             <Link to={status === 'New' ? '/report/new-device' : `/report/${status || ''}`}>
               <Btn>Reports</Btn>
             </Link>
-            <Link to={`/management/vehicle-route`}>
+            <Link to='/management/vehicle-route/view' state={{ rowData: { route_name: vehicle?.route_name } }}>
               <Btn>Route Detail</Btn>
             </Link>
             <Link to='/playback' state={{ selectedVehicle: vehicle }}>
