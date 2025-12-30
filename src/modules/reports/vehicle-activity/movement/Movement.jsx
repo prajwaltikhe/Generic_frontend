@@ -4,10 +4,10 @@ import { toast } from 'react-toastify';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
-import { useEffect, useRef, useState, useCallback } from 'react';
 import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
 
@@ -228,6 +228,12 @@ function Movement() {
 
   const tableData = formatMovementRows(filteredData, page * limit);
 
+  const availableRoutes = useMemo(() => {
+    if (filterData.vehicles && filterData.vehicles.length > 0)
+      return routes.filter((r) => filterData.vehicles.includes(r.vehicle_id));
+    return routes;
+  }, [filterData.vehicles, routes]);
+
   return (
     <div className='w-full h-full p-2'>
       <CustomTab tabs={tabs} />
@@ -243,7 +249,7 @@ function Movement() {
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
           vehicles={routes}
-          routes={routes}
+          routes={availableRoutes}
           intervals={intervalOptions}
         />
       </form>
