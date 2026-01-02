@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
@@ -22,12 +22,12 @@ const statusOptions = [
   { label: 'All Status', value: 'all' },
   { label: 'On Time', value: 'ON_TIME' },
   { label: 'Late Arrival', value: 'LATE' },
-  { label: 'Early Arrival', value: 'EARLY' },
 ];
 
 function VehicalArrivalTime() {
   const dispatch = useDispatch();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '', status: 'all' });
@@ -36,6 +36,14 @@ function VehicalArrivalTime() {
   const company_id = localStorage.getItem('company_id');
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
+
+  // Read status from URL query parameter on component mount
+  useEffect(() => {
+    const statusFromUrl = searchParams.get('status');
+    if (statusFromUrl && statusOptions.some((opt) => opt.value === statusFromUrl)) {
+      setFilterData((prev) => ({ ...prev, status: statusFromUrl }));
+    }
+  }, [searchParams]);
 
   const tabs = useMemo(
     () => shifts.map((shift) => ({ name: shift.name, path: `/report/vehicle-arrival-time/${shift.id}` })),

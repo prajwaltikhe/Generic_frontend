@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '@mui/icons-material';
 import ArrowLeftIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
@@ -34,8 +35,13 @@ const selectState = (s) => ({
   isTrackShow: s.multiTrackStatus.isTrackShow,
 });
 
-const StatCard = ({ icon, label, value, bg, color }) => (
-  <div className='flex flex-row w-1/3 items-center gap-2 shadow-sm' style={{ background: bg }}>
+const StatCard = ({ icon, label, value, bg, color, onClick }) => (
+  <div
+    className={`flex flex-row w-1/3 items-center gap-2 shadow-sm ${
+      onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+    }`}
+    style={{ background: bg }}
+    onClick={onClick}>
     <div className='pl-2'>{icon}</div>
     <div>
       <p className='text-sm' style={{ color }}>
@@ -50,6 +56,7 @@ const StatCard = ({ icon, label, value, bg, color }) => (
 
 const TrackingPanel = ({ handleRightPanel }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow } = useSelector(
     selectState,
@@ -80,6 +87,17 @@ const TrackingPanel = ({ handleRightPanel }) => {
     [search, filtered]
   );
 
+  // Default shift ID for navigation (Night General Shift)
+  const defaultShiftId = '2f7d76b8-87a9-4dc1-822a-a39e99b314e9';
+
+  const handleOnTimeClick = () => {
+    navigate(`/report/vehicle-arrival-time/${defaultShiftId}?status=ON_TIME`);
+  };
+
+  const handleLateClick = () => {
+    navigate(`/report/vehicle-arrival-time/${defaultShiftId}?status=LATE`);
+  };
+
   return (
     <div
       className={`absolute transition-all top-0 left-0 rounded-md bg-white h-full p-3 z-[99999] w-[452px] flex flex-col ${
@@ -93,8 +111,15 @@ const TrackingPanel = ({ handleRightPanel }) => {
       </div>
       <div className='w-full rounded-sm overflow-hidden mb-2 flex justify-between items-center relative'>
         <StatCard icon={<TotalSvg />} label='Total' value={cleaned.All.length} bg='#e7e5e6' />
-        <StatCard icon={<OnTimeSvg />} label='On time' value='-' bg='#00800026' color='#0e7c13' />
-        <StatCard icon={<LateSvg />} label='Late' value='-' bg='#FF000026' color='#d70b0b' />
+        <StatCard
+          icon={<OnTimeSvg />}
+          label='On time'
+          value='-'
+          bg='#00800026'
+          color='#0e7c13'
+          onClick={handleOnTimeClick}
+        />
+        <StatCard icon={<LateSvg />} label='Late' value='-' bg='#FF000026' color='#d70b0b' onClick={handleLateClick} />
       </div>
       <div className='border border-[#1d31a6] rounded-md flex flex-col flex-1 min-h-0 relative'>
         <div className='flex'>
