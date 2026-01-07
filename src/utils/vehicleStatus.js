@@ -30,7 +30,6 @@ export const processVehicles = (vehicles) => {
       v.driver?.first_name || v.driver?.last_name
         ? `${v.driver?.first_name ?? ''} ${v.driver?.last_name ?? ''}`.trim()
         : '-';
-    const route = v.routes?.[0]?.name ?? '-';
     const status = isNew
       ? 'New'
       : isOneHourOld(localTime)
@@ -42,21 +41,18 @@ export const processVehicles = (vehicles) => {
       : !ign && !mov
       ? 'Parked'
       : 'Unknown';
-    const speedStr = v.speed != null && !isNaN(Number(v.speed)) ? `${Number(v.speed)} km/h` : '-';
-
-    const todayVal = io.find((e) => e.propertyName === 'tripOdometer')?.value;
 
     return {
       id: v.id ?? '-',
       imei_number: v.imei_number ?? '-',
       vehicle_name: v.vehicle_name ?? '-',
       vehicle_number: v.vehicle_number ?? '-',
-      route_name: route,
-      today_distance: getOdo(todayVal),
+      route_name: v.routes?.[0]?.name ?? '-',
+      today_distance: v.todayDistance?.distanceKm != null ? `${v.todayDistance?.distanceKm.toFixed(2)} km` : '-',
       seats: v.seats ?? '-',
       assigned_seats: v.AssignedSeats ?? '-',
       onboarded_employee: v.EmployeeOnboardCount ?? '-',
-      speed: speedStr,
+      speed: v.speed != null && !isNaN(Number(v.speed)) ? `${Number(v.speed)} km/h` : '-',
       driver_name: name,
       driver_number: v.driver?.phone_number ?? '-',
       address: v.address ?? '-',
