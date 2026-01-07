@@ -9,26 +9,12 @@ import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  {
-    key: 'date',
-    header: 'Date',
-    render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-'),
-  },
+  { key: 'date', header: 'Date', render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-') },
   { key: 'vehicle_number', header: 'Vehicle Number' },
   { key: 'route_details', header: 'Route Details' },
-  {
-    key: 'driver_name',
-    header: 'Driver Name',
-  },
-  {
-    key: 'driver_number',
-    header: 'Driver Number',
-  },
-  {
-    key: 'violation_distance',
-    header: 'Violation Distance',
-    render: (value) => (value ? `${value} km` : '-'),
-  },
+  { key: 'driver_name', header: 'Driver Name' },
+  { key: 'driver_number', header: 'Driver Number' },
+  { key: 'violation_distance', header: 'Violation Distance', render: (value) => (value ? `${value} km` : '-') },
 ];
 
 function RouteViolation() {
@@ -37,6 +23,7 @@ function RouteViolation() {
   const [limit, setLimit] = useState(10);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '' });
   const [filteredData, setFilteredData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
 
   const company_id = localStorage.getItem('company_id');
   const { loading, error } = useSelector((state) => state?.geofence);
@@ -57,9 +44,11 @@ function RouteViolation() {
 
   useEffect(() => {
     if (company_id)
-      dispatch(fetchRouteViolation({ company_id, page: page + 1, limit })).then((res) => {
+      dispatch(fetchRouteViolation({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
         if (res?.payload?.success) {
+          console.log(res);
           setFilteredData(res?.payload?.data || []);
+          setTotalCount(res?.payload?.pagination?.total || 0);
         }
       });
   }, [dispatch, company_id, page, limit]);
@@ -81,10 +70,12 @@ function RouteViolation() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    dispatch(fetchRouteViolation({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
+    setPage(0);
+    dispatch(fetchRouteViolation({ ...buildApiPayload(), page: 1, limit })).then((res) => {
       if (res?.payload?.success) {
         toast.success('Data fetched successfully');
         setFilteredData(res?.payload?.data || []);
+        setTotalCount(res?.payload?.pagination?.total || 0);
       } else {
         toast.error('Failed to fetch data');
       }
@@ -93,9 +84,8 @@ function RouteViolation() {
 
   const handleFormReset = () => {
     setFilterData({ vehicles: [], routes: [], fromDate: '', toDate: '' });
+    setPage(0);
   };
-
-  const totalCount = filteredData.length; // API response structure doesn't seem to have total count yet, or it's implicitly all data? Assuming all data for now or pagination needs fix if API supports it.
 
   return (
     <div className='w-full h-full p-2'>
