@@ -89,7 +89,6 @@ const MapComponent = ({ selectedVehicle }) => {
       lng: d.lng,
       icon: getIcon(d.status),
       timestamp: d.timestamp || '',
-      address: d.address || '',
       speed: d.speed,
       cls: getCls(d.status),
       label: d.status ?? 'Unknown',
@@ -148,19 +147,16 @@ const MapComponent = ({ selectedVehicle }) => {
             ref={(ref) => ref && (markerRefs.current[d.id] = ref)}>
             <Popup>
               <div className='min-w-[180px] z-[400]'>
-                <div className='font-bold text-base mb-1'>{d.name}</div>
+                <div className='flex items-center justify-between mb-1'>
+                  <div className='font-bold text-base'>{d.name}</div>
+                  <span className={`inline-block px-1.5 py-1 rounded text-xs ${d.cls}`}>{d.label}</span>
+                </div>
+                <div className='text-xs text-gray-600 mb-1'>
+                  <span className='font-semibold'>Speed:</span> {d.speed ?? '-'}
+                </div>
                 <div className='text-xs text-gray-600 mb-1'>
                   <span className='font-semibold'>Time:</span>{' '}
                   {d.timestamp ? new Date(d.timestamp).toLocaleString() : 'N/A'}
-                </div>
-                <div className='text-xs text-gray-600 mb-1'>
-                  <span className='font-semibold'>Speed:</span> {d.speed ?? '-'} km/h
-                </div>
-                <div className='text-xs text-gray-600 mb-1'>
-                  <span className='font-semibold'>Address:</span> {d.address}
-                </div>
-                <div className='mt-2'>
-                  <span className={`inline-block px-2 py-1 rounded text-xs ${d.cls}`}>{d.label}</span>
                 </div>
               </div>
             </Popup>
