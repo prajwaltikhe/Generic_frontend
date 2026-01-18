@@ -3,6 +3,7 @@ import tabs from '../components/Tab';
 import { toast } from 'react-toastify';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import FilterOption from '../../../../components/FilterOption';
 import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
@@ -27,7 +28,7 @@ const columns = [
   {
     key: 'no_of_parking',
     header: 'No of Parking',
-    render: (_, r) => (typeof r?.no_of_parking === 'number' ? r.no_of_parking : r?.no_of_parking ?? '-'),
+    render: (_, r) => (typeof r?.no_of_parking === 'number' ? r.no_of_parking : (r?.no_of_parking ?? '-')),
   },
 ];
 
@@ -37,6 +38,7 @@ function formatParkedRows(data, offset = 0) {
     const r = row?.report || row || {};
     return {
       id: offset + idx + 1,
+      vehicle_id: r.vehicle_id || row.vehicle_id,
       updated_at: r.updated_at ?? null,
       vehicle_type: r.vehicle_type ?? 'Bus',
       vehicle_number: r.vehicle_number ?? null,
@@ -54,6 +56,7 @@ const initialFilter = { vehicles: [], routes: [], interval: '', fromDate: '', to
 
 function Parked() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -82,7 +85,7 @@ function Parked() {
         ...overrides,
       };
     },
-    [company_id]
+    [company_id],
   );
 
   useEffect(() => {
@@ -99,6 +102,31 @@ function Parked() {
       }
     });
   }, [company_id, page, limit, buildApiPayload, dispatch]);
+
+  const tableData = formatParkedRows(filteredData, page * limit);
+
+  const handleViewDetails = (row) => {
+    const params = new URLSearchParams();
+    if (filterData.fromDate) params.set('from_date', filterData.fromDate);
+    if (filterData.toDate) params.set('to_date', filterData.toDate);
+    params.set('type', 'parked');
+    navigate(`/report/parked/details/${row.vehicle_id}?${params.toString()}`);
+  };
+
+  const actionColumn = {
+    key: 'actions',
+    header: 'Actions',
+    render: (_, row) => (
+      <button
+        type='button'
+        onClick={() => handleViewDetails(row)}
+        className='text-white bg-[#1d31a6] hover:bg-[#161f6a] focus:outline-none font-medium rounded-sm text-xs px-3 py-1.5 cursor-pointer'>
+        View Details
+      </button>
+    ),
+  };
+
+  const tableColumns = [...columns, actionColumn];
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -123,21 +151,6 @@ function Parked() {
     setFilterData(initialFilter);
     dataFilter.current = initialFilter;
     setPage(0);
-    setIsLoading(true);
-    if (company_id) {
-      dispatch(fetchVehicleActivityData({ company_id, page: 1, limit })).then((res) => {
-        setIsLoading(false);
-        if (res?.payload?.success) {
-          setFilteredData(res.payload.data);
-          setTotalCount(res.payload?.pagination?.total || 0);
-        } else {
-          setFilteredData([]);
-          setTotalCount(0);
-        }
-      });
-    } else {
-      setIsLoading(false);
-    }
   };
 
   const handleExport = async () => {
@@ -160,8 +173,6 @@ function Parked() {
       orientation: 'landscape',
     });
   };
-
-  const tableData = formatParkedRows(filteredData, page * limit);
 
   const availableRoutes = useMemo(() => {
     if (filterData.vehicles && filterData.vehicles.length > 0)
@@ -194,7 +205,7 @@ function Parked() {
         </div>
       ) : (
         <ReportTable
-          columns={columns}
+          columns={tableColumns}
           data={tableData}
           page={page}
           setPage={setPage}

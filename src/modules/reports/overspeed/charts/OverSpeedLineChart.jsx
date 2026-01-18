@@ -42,7 +42,7 @@ const OverSpeedChart = ({ data }) => {
   };
   return (
     <div className='pt-2 px-1'>
-      <Chart options={options} series={series} type='line' height={300} />
+      <Chart options={options} series={series} type='line' height={250} />
     </div>
   );
 };

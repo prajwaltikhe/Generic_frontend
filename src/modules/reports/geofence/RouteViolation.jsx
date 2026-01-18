@@ -2,6 +2,7 @@ import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchRouteViolation } from '../../../redux/geofenceSlice';
@@ -10,15 +11,16 @@ import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/expo
 
 const columns = [
   { key: 'date', header: 'Date', render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-') },
-  { key: 'vehicle_number', header: 'Vehicle Number' },
-  { key: 'route_details', header: 'Route Details' },
-  { key: 'driver_name', header: 'Driver Name' },
-  { key: 'driver_number', header: 'Driver Number' },
+  { key: 'vehicle_number', header: 'Vehicle Number', render: (v) => v ?? '-' },
+  { key: 'route_details', header: 'Route Details', render: (v) => v ?? '-' },
+  { key: 'driver_name', header: 'Driver Name', render: (v) => v ?? '-' },
+  { key: 'driver_number', header: 'Driver Number', render: (v) => v ?? '-' },
   { key: 'violation_distance', header: 'Violation Distance', render: (value) => (value ? `${value} km` : '-') },
 ];
 
 function RouteViolation() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '' });
@@ -46,24 +48,60 @@ function RouteViolation() {
     if (company_id)
       dispatch(fetchRouteViolation({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
         if (res?.payload?.success) {
-          console.log(res);
           setFilteredData(res?.payload?.data || []);
           setTotalCount(res?.payload?.pagination?.total || 0);
         }
       });
+    // eslint-disable-next-line
   }, [dispatch, company_id, page, limit]);
+
+  const formatData = (items) =>
+    items.map((item, i) => ({
+      id: item.id || item._id || item.vehicle_id || i + 1,
+      vehicle_id: item.vehicle_id || item.id || item._id,
+      date: item.date ?? '-',
+      vehicle_number: item.vehicle_number ?? '-',
+      route_details: item.route_details ?? item.route_name ?? '-',
+      driver_name: item.driver_name ?? '-',
+      driver_number: item.driver_number ?? item.driver_phone ?? '-',
+      violation_distance: item.violation_distance ?? '-',
+    }));
+
+  const data = formatData(filteredData);
+
+  const handleViewDetails = (row) => {
+    const params = new URLSearchParams();
+    if (filterData.fromDate) params.set('from_date', filterData.fromDate);
+    if (filterData.toDate) params.set('to_date', filterData.toDate);
+    navigate(`/report/route-violation/details/${row.vehicle_id}?${params.toString()}`);
+  };
+
+  const actionColumn = {
+    key: 'actions',
+    header: 'Actions',
+    render: (_, row) => (
+      <button
+        type='button'
+        onClick={() => handleViewDetails(row)}
+        className='text-white bg-[#1d31a6] hover:bg-[#161f6a] focus:outline-none font-medium rounded-sm text-xs px-3 py-1.5 cursor-pointer'>
+        View Details
+      </button>
+    ),
+  };
+
+  const tableColumns = [...columns, actionColumn];
 
   const handleExport = () =>
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: filteredData }),
+      rows: buildExportRows({ columns, data }),
       fileName: 'route_violation_report.xlsx',
     });
 
   const handleExportPDF = () =>
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: filteredData }),
+      rows: buildExportRows({ columns, data }),
       fileName: 'route_violation_report.pdf',
       orientation: 'landscape',
     });
@@ -89,7 +127,9 @@ function RouteViolation() {
 
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Route Violation Report</h1>
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Route Violation Report (Total: {totalCount})</h1>
+      </div>
       <form onSubmit={handleFormSubmit}>
         <FilterOption
           handleExport={handleExport}
@@ -103,8 +143,8 @@ function RouteViolation() {
         />
       </form>
       <ReportTable
-        columns={columns}
-        data={filteredData}
+        columns={tableColumns}
+        data={data}
         loading={loading}
         error={error}
         page={page}

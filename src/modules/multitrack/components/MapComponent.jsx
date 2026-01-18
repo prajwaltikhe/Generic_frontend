@@ -17,7 +17,7 @@ const statusColors = {
 const getIcon = (status) =>
   new L.DivIcon({
     html: ReactDOMServer.renderToStaticMarkup(
-      <FaMapMarkerAlt color={statusColors[status?.trim?.()]?.color || statusColors.Unknown.color} size={30} />
+      <FaMapMarkerAlt color={statusColors[status?.trim?.()]?.color || statusColors.Unknown.color} size={30} />,
     ),
     className: '',
     iconSize: [30, 30],

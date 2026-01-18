@@ -3,6 +3,7 @@ import tabs from '../components/Tab';
 import { toast } from 'react-toastify';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import FilterOption from '../../../../components/FilterOption';
 import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
@@ -67,49 +68,29 @@ function formatMovementRows(data, offset = 0) {
     const r = row?.report || row || {};
     return {
       id: offset + idx + 1,
+      vehicle_id: r.vehicle_id || row.vehicle_id,
       updated_at: r.updated_at ?? null,
       vehicle_type: r.vehicle_type ?? 'Bus',
       vehicle_number: r.vehicle_number ?? null,
       route_details: r.route_details ?? null,
       driver_name: r.driver_name ?? null,
       driver_contact_number: r.driver_contact_number ?? null,
-      source: r.source
-        ? r.source
-            .split(',')
-            .map((v) => {
-              const n = Number.parseFloat(v);
-              return isNaN(n) ? v : n.toFixed(7);
-            })
-            .join(',')
-        : null,
-      destination: r.destination
-        ? r.destination
-            .split(',')
-            .map((v) => {
-              const n = Number.parseFloat(v);
-              return isNaN(n) ? v : n.toFixed(7);
-            })
-            .join(',')
-        : null,
-      employee_count:
-        typeof r.employee_count === 'number'
-          ? r.employee_count
-          : typeof row.employee_count === 'number'
-          ? row.employee_count
-          : 0,
+      source: r.source ?? null,
+      destination: r.destination ?? null,
+      employee_count: typeof r.employee_count === 'number' ? r.employee_count : 0,
       speed: typeof r.speed === 'number' ? r.speed : 0,
       start_lat_long: r.start_lat_long ?? null,
       end_lat_long: r.end_lat_long ?? null,
-      trip_distance: typeof r.trip_distance === 'number' ? r.trip_distance : 0,
-      covered_distance: typeof r.covered_distance === 'number' ? r.covered_distance : 0,
+      trip_distance: r.trip_distance ?? 0,
+      covered_distance: r.covered_distance ?? 0,
       start_odometer: r.start_odometer ?? null,
       end_odometer: r.end_odometer ?? null,
-      total_distance: typeof r.total_distance === 'number' ? r.total_distance : 0,
-      top_speed: typeof r.top_speed === 'number' ? r.top_speed : 0,
+      total_distance: r.total_distance ?? 0,
+      top_speed: r.top_speed ?? 0,
       total_running_duration: r.total_running_duration ?? '0h 0m 0s',
       total_idle_duration: r.total_idle_duration ?? '0h 0m 0s',
       total_parked_duration: r.total_parked_duration ?? '0h 0m 0s',
-      no_of_parking: typeof r.no_of_parking === 'number' ? r.no_of_parking : 0,
+      no_of_parking: r.no_of_parking ?? 0,
       total_offline_duration: r.total_offline_duration ?? '0h 0m 0s',
     };
   });
@@ -119,6 +100,7 @@ const initialFilter = { vehicles: [], routes: [], interval: '', fromDate: '', to
 
 function Movement() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -147,92 +129,94 @@ function Movement() {
         ...overrides,
       };
     },
-    [company_id]
+    [company_id],
   );
 
   useEffect(() => {
     if (!company_id) return;
     setIsLoading(true);
-    dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit }))).then((res) => {
-      setIsLoading(false);
-      if (res?.payload?.success) {
-        setFilteredData(res.payload.data);
-        setTotalCount(res.payload?.pagination?.total || 0);
-      } else {
-        setFilteredData([]);
-        setTotalCount(0);
-      }
-    });
+    dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit })))
+      .then((res) => {
+        const raw = res?.payload?.data;
+        setFilteredData(formatMovementRows(raw, page * limit));
+        setTotalCount(res?.payload?.pagination?.total ?? 0);
+      })
+      .finally(() => setIsLoading(false));
   }, [company_id, page, limit, buildApiPayload, dispatch]);
+
+  const tableData = filteredData;
+
+  const handleViewDetails = (row) => {
+    const params = new URLSearchParams();
+    if (filterData.fromDate) params.set('from_date', filterData.fromDate);
+    if (filterData.toDate) params.set('to_date', filterData.toDate);
+    navigate(`/report/movement/details/${row.vehicle_id}?${params.toString()}`);
+  };
+
+  const actionColumn = {
+    key: 'actions',
+    header: 'Actions',
+    render: (_, row) => (
+      <button
+        type='button'
+        onClick={() => handleViewDetails(row)}
+        className='text-white bg-[#1d31a6] hover:bg-[#161f6a] focus:outline-none font-medium rounded-sm text-xs px-3 py-1.5 cursor-pointer'>
+        View Details
+      </button>
+    ),
+  };
+
+  const tableColumns = [...columns, actionColumn];
+
+  const availableRoutes = useMemo(() => {
+    return routes?.map((r) => ({ route_id: r.route_id, route_name: r.route_name }));
+  }, [routes]);
+
+  const handleExport = async () => {
+    setIsLoading(true);
+    const res = await dispatch(fetchVehicleActivityData(buildApiPayload({ page: 1, limit: totalCount || 500 })));
+    setIsLoading(false);
+    const allData = formatMovementRows(res?.payload?.data || []);
+    exportToExcel({
+      columns,
+      rows: buildExportRows({ columns, data: allData }),
+      fileName: 'movement_report.xlsx',
+    });
+  };
+
+  const handleExportPDF = async () => {
+    setIsLoading(true);
+    const res = await dispatch(fetchVehicleActivityData(buildApiPayload({ page: 1, limit: totalCount || 500 })));
+    setIsLoading(false);
+    const allData = formatMovementRows(res?.payload?.data || []);
+    exportToPDF({
+      columns,
+      rows: buildExportRows({ columns, data: allData }),
+      fileName: 'movement_report.pdf',
+      orientation: 'landscape',
+    });
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     dataFilter.current = filterData;
     setPage(0);
     setIsLoading(true);
-    dispatch(fetchVehicleActivityData(buildApiPayload({ page: 1, limit }))).then((res) => {
-      setIsLoading(false);
-      if (res?.payload?.success) {
-        setFilteredData(res.payload.data);
-        setTotalCount(res.payload?.pagination?.total || 0);
-        toast.success(res.payload.message || 'Success');
-      } else {
-        setFilteredData([]);
-        setTotalCount(0);
-        toast.error(res?.payload?.message || 'Failed to fetch data');
-      }
-    });
+    dispatch(fetchVehicleActivityData(buildApiPayload({ page: 1, limit })))
+      .then((res) => {
+        const raw = res?.payload?.data;
+        setFilteredData(formatMovementRows(raw));
+        setTotalCount(res?.payload?.pagination?.total ?? 0);
+        if (res?.payload?.success) toast.success(res.payload.message || 'Data fetched successfully');
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const handleFormReset = () => {
     setFilterData(initialFilter);
     dataFilter.current = initialFilter;
     setPage(0);
-    setIsLoading(true);
-    if (company_id) {
-      dispatch(fetchVehicleActivityData({ company_id, page: 1, limit })).then((res) => {
-        setIsLoading(false);
-        if (res?.payload?.success) {
-          setFilteredData(res.payload.data);
-          setTotalCount(res.payload?.pagination?.total || 0);
-        } else {
-          setFilteredData([]);
-          setTotalCount(0);
-        }
-      });
-    } else {
-      setIsLoading(false);
-    }
   };
-
-  const handleExport = async () => {
-    const res = await dispatch(fetchVehicleActivityData({ ...buildApiPayload({ page: 1, limit: totalCount || 100 }) }));
-    const exportRows = formatMovementRows(res?.payload?.data || []);
-    exportToExcel({
-      columns,
-      rows: buildExportRows({ columns, data: exportRows }),
-      fileName: 'movement_report.xlsx',
-    });
-  };
-
-  const handleExportPDF = async () => {
-    const res = await dispatch(fetchVehicleActivityData({ ...buildApiPayload({ page: 1, limit: totalCount || 100 }) }));
-    const exportRows = formatMovementRows(res?.payload?.data || []);
-    exportToPDF({
-      columns,
-      rows: buildExportRows({ columns, data: exportRows }),
-      fileName: 'movement_report.pdf',
-      orientation: 'landscape',
-    });
-  };
-
-  const tableData = formatMovementRows(filteredData, page * limit);
-
-  const availableRoutes = useMemo(() => {
-    if (filterData.vehicles && filterData.vehicles.length > 0)
-      return routes.filter((r) => filterData.vehicles.includes(r.vehicle_id));
-    return routes;
-  }, [filterData.vehicles, routes]);
 
   return (
     <div className='w-full h-full p-2'>
@@ -259,7 +243,7 @@ function Movement() {
         </div>
       ) : (
         <ReportTable
-          columns={columns}
+          columns={tableColumns}
           data={tableData}
           page={page}
           setPage={setPage}

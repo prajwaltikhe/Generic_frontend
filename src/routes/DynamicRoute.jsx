@@ -27,17 +27,24 @@ import FeedbackReport from '../modules/reports/feedback/Feedback';
 import EmergencyAlertReport from '../modules/reports/emergency-alert/EmergencyAlert';
 import SeatOccupancyReport from '../modules/reports/seat-occupancy/SeatOccupancy';
 import GeofencEntryExit from '../modules/reports/geofence/GeofencEntryExit';
+import GeofenceReportDetails from '../modules/reports/geofence/GeofenceReportDetails';
 import RouteViolation from '../modules/reports/geofence/RouteViolation';
+import RouteViolationDetails from '../modules/reports/geofence/RouteViolationDetails';
 import DestinationArrivalFemale from '../modules/reports/destination-arrival-female/DestinationArrivalFemale';
 import Movement from '../modules/reports/vehicle-activity/movement/Movement';
+import MovementDetails from '../modules/reports/vehicle-activity/movement/MovementDetails';
 import Parked from '../modules/reports/vehicle-activity/parked/Parked';
+import ParkedDetails from '../modules/reports/vehicle-activity/parked/ParkedDetails';
 import Idle from '../modules/reports/vehicle-activity/idle/Idle';
+import IdleDetails from '../modules/reports/vehicle-activity/idle/IdleDetails';
 import NewDevice from '../modules/reports/vehicle-activity/new-device/NewDevice';
 import Offline from '../modules/reports/vehicle-activity/offline/Offline';
+import OfflineDetails from '../modules/reports/vehicle-activity/offline/OfflineDetails';
 import MapHistory from '../modules/reports/vehicle-activity/map-history/MapHistory';
 import EmployeeOnboard from '../modules/reports/employee-onboard/EmployeeOnboard';
 import Multitrack from '../modules/multitrack/Multitrack';
 import Overspeed from '../modules/reports/overspeed/Overspeed';
+import OverspeedReportDetails from '../modules/reports/overspeed/OverspeedReportDetails';
 import ViewOverspeed from '../modules/reports/overspeed/ViewOverspeed';
 import ViewViolationMap from '../modules/reports/overspeed/ViewViolationMap';
 import PunchTimelog from '../modules/reports/punch-timelog/PunchTimelog';
@@ -56,15 +63,22 @@ function DynamicRoute() {
       <Route path='/playback' element={<Playback />} />
       <Route path='/report'>
         <Route path='movement' element={<Movement />} />
+        <Route path='movement/details/:id' element={<MovementDetails />} />
         <Route path='parked' element={<Parked />} />
+        <Route path='parked/details/:id' element={<ParkedDetails />} />
         <Route path='idle' element={<Idle />} />
+        <Route path='idle/details/:id' element={<IdleDetails />} />
         <Route path='offline' element={<Offline />} />
+        <Route path='offline/details/:id' element={<OfflineDetails />} />
         <Route path='new-device' element={<NewDevice />} />
         <Route path='map-history' element={<MapHistory />} />
         {/* <Route path='consolidated' element={<Consolidated />} /> */}
         <Route path='geofence-entry-exit' element={<GeofencEntryExit />} />
+        <Route path='geofence-entry-exit/details/:id' element={<GeofenceReportDetails />} />
         <Route path='route-violation' element={<RouteViolation />} />
+        <Route path='route-violation/details/:id' element={<RouteViolationDetails />} />
         <Route path='overspeed' element={<Overspeed />} />
+        <Route path='overspeed/details/:id' element={<OverspeedReportDetails />} />
         <Route path='overspeed/view' element={<ViewOverspeed />} />
         <Route path='overspeed/view-violation-map' element={<ViewViolationMap />} />
         <Route path='employees-on-board' element={<EmployeeOnboard />} />

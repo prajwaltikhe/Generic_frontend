@@ -13,7 +13,7 @@ export const fetchVehicleReport = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Async thunk to fetch all vehicle data
@@ -26,7 +26,7 @@ export const fetchAllVehicleData = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Async thunk to fetch seat occupancy report
@@ -39,7 +39,7 @@ export const fetchSeatOccupancyReport = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Async thunk to fetch speed over report
@@ -52,6 +52,20 @@ export const fetchOverSpeedReport = createAsyncThunk('vehicleReport/fetchOverSpe
   }
 });
 
+// Async thunk to fetch overspeed report details
+export const fetchOverspeedReportDetails = createAsyncThunk(
+  'vehicleReport/fetchOverspeedReportDetails',
+  async ({ id, company_id, from_date, to_date, page, limit }, thunkAPI) => {
+    try {
+      const params = { company_id, from_date, to_date, page, limit };
+      const response = await ApiService.get(`reports/overspeed/details/${id}`, params);
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  },
+);
+
 // Async thunk to fetch VehicleArrivalReport
 export const fetchVehicleArrivalData = createAsyncThunk(
   'vehicleReport/fetchVehicleArrivalData',
@@ -62,7 +76,7 @@ export const fetchVehicleArrivalData = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Initial state

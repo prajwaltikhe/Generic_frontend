@@ -11,7 +11,7 @@ export const fetchVehicleActivityData = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
-  }
+  },
 );
 
 export const fetchVehicleMissingInflux = createAsyncThunk(
@@ -24,7 +24,7 @@ export const fetchVehicleMissingInflux = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
-  }
+  },
 );
 
 export const fetchMapHistoryData = createAsyncThunk('mapHistory/fetchMapHistoryData', async (params, thunkAPI) => {
@@ -35,6 +35,21 @@ export const fetchMapHistoryData = createAsyncThunk('mapHistory/fetchMapHistoryD
     return thunkAPI.rejectWithValue(error.message);
   }
 });
+
+// Async thunk to fetch movement details with optional type filter (idle, parked, offline)
+export const fetchMovementDetails = createAsyncThunk(
+  'vehicleActivity/fetchMovementDetails',
+  async ({ vehicle_id, from_date, to_date, type, page, limit }, { rejectWithValue }) => {
+    try {
+      const params = { vehicle_id, from_date, to_date, page, limit };
+      if (type) params.type = type;
+      const response = await ApiService.get('reports/movement-details', params);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to fetch movement details');
+    }
+  },
+);
 
 // ✅ Initial State
 const initialState = {

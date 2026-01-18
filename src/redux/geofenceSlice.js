@@ -28,6 +28,32 @@ export const fetchRouteViolation = createAsyncThunk('geofence/fetchRouteViolatio
   }
 });
 
+export const fetchGeofenceReportDetails = createAsyncThunk(
+  'geofence/fetchGeofenceReportDetails',
+  async ({ id, from_date, to_date, page, limit }, thunkAPI) => {
+    try {
+      const params = { from_date, to_date, page, limit };
+      const res = await ApiService.get(`geofenceReport/details/${id}`, params);
+      return res;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  },
+);
+
+export const fetchRouteViolationDetails = createAsyncThunk(
+  'geofence/fetchRouteViolationDetails',
+  async ({ id, from_date, to_date }, thunkAPI) => {
+    try {
+      const params = { from_date, to_date };
+      const res = await ApiService.get(`route-violation-summary/details/${id}`, params);
+      return res;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  },
+);
+
 const initialState = {
   GeoFenceVehicleReport: [],
   geofenceType: [],

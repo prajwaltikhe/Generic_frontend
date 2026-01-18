@@ -3,6 +3,7 @@ import tabs from '../components/Tab';
 import { toast } from 'react-toastify';
 import CustomTab from '../components/CustomTab';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import FilterOption from '../../../../components/FilterOption';
 import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
@@ -21,7 +22,7 @@ const columns = [
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number ?? '-' },
   { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details ?? '-' },
   { key: 'driver_name', header: 'Driver Name', render: (_, r) => r?.driver_name ?? '-' },
-  { key: 'driver_contact_number', header: 'Contact Number', render: (_, r) => r?.driver_contact_number ?? '-' },
+  { key: 'driver_contact_number', header: 'Driver Contact Number', render: (_, r) => r?.driver_contact_number ?? '-' },
   {
     key: 'total_offline_duration',
     header: 'Total Offline Duration',
@@ -37,6 +38,7 @@ function formatOfflineRows(data, offset = 0) {
     const r = row?.report || row || {};
     return {
       id: offset + idx + 1,
+      vehicle_id: r.vehicle_id || row.vehicle_id,
       updated_at: r.updated_at ?? null,
       vehicle_type: r.vehicle_type ?? 'Bus',
       vehicle_number: r.vehicle_number ?? null,
@@ -54,6 +56,7 @@ const initialFilter = { vehicles: [], routes: [], interval: '', fromDate: '', to
 
 function Offline() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -81,7 +84,7 @@ function Offline() {
         ...overrides,
       };
     },
-    [company_id]
+    [company_id],
   );
 
   useEffect(() => {
@@ -98,6 +101,31 @@ function Offline() {
       }
     });
   }, [company_id, page, limit, buildApiPayload, dispatch]);
+
+  const tableData = formatOfflineRows(filteredData, page * limit);
+
+  const handleViewDetails = (row) => {
+    const params = new URLSearchParams();
+    if (filterData.fromDate) params.set('from_date', filterData.fromDate);
+    if (filterData.toDate) params.set('to_date', filterData.toDate);
+    params.set('type', 'offline');
+    navigate(`/report/offline/details/${row.vehicle_id}?${params.toString()}`);
+  };
+
+  const actionColumn = {
+    key: 'actions',
+    header: 'Actions',
+    render: (_, row) => (
+      <button
+        type='button'
+        onClick={() => handleViewDetails(row)}
+        className='text-white bg-[#1d31a6] hover:bg-[#161f6a] focus:outline-none font-medium rounded-sm text-xs px-3 py-1.5 cursor-pointer'>
+        View Details
+      </button>
+    ),
+  };
+
+  const tableColumns = [...columns, actionColumn];
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -122,21 +150,6 @@ function Offline() {
     setFilterData(initialFilter);
     dataFilter.current = initialFilter;
     setPage(0);
-    setIsLoading(true);
-    if (company_id) {
-      dispatch(fetchVehicleActivityData({ company_id, page: 1, limit })).then((res) => {
-        setIsLoading(false);
-        if (res?.payload?.success) {
-          setFilteredData(res.payload.data);
-          setTotal(res.payload?.pagination?.total || 0);
-        } else {
-          setFilteredData([]);
-          setTotal(0);
-        }
-      });
-    } else {
-      setIsLoading(false);
-    }
   };
 
   const handleExport = async () => {
@@ -159,8 +172,6 @@ function Offline() {
       orientation: 'landscape',
     });
   };
-
-  const tableData = formatOfflineRows(filteredData, page * limit);
 
   const availableRoutes = useMemo(() => {
     if (filterData.vehicles && filterData.vehicles.length > 0)
@@ -193,7 +204,7 @@ function Offline() {
         </div>
       ) : (
         <ReportTable
-          columns={columns}
+          columns={tableColumns}
           data={tableData}
           page={page}
           setPage={setPage}
