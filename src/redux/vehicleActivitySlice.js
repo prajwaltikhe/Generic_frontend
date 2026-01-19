@@ -29,14 +29,13 @@ export const fetchVehicleMissingInflux = createAsyncThunk(
 
 export const fetchMapHistoryData = createAsyncThunk('mapHistory/fetchMapHistoryData', async (params, thunkAPI) => {
   try {
-    const response = await ApiService.get('report/maphistory', params);
+    const response = await ApiService.get('reports/map-history', params);
     return response;
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
   }
 });
 
-// Async thunk to fetch movement details with optional type filter (idle, parked, offline)
 export const fetchMovementDetails = createAsyncThunk(
   'vehicleActivity/fetchMovementDetails',
   async ({ vehicle_id, from_date, to_date, type, page, limit }, { rejectWithValue }) => {
@@ -51,7 +50,6 @@ export const fetchMovementDetails = createAsyncThunk(
   },
 );
 
-// ✅ Initial State
 const initialState = {
   vehicleActivityMomentData: [],
   vehicleMissingInflux: [],
