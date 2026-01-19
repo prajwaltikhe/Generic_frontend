@@ -13,7 +13,7 @@ function FilterOption({
   handleFormReset,
   handleFormSubmit,
   employees = [],
-  employeeIds=[],
+  employeeIds = [],
   vehicles = [],
   routes = [],
   plants = [],
@@ -24,6 +24,7 @@ function FilterOption({
   setFile,
   isDate = true,
   report = false,
+  singleVehicle = false,
 }) {
   const toArray = (v) => (Array.isArray(v) ? v : []);
   const selectAllOpt = { label: 'Select All', value: 'SELECT_ALL' };
@@ -32,8 +33,8 @@ function FilterOption({
     !Array.isArray(selected) || !selected.length
       ? []
       : selected.length === all.length
-      ? [selectAllOpt]
-      : all.filter((o) => selected.includes(o.value));
+        ? [selectAllOpt]
+        : all.filter((o) => selected.includes(o.value));
   const handleMultiChange = (key, all) => (_, nv) => {
     const isAll = nv.some((o) => o.value === 'SELECT_ALL');
     setFilterData({
@@ -168,14 +169,22 @@ function FilterOption({
                   onChange={(v) => setFilterData({ ...filterData, plant: v })}
                 />
               ))}
-            {vehicleOptions.length > 0 && (
-              <MultiSelect
-                label='Select Vehicle Numbers'
-                options={vehicleOptions}
-                value={filterData.vehicles || []}
-                onChange={handleMultiChange('vehicles', vehicleOptions)}
-              />
-            )}
+            {vehicleOptions.length > 0 &&
+              (singleVehicle ? (
+                <SingleSelect
+                  label='Select Vehicle'
+                  options={vehicleOptions}
+                  value={filterData.vehicle_id || ''}
+                  onChange={(v) => setFilterData({ ...filterData, vehicle_id: v })}
+                />
+              ) : (
+                <MultiSelect
+                  label='Select Vehicle Numbers'
+                  options={vehicleOptions}
+                  value={filterData.vehicles || []}
+                  onChange={handleMultiChange('vehicles', vehicleOptions)}
+                />
+              ))}
             {routeOptions.length > 0 && (
               <MultiSelect
                 label='Select Vehicle Routes'
