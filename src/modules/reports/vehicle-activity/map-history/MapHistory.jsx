@@ -5,9 +5,9 @@ import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, memo } from 'react';
 import { fetchMapHistoryData } from '../../../../redux/vehicleActivitySlice';
-import { MapContainer, TileLayer, Popup, useMap, memo } from 'react-leaflet';
+import { MapContainer, TileLayer, Popup, useMap } from 'react-leaflet';
 import { ScaleControl, ZoomControl, Polyline, CircleMarker } from 'react-leaflet';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
 
