@@ -1,6 +1,9 @@
-import { useState, useMemo } from 'react';
+import moment from 'moment';
+import { APIURL } from '../../../constants';
+import { ApiService } from '../../../services';
 import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '@mui/icons-material';
+import { useState, useMemo, useEffect } from 'react';
 import ArrowLeftIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
 import ISearch, { LateSvg, OnTimeSvg, TotalSvg } from './ISearch';
@@ -60,7 +63,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
   const [search, setSearch] = useState('');
   const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow } = useSelector(
     selectState,
-    shallowEqual
+    shallowEqual,
   );
 
   const cleaned = useMemo(
@@ -72,23 +75,44 @@ const TrackingPanel = ({ handleRightPanel }) => {
       New: newDevices || [],
       All: devices || [],
     }),
-    [devices, newDevices, running, parked, idle, offline]
+    [devices, newDevices, running, parked, idle, offline],
   );
 
   const tabCounts = useMemo(
     () => Object.fromEntries(statusTabs.map((t) => [t.label, cleaned[t.label]?.length || 0])),
-    [cleaned]
+    [cleaned],
   );
 
   const filtered = useMemo(() => cleaned[activeTab] || [], [cleaned, activeTab]);
 
   const shownDevices = useMemo(
     () => (!search ? filtered : filtered.filter((d) => d.vehicle_name?.toLowerCase().includes(search.toLowerCase()))),
-    [search, filtered]
+    [search, filtered],
   );
 
-  // Default shift ID for navigation (Night General Shift)
   const defaultShiftId = '2f7d76b8-87a9-4dc1-822a-a39e99b314e9';
+
+  const [arrivalStats, setArrivalStats] = useState({ onTime: 0, late: 0 });
+
+  useEffect(() => {
+    const fetchArrivalStats = async () => {
+      try {
+        const res = await ApiService.get(APIURL.LATEARRIVAL);
+        if (res?.success && Array.isArray(res.data?.weekChart)) {
+          const today = moment().format('ddd');
+          const todayData = res.data.weekChart.find((d) => d.day === today);
+          const lateCount = todayData?.current || 0;
+          setArrivalStats((prev) => ({ ...prev, late: lateCount }));
+        }
+      } catch (err) {
+        console.error('Error fetching arrival stats:', err);
+      }
+    };
+    fetchArrivalStats();
+  }, []);
+
+  const totalVehicles = cleaned.All.length;
+  const onTimeCount = Math.max(0, totalVehicles - arrivalStats.late);
 
   const handleOnTimeClick = () => {
     navigate(`/report/vehicle-arrival-time/${defaultShiftId}?status=ON_TIME`);
@@ -110,16 +134,23 @@ const TrackingPanel = ({ handleRightPanel }) => {
         {isTrackShow ? <ArrowRightIcon /> : <ArrowLeftIcon />}
       </div>
       <div className='w-full rounded-sm overflow-hidden mb-2 flex justify-between items-center relative'>
-        <StatCard icon={<TotalSvg />} label='Total' value={cleaned.All.length} bg='#e7e5e6' />
+        <StatCard icon={<TotalSvg />} label='Total' value={totalVehicles} bg='#e7e5e6' />
         <StatCard
           icon={<OnTimeSvg />}
           label='On time'
-          value='-'
+          value={onTimeCount}
           bg='#00800026'
           color='#0e7c13'
           onClick={handleOnTimeClick}
         />
-        <StatCard icon={<LateSvg />} label='Late' value='-' bg='#FF000026' color='#d70b0b' onClick={handleLateClick} />
+        <StatCard
+          icon={<LateSvg />}
+          label='Late'
+          value={arrivalStats.late}
+          bg='#FF000026'
+          color='#d70b0b'
+          onClick={handleLateClick}
+        />
       </div>
       <div className='border border-[#1d31a6] rounded-md flex flex-col flex-1 min-h-0 relative'>
         <div className='flex'>
@@ -168,8 +199,8 @@ const TrackingPanel = ({ handleRightPanel }) => {
                   status == null
                     ? 'text-gray-400 text-[15px]'
                     : status
-                    ? 'text-green-600 text-[15px]'
-                    : 'text-red-400 text-[15px]';
+                      ? 'text-green-600 text-[15px]'
+                      : 'text-red-400 text-[15px]';
                 return (
                   <span key={i} className='w-8 text-center'>
                     <Icon className={cls} />

@@ -169,8 +169,10 @@ function Movement() {
   const tableColumns = [...columns, actionColumn];
 
   const availableRoutes = useMemo(() => {
-    return routes?.map((r) => ({ route_id: r.route_id, route_name: r.route_name }));
-  }, [routes]);
+    if (filterData.vehicles && filterData.vehicles.length > 0)
+      return routes.filter((r) => filterData.vehicles.includes(r.vehicle_id));
+    return routes;
+  }, [filterData.vehicles, routes]);
 
   const handleExport = async () => {
     setIsLoading(true);

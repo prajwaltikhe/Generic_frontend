@@ -1,19 +1,17 @@
-const isOneHourOld = (d) => !!d && !isNaN((d = new Date(d))) && Date.now() - d > 3600000;
+const isDataOld = (d) => !!d && !isNaN((d = new Date(d))) && Date.now() - d > 600000;
 
-const colorOfDot = (ign, mov, time, isNew) =>
+const colorOfDot = (ign, mov, time, isNew, speed) =>
   isNew
     ? 'gray'
-    : isOneHourOld(time)
-    ? 'rgb(0,0,255)'
-    : ign && mov
-    ? 'rgb(0,128,0)'
-    : ign
-    ? 'rgb(255,255,0)'
-    : !ign && !mov
-    ? 'rgb(255,0,0)'
-    : 'gray';
-
-const getOdo = (val) => (typeof val === 'number' && !isNaN(val) ? (val / 1000).toFixed(2) + ' km' : '-');
+    : (ign && mov) || speed > 0
+      ? 'rgb(0,128,0)'
+      : isDataOld(time)
+        ? 'rgb(0,0,255)'
+        : ign
+          ? 'rgb(255,255,0)'
+          : !ign && !mov
+            ? 'rgb(255,0,0)'
+            : 'gray';
 
 export const processVehicles = (vehicles) => {
   const devs = (vehicles || []).filter(Boolean).map((v) => {
@@ -21,6 +19,7 @@ export const processVehicles = (vehicles) => {
     const get = (id) => io.find((i) => i.id === id)?.value ?? 0;
     const ign = get(239) === 1,
       mov = get(240) === 1;
+    const speed = Number(v.speed) || 0;
     const hasTs = !!v.timestamp && !isNaN(new Date(v.timestamp));
     const hasLat = v.latitude != null && +v.latitude !== 0;
     const hasLng = v.longitude != null && +v.longitude !== 0;
@@ -30,17 +29,16 @@ export const processVehicles = (vehicles) => {
       v.driver?.first_name || v.driver?.last_name
         ? `${v.driver?.first_name ?? ''} ${v.driver?.last_name ?? ''}`.trim()
         : '-';
+
     const status = isNew
       ? 'New'
-      : isOneHourOld(localTime)
-      ? 'Offline'
-      : ign && mov
-      ? 'Running'
-      : ign
-      ? 'Idle'
-      : !ign && !mov
-      ? 'Parked'
-      : 'Unknown';
+      : (ign && mov) || speed > 0
+        ? 'Running'
+        : isDataOld(localTime)
+          ? 'Offline'
+          : ign
+            ? 'Idle'
+            : 'Parked';
 
     return {
       id: v.id ?? '-',
@@ -65,8 +63,8 @@ export const processVehicles = (vehicles) => {
       hasBattery: get(68) > 0,
       hasExternalPower: get(66) > 0,
       movement: mov,
-      color: colorOfDot(ign, mov, localTime, isNew),
-      isOffline: isOneHourOld(localTime),
+      color: colorOfDot(ign, mov, localTime, isNew, speed),
+      isOffline: isDataOld(localTime),
       status,
     };
   });
