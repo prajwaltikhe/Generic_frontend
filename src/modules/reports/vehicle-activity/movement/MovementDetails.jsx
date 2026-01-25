@@ -65,16 +65,15 @@ function MovementDetails() {
         vehicle_id: id,
         from_date: filterData.fromDate,
         to_date: filterData.toDate,
-        page: page + 1,
-        limit,
+        page: 1,
+        limit: 10000,
       }),
     ).then((res) => {
       setLoading(false);
       if (res?.payload?.success) {
         const items = res?.payload?.data || [];
         setData(Array.isArray(items) ? items : [items]);
-        const pagination = res?.payload?.pagination;
-        setTotalCount(pagination?.total || items.length || 0);
+        setTotalCount(res?.payload?.pagination?.total || items.length || 0);
       } else {
         setData([]);
         setTotalCount(0);
@@ -85,7 +84,7 @@ function MovementDetails() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line
-  }, [id, page, limit]);
+  }, [id]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -104,16 +103,19 @@ function MovementDetails() {
   };
 
   const handleExport = async () => {
-    const res = await dispatch(
-      fetchMovementDetails({
-        vehicle_id: id,
-        from_date: filterData.fromDate,
-        to_date: filterData.toDate,
-        page: 1,
-        limit: totalCount,
-      }),
-    );
-    const allData = res?.payload?.data || [];
+    let allData = data;
+    if (!allData || allData.length === 0) {
+      const res = await dispatch(
+        fetchMovementDetails({
+          vehicle_id: id,
+          from_date: filterData.fromDate,
+          to_date: filterData.toDate,
+          page: 1,
+          limit: totalCount || 10000,
+        }),
+      );
+      allData = res?.payload?.data || [];
+    }
     exportToExcel({
       columns,
       rows: buildExportRows({ columns, data: Array.isArray(allData) ? allData : [allData] }),
@@ -122,16 +124,19 @@ function MovementDetails() {
   };
 
   const handleExportPDF = async () => {
-    const res = await dispatch(
-      fetchMovementDetails({
-        vehicle_id: id,
-        from_date: filterData.fromDate,
-        to_date: filterData.toDate,
-        page: 1,
-        limit: totalCount,
-      }),
-    );
-    const allData = res?.payload?.data || [];
+    let allData = data;
+    if (!allData || allData.length === 0) {
+      const res = await dispatch(
+        fetchMovementDetails({
+          vehicle_id: id,
+          from_date: filterData.fromDate,
+          to_date: filterData.toDate,
+          page: 1,
+          limit: totalCount || 10000,
+        }),
+      );
+      allData = res?.payload?.data || [];
+    }
     exportToPDF({
       columns,
       rows: buildExportRows({ columns, data: Array.isArray(allData) ? allData : [allData] }),
@@ -139,6 +144,8 @@ function MovementDetails() {
       orientation: 'landscape',
     });
   };
+
+  const paginatedData = data.slice(page * limit, (page + 1) * limit);
 
   return (
     <div className='w-full h-full p-2'>
@@ -166,7 +173,7 @@ function MovementDetails() {
       </form>
       <ReportTable
         columns={columns}
-        data={data}
+        data={paginatedData}
         loading={loading}
         page={page}
         setPage={setPage}
