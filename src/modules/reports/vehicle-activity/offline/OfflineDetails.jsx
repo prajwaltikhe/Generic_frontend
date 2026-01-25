@@ -56,8 +56,8 @@ function OfflineDetails() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filterData, setFilterData] = useState({
-    fromDate: searchParams.get('from_date') || '',
-    toDate: searchParams.get('to_date') || '',
+    fromDate: searchParams.get('from_date') || moment().format('YYYY-MM-DD'),
+    toDate: searchParams.get('to_date') || moment().add(1, 'days').format('YYYY-MM-DD'),
   });
 
   const fetchData = () => {
