@@ -72,7 +72,6 @@ function DynamicRoute() {
         <Route path='offline/details/:id' element={<OfflineDetails />} />
         <Route path='new-device' element={<NewDevice />} />
         <Route path='map-history' element={<MapHistory />} />
-        {/* <Route path='consolidated' element={<Consolidated />} /> */}
         <Route path='geofence-entry-exit' element={<GeofencEntryExit />} />
         <Route path='geofence-entry-exit/details/:id' element={<GeofenceReportDetails />} />
         <Route path='route-violation' element={<RouteViolation />} />

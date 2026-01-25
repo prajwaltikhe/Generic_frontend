@@ -85,8 +85,9 @@ function PlantInTime() {
     try {
       const res = await ApiService.get(APIURL.PLANTINTIME, buildApiPayload());
       if (res?.success) {
-        setFilteredData(res.data || []);
-        setTotalCount(res.pagination?.total ?? res.data?.length ?? 0);
+        const list = res.data?.plantInTime || res.data || [];
+        setFilteredData(Array.isArray(list) ? list : []);
+        setTotalCount(res.data?.pagination?.total ?? res.pagination?.total ?? list.length ?? 0);
       } else {
         setFilteredData([]);
         setTotalCount(0);
@@ -158,7 +159,7 @@ function PlantInTime() {
     try {
       const exportPayload = buildApiPayload(1, 100);
       const res = await ApiService.get(APIURL.PLANTINTIME, exportPayload);
-      const data = res?.data || [];
+      const data = res?.data?.plantInTime || res?.data || [];
 
       if (!data.length) {
         toast.error('No data available to export.');
@@ -179,7 +180,7 @@ function PlantInTime() {
     try {
       const exportPayload = buildApiPayload(1, totalCount);
       const res = await ApiService.get(APIURL.PLANTINTIME, exportPayload);
-      const data = res?.data || [];
+      const data = res?.data?.plantInTime || res?.data || [];
 
       if (!data.length) {
         toast.error('No data available to export.');
