@@ -1,7 +1,5 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useEffect, useRef, useState } from 'react';
 import IModal from '../../../components/modal/Modal';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import FmdGoodIcon from '@mui/icons-material/FmdGood';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
-import { fetchVehicles } from '../../../redux/vehiclesSlice';
+import { fetchVehicles, deleteVehicle, changeVehicleStatus, uploadVehicleData } from '../../../redux/vehiclesSlice';
 import CommonTable from '../../../components/table/CommonTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
@@ -112,37 +110,28 @@ function Vehicle() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Vehicle?')) return;
-    try {
-      const res = await ApiService.delete(`${APIURL.VEHICLE}/${id}`);
-      if (res.success) {
+    dispatch(deleteVehicle(id)).then((res) => {
+      if (deleteVehicle.fulfilled.match(res)) {
         toast.success('Vehicle deleted successfully!');
         dispatch(fetchVehicles(buildApiPayload()));
-        window.location.reload();
       } else {
-        toast.error(res.message || 'Failed to delete vehicle');
+        toast.error(res.payload || 'Failed to delete vehicle');
       }
-    } catch {
-      toast.error('Delete failed.');
-    }
+    });
   };
 
   const handleStatusChange = async () => {
     if (!selectedVehicle) return;
-    try {
-      const newStatusId = selectedVehicle.status === 'Active' ? 2 : 1;
-      const res = await ApiService.put(`${APIURL.VEHICLE}/${selectedVehicle.actual_id}`, {
-        vehicle_status_id: newStatusId,
-      });
-      if (res.success) {
+    const newStatusId = selectedVehicle.status === 'Active' ? 2 : 1;
+    dispatch(changeVehicleStatus({ id: selectedVehicle.actual_id, newStatusId })).then((res) => {
+      if (changeVehicleStatus.fulfilled.match(res)) {
         toast.success('Status updated!');
         setIsStatusModalOpen(false);
         dispatch(fetchVehicles(buildApiPayload()));
       } else {
-        toast.error('Failed to update status.');
+        toast.error(res.payload || 'Failed to update status.');
       }
-    } catch {
-      toast.error('Status update failed.');
-    }
+    });
   };
 
   const handleFormSubmit = (e) => {
@@ -165,14 +154,16 @@ function Vehicle() {
     if (!file) return toast.error('Please select a file');
     const formData = new FormData();
     formData.append('file', file);
-    const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=vehicle`, formData);
-    if (res.success) {
-      toast.success(res.message);
-      if (fileInputRef.current) fileInputRef.current.value = null;
-      dispatch(fetchVehicles(buildApiPayload()));
-    } else {
-      toast.error(res.message || 'Upload failed');
-    }
+
+    dispatch(uploadVehicleData(formData)).then((res) => {
+      if (uploadVehicleData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'Upload successful');
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        dispatch(fetchVehicles(buildApiPayload()));
+      } else {
+        toast.error(res.payload || 'Upload failed');
+      }
+    });
   };
 
   const handleExport = async () => {
@@ -287,7 +278,7 @@ function Vehicle() {
         columns={columns.map((c) =>
           c.key === 'status'
             ? { ...c, render: (_, row) => c.render(_, row, setSelectedVehicle, setIsStatusModalOpen) }
-            : c
+            : c,
         )}
         data={tableData}
         page={page}

@@ -81,7 +81,7 @@ const settingsSubMenus = [
 function Sidebar() {
   return (
     <div className='sidebar w-25 h-screen bg-[#07163d]'>
-      <div className='w-[90%] p-4 rounded-3xl overflow-hidden'>
+      <div className='w-full p-4 rounded-3xl overflow-hidden'>
         <img src={logo} alt='samsung logo' className='object-contain rounded-xl' />
       </div>
       <div className='flex flex-col justify-between responsive-height'>

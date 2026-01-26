@@ -1,28 +1,32 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { TextField } from '@mui/material';
-import { APIURL } from '../../../../constants';
-import { ApiService } from '../../../../services';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { updateEmergencyReportAlert } from '../../../../redux/emergencyReportAlertSlice';
 
 function EmergencyAlertForm() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { state: data } = useLocation();
   const [action, setAction] = useState(data?.actionTaken || '');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await ApiService.put(
-      `${APIURL.EMERGENCY}/${data.emergencyID}`,
-      { action_taken: action },
-      { company_id: localStorage.getItem('company_id') }
-    );
-    if (res.success) {
-      toast.success('Emergency alert updated successfully!');
-      navigate('/management/emergency-alerts');
-    } else {
-      toast.error(res.message || 'Something went wrong.');
-    }
+    dispatch(
+      updateEmergencyReportAlert({
+        id: data.emergencyID,
+        payload: { action_taken: action },
+        company_id: localStorage.getItem('company_id'),
+      }),
+    ).then((res) => {
+      if (updateEmergencyReportAlert.fulfilled.match(res)) {
+        toast.success('Emergency alert updated successfully!');
+        navigate('/management/emergency-alerts');
+      } else {
+        toast.error(res.payload || 'Something went wrong.');
+      }
+    });
   };
 
   return (

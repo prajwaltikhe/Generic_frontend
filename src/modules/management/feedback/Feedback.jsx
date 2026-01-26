@@ -3,9 +3,9 @@ import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
+
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchFeedbackReport, deleteFeedbackReport } from '../../../redux/feedBackReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
@@ -68,22 +68,17 @@ function Feedback() {
 
   const fetchFeedbacks = async () => {
     setLoading(true);
-    try {
-      const res = await ApiService.get(APIURL.FEEDBACK, buildApiPayload());
-      if (res?.success) {
-        const list = Array.isArray(res.data?.feedbacks) ? res.data.feedbacks : [];
+    dispatch(fetchFeedbackReport(buildApiPayload())).then((res) => {
+      if (fetchFeedbackReport.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.feedbacks) ? res.payload.feedbacks : [];
         setFilteredData(list);
-        setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
+        setTotalCount(res.payload?.pagination?.total ?? list.length ?? 0);
       } else {
         setFilteredData([]);
         setTotalCount(0);
       }
-    } catch {
-      setFilteredData([]);
-      setTotalCount(0);
-    } finally {
       setLoading(false);
-    }
+    });
   };
 
   const handleEdit = (row) => {
@@ -95,20 +90,15 @@ function Feedback() {
 
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this feedback?')) return;
-
-    try {
-      const res = await ApiService.delete(`${APIURL.FEEDBACK}/${row.feedbackId}`);
-      if (res.success) {
+    dispatch(deleteFeedbackReport(row.feedbackId)).then((res) => {
+      if (deleteFeedbackReport.fulfilled.match(res)) {
         toast.success('Feedback deleted successfully!');
-        await fetchFeedbacks();
         if (filteredData.length === 1 && page > 0) setPage(page - 1);
-        window.location.reload();
+        else fetchFeedbacks();
       } else {
-        toast.error('Failed to delete this Feedback.');
+        toast.error(res.payload || 'Failed to delete this Feedback.');
       }
-    } catch {
-      toast.error('An error occurred while deleting.');
-    }
+    });
   };
 
   const handleFormSubmit = (e) => {
@@ -124,46 +114,46 @@ function Feedback() {
   };
 
   const handleExport = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.FEEDBACK, exportPayload);
-      const list = Array.isArray(res.data?.feedbacks) ? res.data.feedbacks : [];
-
-      if (!list.length) {
-        toast.error('No data available to export.');
-        return;
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchFeedbackReport(exportPayload)).then((res) => {
+      if (fetchFeedbackReport.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.feedbacks) ? res.payload.feedbacks : [];
+        if (!list.length) {
+          toast.error('No data available to export.');
+          return;
+        }
+        exportToExcel({
+          columns,
+          rows: buildExportRows({ columns, data: formatFeedback(list) }),
+          fileName: 'feedbacks.xlsx',
+        });
+        fetchFeedbacks();
+      } else {
+        toast.error('Export failed');
       }
-
-      exportToExcel({
-        columns,
-        rows: buildExportRows({ columns, data: formatFeedback(list) }),
-        fileName: 'feedbacks.xlsx',
-      });
-    } catch {
-      toast.error('Export failed');
-    }
+    });
   };
 
   const handleExportPDF = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.FEEDBACK, exportPayload);
-      const list = Array.isArray(res.data?.feedbacks) ? res.data.feedbacks : [];
-
-      if (!list.length) {
-        toast.error('No data available to export.');
-        return;
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchFeedbackReport(exportPayload)).then((res) => {
+      if (fetchFeedbackReport.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.feedbacks) ? res.payload.feedbacks : [];
+        if (!list.length) {
+          toast.error('No data available to export.');
+          return;
+        }
+        exportToPDF({
+          columns,
+          rows: buildExportRows({ columns, data: formatFeedback(list) }),
+          fileName: 'feedbacks.pdf',
+          orientation: 'landscape',
+        });
+        fetchFeedbacks();
+      } else {
+        toast.error('Export PDF failed');
       }
-
-      exportToPDF({
-        columns,
-        rows: buildExportRows({ columns, data: formatFeedback(list) }),
-        fileName: 'feedbacks.pdf',
-        orientation: 'landscape',
-      });
-    } catch {
-      toast.error('Export PDF failed');
-    }
+    });
   };
 
   const tableData = formatFeedback(filteredData, page * limit);

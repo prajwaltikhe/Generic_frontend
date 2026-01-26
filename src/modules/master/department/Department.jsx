@@ -1,7 +1,5 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useEffect, useRef, useState } from 'react';
 import IModal from '../../../components/modal/Modal';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,7 +9,7 @@ import FilterOptions from '../../../components/FilterOption';
 import CommanTable from '../../../components/table/CommonTable';
 import { fetchDepartments, fetchDepartmentById } from '../../../redux/departmentSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
-import { clearSelectedDepartment, deleteDepartment } from '../../../redux/departmentSlice';
+import { clearSelectedDepartment, deleteDepartment, uploadDepartmentData } from '../../../redux/departmentSlice';
 
 const columns = [
   { key: 'id', header: 'Sr No' },
@@ -68,16 +66,9 @@ function Department() {
 
     try {
       const res = await dispatch(deleteDepartment(row.departmentId));
-      if (res.meta.requestStatus === 'fulfilled') {
+      if (deleteDepartment.fulfilled.match(res)) {
         toast.success('Department deleted successfully!');
-        dispatch(fetchDepartments(buildApiPayload()))
-          .unwrap()
-          .then((data) => {
-            if (data.departments.length === 0 && page > 0) {
-              setPage(page - 1);
-            }
-          });
-        window.location.reload();
+        dispatch(fetchDepartments(buildApiPayload()));
       } else {
         toast.error('Failed to delete department');
       }
@@ -100,19 +91,16 @@ function Department() {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=department`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+    dispatch(uploadDepartmentData(formData)).then((res) => {
+      if (uploadDepartmentData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         dispatch(fetchDepartments(buildApiPayload()));
       } else {
-        toast.error(res.message || 'Upload failed');
+        toast.error(res.payload || 'Upload failed');
       }
-    } catch {
-      toast.error('Upload failed.');
-    }
+    });
   };
 
   const handleExport = async () => {

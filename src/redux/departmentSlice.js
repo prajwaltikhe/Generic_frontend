@@ -16,7 +16,7 @@ export const fetchDepartments = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Network error');
     }
-  }
+  },
 );
 
 // Fetch single department by ID
@@ -32,7 +32,7 @@ export const fetchDepartmentById = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Network error');
     }
-  }
+  },
 );
 
 // Create department
@@ -48,7 +48,7 @@ export const createDepartment = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Network error');
     }
-  }
+  },
 );
 
 // Update department
@@ -64,7 +64,7 @@ export const updateDepartment = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Network error');
     }
-  }
+  },
 );
 
 // Delete department
@@ -80,7 +80,21 @@ export const deleteDepartment = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Network error');
     }
-  }
+  },
+);
+
+// Upload Department Data (Excel/CSV)
+export const uploadDepartmentData = createAsyncThunk(
+  'department/uploadDepartmentData',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=department`, formData);
+      if (!response.success) return rejectWithValue(response.message || 'Upload failed');
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Upload failed');
+    }
+  },
 );
 
 const initialState = {

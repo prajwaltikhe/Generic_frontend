@@ -1,21 +1,21 @@
 import { Link } from 'react-router-dom';
-import { APIURL } from '../../../constants';
-import { useEffect, useState } from 'react';
-import { ApiService } from '../../../services';
+import { useEffect } from 'react';
+
 import runningBusIcon from '../../../assets/running_bus.svg';
 import emergencyAlert from '../../../assets/emergency_alerts.svg';
 import employeeOnboarded from '../../../assets/employee_onboard.svg';
 
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTotalCount } from '../../../redux/dashboardSlice';
+
 function useDashboardTotalCount() {
-  const [total, setTotal] = useState({ vehicleTotal: 0, employeesTotal: 0, alertTotal: 0 });
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const total = useSelector((state) => state.dashboard?.totalCounts?.total || {});
+  const loading = useSelector((state) => state.dashboard?.loading);
 
   useEffect(() => {
-    ApiService.get(APIURL.TOTALCOUNT).then((res) => {
-      if (res?.success) setTotal(res.data?.total || {});
-      setLoading(false);
-    });
-  }, []);
+    dispatch(fetchTotalCount());
+  }, [dispatch]);
   return { total, loading };
 }
 
@@ -51,9 +51,9 @@ export default function CounterCard() {
     <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
       {cards.map(({ id, label, value, icon, link, iconWidth }) => (
         <Link key={id} to={link} className='flex items-center bg-white rounded shadow p-3 hover:bg-gray-50 transition'>
-          <img src={icon} alt='' className={`${iconWidth} h-8`} />
+          <img src={icon} alt='' className={`${iconWidth} h-10`} />
           <div className='ml-4'>
-            <div className='text-xs text-gray-500'>{label}</div>
+            <div className='text-sm font-medium'>{label}</div>
             <div className='text-lg font-bold'>
               {loading ? <span className='animate-pulse text-gray-300'>--</span> : value}
             </div>

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDepartmentAnalytics } from '../../../redux/dashboardSlice';
 import supportIcon from '../../../assets/support.png';
 import computerIcon from '../../../assets/computer.png';
 import refrigeratorIcon from '../../../assets/refrigerator.png';
@@ -18,31 +18,33 @@ const DEPTS = {
 };
 
 export default function DepartmentStats() {
-  const [departments, setDepartments] = useState([]),
-    [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const departments = useSelector((state) =>
+    Array.isArray(state.dashboard?.departmentAnalytics)
+      ? state.dashboard.departmentAnalytics.filter((d) => DEPTS[d.department_name])
+      : [],
+  );
+  const loading = useSelector((state) => state.dashboard?.loading);
+
   useEffect(() => {
-    ApiService.get(APIURL.DEPARTMENTANALYTICS, { company_id: localStorage.getItem('company_id') }).then((res) => {
-      setDepartments(res?.success && Array.isArray(res.data) ? res.data.filter((d) => DEPTS[d.department_name]) : []);
-      setLoading(false);
-    });
-  }, []);
+    dispatch(fetchDepartmentAnalytics({ company_id: localStorage.getItem('company_id') }));
+  }, [dispatch]);
 
   return (
     <div className='shadow-sm rounded-sm bg-white w-full p-3'>
-      <p className='pb-3 text-sm'>Departments Analytics</p>
-      <hr className='border-gray-100' />
+      <p className='pb-1 font-semibold'>Departments Analytics</p>
       {loading ? (
         <div className='w-full flex justify-center items-center py-8'>
           <span className='text-xs text-gray-400 animate-pulse'>Loading...</span>
         </div>
       ) : (
-        <div className='my-4 grid grid-cols-3 gap-y-6'>
+        <div className='mt-4 grid grid-cols-3 gap-y-4'>
           {departments.slice(0, 6).map((d, i) => {
             const { label, icon } = DEPTS[d.department_name];
             return (
               <div key={i} className='flex flex-col items-center'>
-                <img src={icon} alt={label} className='w-10' />
-                <span>{d.count}</span>
+                <img src={icon} alt={label} className='w-12 mb-1' />
+                <span className='font-semibold text-lg'>{d.count}</span>
                 <p className='text-sm capitalize'>{label}</p>
               </div>
             );

@@ -12,7 +12,7 @@ function CommonSearch({ searchQuery = '', setSearchQuery }) {
   return (
     <div className='flex justify-end bg-white'>
       <TextField
-        label='Search'
+        label='Search...'
         variant='outlined'
         size='small'
         sx={{ width: 300 }}

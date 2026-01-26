@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../../constants';
-import { ApiService } from '../../../../services';
 import { useSelector, useDispatch } from 'react-redux';
+import { createPlantInTime, updatePlantInTime } from '../../../../redux/plantInTimeSlice';
 import { Autocomplete, TextField } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
@@ -73,26 +72,22 @@ function PlantInTimeForm() {
         third_shift_start_time: values.thirdShiftStartTime,
         third_shift_end_time: values.thirdShiftEndTime,
       };
-      try {
-        const res =
-          mode === 'edit' && rowData
-            ? await ApiService.put(`${APIURL.PLANTINTIME}/${rowData.plantId}`, payload)
-            : await ApiService.post(APIURL.PLANTINTIME, payload);
-        if (res.success) {
-          toast.success(res.message || 'Plant in Time saved successfully!');
+      const action =
+        mode === 'edit' && rowData ? updatePlantInTime({ id: rowData.plantId, payload }) : createPlantInTime(payload);
+
+      dispatch(action).then((res) => {
+        if (createPlantInTime.fulfilled.match(res) || updatePlantInTime.fulfilled.match(res)) {
+          toast.success('Plant in Time saved successfully!');
           navigate('/master/plant-in-time');
         } else {
-          toast.error(res.message || 'Something went wrong.');
+          toast.error(res.payload || 'Something went wrong.');
         }
-      } catch {
-        toast.error('Something went wrong.');
-      }
+      });
     },
   });
 
   useEffect(() => {
     if (companyId) dispatch(fetchVehicleRoutes({ company_id: companyId, limit: 100 }));
-     
   }, [dispatch, companyId]);
 
   return (

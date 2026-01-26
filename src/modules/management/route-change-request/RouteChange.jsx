@@ -1,8 +1,7 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchRouteChangeRequests, uploadRouteChangeData } from '../../../redux/routeChangeRequestSlice';
 import StatusDropdown from './components/statusDropdown';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
@@ -91,23 +90,23 @@ export default function RouteChange() {
       page: customPage,
       limit: customLimit,
     }),
-    [company_id, filterData, page, limit, searchQuery]
+    [company_id, filterData, page, limit, searchQuery],
   );
 
   const fetchRouteChanges = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await ApiService.get(APIURL.ROUTECHANGEREQ, buildApiPayload());
-      const list = Array.isArray(res.data?.routeChanges) ? res.data.routeChanges : [];
-      setFilteredData(list);
-      setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
-    } catch {
-      setFilteredData([]);
-      setTotalCount(0);
-    } finally {
+    dispatch(fetchRouteChangeRequests(buildApiPayload())).then((res) => {
+      if (fetchRouteChangeRequests.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.routeChanges) ? res.payload.routeChanges : [];
+        setFilteredData(list);
+        setTotalCount(res.payload?.pagination?.total ?? res.payload?.pagination?.total ?? list.length ?? 0);
+      } else {
+        setFilteredData([]);
+        setTotalCount(0);
+      }
       setLoading(false);
-    }
-  }, [buildApiPayload]);
+    });
+  }, [buildApiPayload, dispatch]);
 
   useEffect(() => {
     fetchRouteChanges();
@@ -133,41 +132,40 @@ export default function RouteChange() {
     if (!file) return toast.error('Please select a file');
     const formData = new FormData();
     formData.append('file', file);
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=route_change`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+
+    dispatch(uploadRouteChangeData(formData)).then((res) => {
+      if (uploadRouteChangeData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         fetchRouteChanges();
-      } else toast.error(res.message || 'Upload failed');
-    } catch {
-      toast.error('Upload failed.');
-    }
+      } else toast.error(res.payload || 'Upload failed');
+    });
   };
 
   const getAllColumns = () => columns.map(({ key, header }) => ({ key, header }));
 
   const handleExportCommon = async (type) => {
-    try {
-      const exportPayload = buildApiPayload(1, 1000);
-      const res = await ApiService.get(APIURL.ROUTECHANGEREQ, exportPayload);
-      const list = Array.isArray(res.data?.routeChanges) ? res.data.routeChanges : [];
-      if (!list.length) return toast.error(`No data available to export.`);
-      const rows = buildExportRows({ columns: getAllColumns(), data: formatRouteChange(list) });
-      if (type === 'excel') {
-        exportToExcel({ columns: getAllColumns(), rows, fileName: 'route_change_requests.xlsx' });
+    const exportPayload = buildApiPayload(1, 1000);
+    dispatch(fetchRouteChangeRequests(exportPayload)).then((res) => {
+      if (fetchRouteChangeRequests.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.routeChanges) ? res.payload.routeChanges : [];
+        if (!list.length) return toast.error(`No data available to export.`);
+        const rows = buildExportRows({ columns: getAllColumns(), data: formatRouteChange(list) });
+        if (type === 'excel') {
+          exportToExcel({ columns: getAllColumns(), rows, fileName: 'route_change_requests.xlsx' });
+        } else {
+          exportToPDF({
+            columns: getAllColumns(),
+            rows,
+            fileName: 'route_change_requests.pdf',
+            orientation: 'landscape',
+          });
+        }
       } else {
-        exportToPDF({
-          columns: getAllColumns(),
-          rows,
-          fileName: 'route_change_requests.pdf',
-          orientation: 'landscape',
-        });
+        toast.error(`Export${type === 'pdf' ? ' PDF' : ''} failed`);
       }
-    } catch {
-      toast.error(`Export${type === 'pdf' ? ' PDF' : ''} failed`);
-    }
+    });
   };
 
   const handleExport = () => handleExportCommon('excel');
@@ -216,7 +214,7 @@ export default function RouteChange() {
           columns={columns.map((c) =>
             c.key === 'route_change_request_status_id'
               ? { ...c, render: (_, row) => c.render(_, row, handleStatusUpdate) }
-              : c
+              : c,
           )}
           data={tableData}
           page={page}

@@ -1,14 +1,12 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommanTable from '../../../components/table/CommonTable';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicleRoutes, deleteVehicleRoute, uploadVehicleRouteData } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const shifts = [
@@ -48,10 +46,10 @@ const formatVehicleRoute = (data, offset = 0) =>
       typeof d.status === 'string' && d.status.trim()
         ? d.status
         : d.active === 1
-        ? 'Active'
-        : d.active === 0
-        ? 'Inactive'
-        : '-',
+          ? 'Active'
+          : d.active === 0
+            ? 'Inactive'
+            : '-',
     createdAt: d.created_at ? dayjs(d.created_at).format('YYYY-MM-DD') : '-',
     row: d,
   }));
@@ -95,24 +93,19 @@ function VehicleRoute() {
 
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this Vehicle Route?')) return;
-
-    try {
-      const response = await ApiService.delete(`${APIURL.VEHICLE_ROUTE}/${row.routeID}`);
-      if (response.success) {
-        toast.success(response.message || 'Vehicle Route deleted successfully!');
+    dispatch(deleteVehicleRoute(row.routeID)).then((res) => {
+      if (deleteVehicleRoute.fulfilled.match(res)) {
+        toast.success('Vehicle Route deleted successfully!');
         dispatch(fetchVehicleRoutes(buildApiPayload())).then((res) => {
           const routes = res?.payload?.routes || [];
           if (routes.length === 0 && page > 0) {
             setPage(page - 1);
           }
         });
-        window.location.reload();
       } else {
-        toast.error(response.message || 'Failed to delete Vehicle Route');
+        toast.error(res.payload || 'Failed to delete Vehicle Route');
       }
-    } catch {
-      toast.error('An error occurred while deleting.');
-    }
+    });
   };
 
   const handleFormReset = () => {
@@ -125,23 +118,19 @@ function VehicleRoute() {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!file) return toast.error('Please select a file');
-
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=vehicle_route`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+    dispatch(uploadVehicleRouteData(formData)).then((res) => {
+      if (uploadVehicleRouteData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         dispatch(fetchVehicleRoutes(buildApiPayload()));
       } else {
-        toast.error(res.message || 'Upload failed');
+        toast.error(res.payload || 'Upload failed');
       }
-    } catch {
-      toast.error('Upload failed.');
-    }
+    });
   };
 
   const handleExport = async () => {

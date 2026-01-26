@@ -14,7 +14,7 @@ export const fetchPlants = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Network error');
     }
-  }
+  },
 );
 
 //Async thunk to Fetch single plant by ID
@@ -66,6 +66,17 @@ export const deletePlant = createAsyncThunk('plant/deletePlant', async (plantID,
     return { plantID, message: response.message };
   } catch (error) {
     return rejectWithValue(error.message || 'Network error');
+  }
+});
+
+// Upload Plant Data (Excel/CSV)
+export const uploadPlantData = createAsyncThunk('plant/uploadPlantData', async (formData, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=plant`, formData);
+    if (!response.success) return rejectWithValue(response.message || 'Upload failed');
+    return response;
+  } catch (error) {
+    return rejectWithValue(error.message || 'Upload failed');
   }
 });
 

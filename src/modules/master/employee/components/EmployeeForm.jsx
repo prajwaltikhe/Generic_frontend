@@ -3,8 +3,10 @@ import { toast } from 'react-toastify';
 import { APIURL } from '../../../../constants';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDropdownOpt } from '../../../../hooks/useDropdownOpt';
-import { AddressServices, ApiService } from '../../../../services';
+import { AddressServices } from '../../../../services';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { createEmployee, updateEmployee } from '../../../../redux/employeeSlice';
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { Autocomplete, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
 
@@ -100,6 +102,7 @@ function MapClickHandler({ onMapClick, disabled }) {
 }
 
 function EmployeeForm() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { state: rowData } = useLocation();
   const companyID = localStorage.getItem('company_id');
@@ -219,7 +222,7 @@ function EmployeeForm() {
             label: item.display_name,
             value: item.place_id,
             otherData: { ...item, lat: String(item.lat || ''), lon: String(item.lon || '') },
-          }))
+          })),
         );
       }
     }, 500);
@@ -254,10 +257,10 @@ function EmployeeForm() {
               value: `${lat}-${lng}`,
               otherData: { display_name: addr, lat: String(lat), lon: String(lng) },
             }
-          : null
+          : null,
       );
     },
-    [isViewMode]
+    [isViewMode],
   );
 
   const handleLatChange = (e) => {
@@ -282,7 +285,7 @@ function EmployeeForm() {
               value: `${formVal.latitude}-${formVal.longitude}`,
               otherData: { display_name: addr, lat: String(formVal.latitude), lon: String(formVal.longitude) },
             }
-          : null
+          : null,
       );
     }
   };
@@ -323,19 +326,20 @@ function EmployeeForm() {
         status_id: 1,
       };
 
-      const url = isEditMode
-        ? `${APIURL.EMPLOYEE}/${rowData.rowData.actual_id}?company_id=${companyID}`
-        : APIURL.EMPLOYEE;
+      const action = isEditMode
+        ? updateEmployee({ id: rowData.rowData.actual_id, formData: payload })
+        : createEmployee(payload);
 
-      const res = isEditMode ? await ApiService.put(url, payload) : await ApiService.post(url, payload);
-      if (res?.success) {
-        toast.success(`Employee ${isEditMode ? 'updated' : 'created'} successfully!`);
-        navigate('/master/employee');
-      } else {
-        toast.error(res?.message || 'Error saving employee');
-      }
+      dispatch(action).then((res) => {
+        if (createEmployee.fulfilled.match(res) || updateEmployee.fulfilled.match(res)) {
+          toast.success(`Employee ${isEditMode ? 'updated' : 'created'} successfully!`);
+          navigate('/master/employee');
+        } else {
+          toast.error(res.payload || 'Error saving employee');
+        }
+      });
     },
-    [formVal, isEditMode, rowData, companyID, navigate]
+    [formVal, isEditMode, rowData, navigate, dispatch],
   );
 
   const profileImageSrc = useMemo(() => {

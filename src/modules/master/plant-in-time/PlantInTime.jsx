@@ -1,9 +1,9 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { fetchPlantInTime, deletePlantInTime, uploadPlantInTimeData } from '../../../redux/plantInTimeSlice';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOptions from '../../../components/FilterOption';
 import CommanTable from '../../../components/table/CommonTable';
@@ -56,6 +56,7 @@ function formatPlantInTime(data, offset = 0) {
 }
 
 function PlantInTime() {
+  const dispatch = useDispatch();
   const companyID = localStorage.getItem('company_id');
   const navigate = useNavigate();
   const fileInputRef = useRef();
@@ -82,22 +83,17 @@ function PlantInTime() {
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-      const res = await ApiService.get(APIURL.PLANTINTIME, buildApiPayload());
-      if (res?.success) {
-        const list = res.data?.plantInTime || res.data || [];
+    dispatch(fetchPlantInTime(buildApiPayload())).then((res) => {
+      if (fetchPlantInTime.fulfilled.match(res)) {
+        const list = res.payload?.plantInTime || res.payload || [];
         setFilteredData(Array.isArray(list) ? list : []);
-        setTotalCount(res.data?.pagination?.total ?? res.pagination?.total ?? list.length ?? 0);
+        setTotalCount(res.payload?.pagination?.total ?? res.payload?.pagination?.total ?? list.length ?? 0);
       } else {
         setFilteredData([]);
         setTotalCount(0);
       }
-    } catch {
-      setFilteredData([]);
-      setTotalCount(0);
-    } finally {
       setLoading(false);
-    }
+    });
   };
 
   const handleView = (row) => {
@@ -111,19 +107,15 @@ function PlantInTime() {
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this Plant In Time Data?')) return;
 
-    try {
-      const response = await ApiService.delete(`${APIURL.PLANTINTIME}/${row.plantId}`);
-      if (response.success) {
+    dispatch(deletePlantInTime(row.plantId)).then((res) => {
+      if (deletePlantInTime.fulfilled.match(res)) {
         toast.success('Plant in Time deleted successfully!');
-        await fetchData();
+        fetchData();
         if (filteredData.length === 1 && page > 0) setPage(page - 1);
-        window.location.reload();
       } else {
-        toast.error('Failed to delete Plant in Time.');
+        toast.error(res.payload || 'Failed to delete Plant in Time.');
       }
-    } catch {
-      toast.error('An error occurred while deleting.');
-    }
+    });
   };
 
   const handleFormReset = () => {
@@ -140,62 +132,53 @@ function PlantInTime() {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=plant_in_time`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+    dispatch(uploadPlantInTimeData(formData)).then((res) => {
+      if (uploadPlantInTimeData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         fetchData();
       } else {
-        toast.error(res.message || 'Upload failed');
+        toast.error(res.payload || 'Upload failed');
       }
-    } catch {
-      toast.error('Upload failed.');
-    }
+    });
   };
 
   const handleExport = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.PLANTINTIME, exportPayload);
-      const data = res?.data?.plantInTime || res?.data || [];
-
-      if (!data.length) {
-        toast.error('No data available to export.');
-        return;
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchPlantInTime(exportPayload)).then((res) => {
+      if (fetchPlantInTime.fulfilled.match(res)) {
+        const data = res.payload?.plantInTime || res.payload || [];
+        if (!data.length) {
+          toast.error('No data available to export.');
+          return;
+        }
+        exportToExcel({
+          columns,
+          rows: buildExportRows({ columns, data: formatPlantInTime(data) }),
+          fileName: 'plant_in_time.xlsx',
+        });
       }
-
-      exportToExcel({
-        columns,
-        rows: buildExportRows({ columns, data: formatPlantInTime(data) }),
-        fileName: 'plant_in_time.xlsx',
-      });
-    } catch {
-      toast.error('Export failed');
-    }
+    });
   };
 
   const handleExportPDF = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, totalCount);
-      const res = await ApiService.get(APIURL.PLANTINTIME, exportPayload);
-      const data = res?.data?.plantInTime || res?.data || [];
-
-      if (!data.length) {
-        toast.error('No data available to export.');
-        return;
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchPlantInTime(exportPayload)).then((res) => {
+      if (fetchPlantInTime.fulfilled.match(res)) {
+        const data = res.payload?.plantInTime || res.payload || [];
+        if (!data.length) {
+          toast.error('No data available to export.');
+          return;
+        }
+        exportToPDF({
+          columns,
+          rows: buildExportRows({ columns, data: formatPlantInTime(data) }),
+          fileName: 'plant_in_time.pdf',
+          orientation: 'landscape',
+        });
       }
-
-      exportToPDF({
-        columns,
-        rows: buildExportRows({ columns, data: formatPlantInTime(data) }),
-        fileName: 'plant_in_time.pdf',
-        orientation: 'landscape',
-      });
-    } catch {
-      toast.error('Export PDF failed');
-    }
+    });
   };
 
   const handleSample = () =>

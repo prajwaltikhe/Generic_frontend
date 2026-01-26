@@ -1,14 +1,13 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
 import CommonTable from '../../../components/table/CommonTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAnnouncements, deleteAnnouncement, uploadAnnouncementData } from '../../../redux/announcementSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -66,34 +65,29 @@ function Announcement() {
   });
 
   useEffect(() => {
-    fetchAnnouncements();
+    loadAnnouncements();
     // eslint-disable-next-line
   }, [page, limit, searchQuery]);
 
-  const fetchAnnouncements = async () => {
+  const loadAnnouncements = async () => {
     setLoading(true);
-    try {
-      const res = await ApiService.get(APIURL.ANNOUNCEMENT, buildApiPayload());
-      if (res?.success) {
-        const list = Array.isArray(res.data?.announcements) ? res.data.announcements : [];
+    dispatch(fetchAnnouncements(buildApiPayload())).then((res) => {
+      if (fetchAnnouncements.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.announcements) ? res.payload.announcements : [];
         setFilteredData(list);
-        setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
+        setTotalCount(res.payload?.pagination?.total ?? list.length ?? 0);
       } else {
         setFilteredData([]);
         setTotalCount(0);
       }
-    } catch {
-      setFilteredData([]);
-      setTotalCount(0);
-    } finally {
       setLoading(false);
-    }
+    });
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     setPage(0);
-    fetchAnnouncements();
+    loadAnnouncements();
   };
 
   const handleFormReset = () => {
@@ -109,52 +103,53 @@ function Announcement() {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=announcement`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+    dispatch(uploadAnnouncementData(formData)).then((res) => {
+      if (uploadAnnouncementData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
-        fetchAnnouncements();
+        loadAnnouncements();
       } else {
-        toast.error(res.message || 'File upload failed.');
+        toast.error(res.payload || 'File upload failed.');
       }
-    } catch {
-      toast.error('Upload failed.');
-    }
+    });
   };
 
   const handleExport = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.ANNOUNCEMENT, exportPayload);
-      const list = Array.isArray(res.data?.announcements) ? res.data.announcements : [];
-      exportToExcel({
-        columns,
-        rows: buildExportRows({ columns, data: formatAnnouncement(list) }),
-        fileName: 'announcements.xlsx',
-      });
-      toast.success('Export to Excel successful.');
-    } catch {
-      toast.error('Export to Excel failed.');
-    }
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchAnnouncements(exportPayload)).then((res) => {
+      if (fetchAnnouncements.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.announcements) ? res.payload.announcements : [];
+        exportToExcel({
+          columns,
+          rows: buildExportRows({ columns, data: formatAnnouncement(list) }),
+          fileName: 'announcements.xlsx',
+        });
+        toast.success('Export to Excel successful.');
+        loadAnnouncements(); // Reload to restore table view
+      } else {
+        toast.error('Export to Excel failed.');
+      }
+    });
   };
 
   const handleExportPDF = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.ANNOUNCEMENT, exportPayload);
-      const list = Array.isArray(res.data?.announcements) ? res.data.announcements : [];
-      exportToPDF({
-        columns,
-        rows: buildExportRows({ columns, data: formatAnnouncement(list) }),
-        fileName: 'announcements.pdf',
-        orientation: 'landscape',
-      });
-      toast.success('Export to PDF successful.');
-    } catch {
-      toast.error('Export PDF failed.');
-    }
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchAnnouncements(exportPayload)).then((res) => {
+      if (fetchAnnouncements.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.announcements) ? res.payload.announcements : [];
+        exportToPDF({
+          columns,
+          rows: buildExportRows({ columns, data: formatAnnouncement(list) }),
+          fileName: 'announcements.pdf',
+          orientation: 'landscape',
+        });
+        toast.success('Export to PDF successful.');
+        loadAnnouncements(); // Reload to restore table view
+      } else {
+        toast.error('Export PDF failed.');
+      }
+    });
   };
 
   const handleSample = () => {
@@ -164,18 +159,15 @@ function Announcement() {
 
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
-    try {
-      const response = await ApiService.delete(`${APIURL.ANNOUNCEMENT}/${row.announcementId}`);
-      if (response && response.success) {
+    dispatch(deleteAnnouncement(row.announcementId)).then((res) => {
+      if (deleteAnnouncement.fulfilled.match(res)) {
         toast.success('Announcement deleted successfully!');
         if (filteredData.length === 1 && page > 0) setPage(page - 1);
-        else fetchAnnouncements();
+        else loadAnnouncements();
       } else {
-        toast.error(response?.message || 'Failed to delete announcement.');
+        toast.error(res.payload || 'Failed to delete announcement.');
       }
-    } catch {
-      toast.error('An error occurred while deleting announcement.');
-    }
+    });
   };
 
   const handleEdit = (row) => {

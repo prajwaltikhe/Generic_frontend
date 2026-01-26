@@ -3,18 +3,16 @@ import { useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import logo from '../../assets/logo.png';
-import { APIURL } from '../../constants';
 import { useDispatch } from 'react-redux';
 import { auth } from '../../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../../redux/authSlice';
+import { verifyOtp } from '../../redux/authSlice';
 import { useAuth } from '../../context/AuthContext';
 import { signInWithCustomToken } from 'firebase/auth';
-import { setPlantData } from '../../redux/plantSlice';
+import { fetchPlants } from '../../redux/plantSlice';
 import Visibility from '@mui/icons-material/Visibility';
-import { ApiService, AuthService } from '../../services';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { setDepartmentData } from '../../redux/departmentSlice';
+import { fetchDepartments } from '../../redux/departmentSlice';
 import { IconButton, Paper, TextField, Button, InputAdornment } from '@mui/material';
 
 const validationSchema = Yup.object({ otp: Yup.string().required('OTP is required') });
@@ -24,11 +22,6 @@ function Otp() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showOtp, setShowOtp] = useState(false);
-
-  const loadData = () => {
-    ApiService.get(APIURL.DEPARTMENTS).then((res) => dispatch(setDepartmentData(res.data)));
-    ApiService.get(APIURL.PLANTS).then((res) => dispatch(setPlantData(res.data)));
-  };
 
   const formik = useFormik({
     initialValues: { otp: '' },
@@ -42,20 +35,28 @@ function Otp() {
         return;
       }
       try {
-        const res = await AuthService.verifyOtp(APIURL.VERIFY_OTP, userId, values.otp);
-        const { token, user } = res.data;
-        const cred = await signInWithCustomToken(auth, token);
-        const idToken = await cred.user.getIdToken();
-        dispatch(loginUser(res));
-        login(idToken);
-        localStorage.setItem('company_id', user.company_id);
-        loadData();
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('pendingUserEmail');
-        toast.success('OTP verified');
-        navigate('/dashboard');
+        const actionResult = await dispatch(verifyOtp({ userId, otp: values.otp }));
+        if (verifyOtp.fulfilled.match(actionResult)) {
+          const { token, user } = actionResult.payload;
+          const cred = await signInWithCustomToken(auth, token);
+          const idToken = await cred.user.getIdToken();
+
+          login(idToken); // Context login
+          localStorage.setItem('company_id', user.company_id);
+
+          // Load initial data
+          dispatch(fetchDepartments({ limit: 100 }));
+          dispatch(fetchPlants({ limit: 100 }));
+
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('pendingUserEmail');
+          toast.success('OTP verified');
+          navigate('/dashboard');
+        } else {
+          toast.error(actionResult.payload || 'Invalid OTP');
+        }
       } catch {
-        toast.error('Invalid OTP');
+        toast.error('Verification failed');
       }
       setSubmitting(false);
     },

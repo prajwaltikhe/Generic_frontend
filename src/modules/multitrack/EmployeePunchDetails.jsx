@@ -6,7 +6,7 @@ import CommonSearch from '../../components/CommonSearch';
 import ReportTable from '../../components/table/ReportTable';
 import { fetchEmployeeOnboard } from '../../redux/employeeSlice';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { exportToExcel, buildExportRows } from '../../utils/exportUtils';
+import { exportToExcel, exportToPDF, buildExportRows } from '../../utils/exportUtils';
 
 const columns = [
   { key: 'employeeName', header: 'Employee Name', render: (_v, r) => r.employeeName },
@@ -77,15 +77,14 @@ export default function EmployeePunchDetails() {
       }
       return items;
     },
-    [selectedVehicle, companyId, page, rowsPerPage, totalCount, searchQuery, dispatch]
+    [selectedVehicle, companyId, page, rowsPerPage, totalCount, searchQuery, dispatch],
   );
 
   useEffect(() => {
     fetchData();
-     
   }, [fetchData]);
 
-  const handleExport = async () => {
+  const handleExportExcel = async () => {
     setExportLoading(true);
     try {
       const items = await fetchData(true);
@@ -101,6 +100,23 @@ export default function EmployeePunchDetails() {
     }
   };
 
+  const handleExportPDF = async () => {
+    setExportLoading(true);
+    try {
+      const items = await fetchData(true);
+      if (!items) return;
+      const exportRows = items.map((item, idx) => getEmpRow(item, idx));
+      exportToPDF({
+        columns,
+        rows: buildExportRows({ columns, data: exportRows }),
+        fileName: 'employee_punch_details.pdf',
+        orientation: 'landscape',
+      });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const vInfo = useMemo(
     () => [
       ['Vehicle Name', vehicleInfo.name],
@@ -108,7 +124,7 @@ export default function EmployeePunchDetails() {
       ['Speed', vehicleInfo.speed],
       ['Total Onboarded Employee', vehicleInfo.onboarded],
     ],
-    [vehicleInfo]
+    [vehicleInfo],
   );
 
   return (
@@ -125,13 +141,22 @@ export default function EmployeePunchDetails() {
               ))}
             </div>
           </div>
-          <button
-            type='button'
-            className='text-white bg-gray-800 hover:bg-gray-900 font-semibold rounded px-6 py-2 min-w-[120px] mt-4 md:mt-0 shadow-sm transition duration-200 focus:outline-none'
-            onClick={handleExport}
-            disabled={exportLoading}>
-            {exportLoading ? 'Exporting...' : 'Export'}
-          </button>
+          <div className='flex w-fit gap-2.5'>
+            <button
+              type='button'
+              className='min-w-40 text-white bg-[#1d31a6] hover:bg-[#1d31a6] font-medium rounded-sm text-sm w-full px-5 py-2.5 cursor-pointer disabled:opacity-50'
+              onClick={handleExportExcel}
+              disabled={exportLoading}>
+              {exportLoading ? 'Exporting...' : 'Export Excel'}
+            </button>
+            <button
+              type='button'
+              className='min-w-40 text-white bg-red-600 hover:bg-red-700 font-medium rounded-sm text-sm w-full px-5 py-2.5 cursor-pointer disabled:opacity-50'
+              onClick={handleExportPDF}
+              disabled={exportLoading}>
+              {exportLoading ? 'Exporting...' : 'Export PDF'}
+            </button>
+          </div>
         </div>
         <Paper elevation={0} sx={{ borderRadius: 2, overflow: 'hidden', background: '#fafafa' }}>
           <div className='p-6'>

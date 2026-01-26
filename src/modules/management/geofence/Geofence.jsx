@@ -3,9 +3,7 @@ import dayjs from 'dayjs';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
-import { fetchVehicleGeoFence } from '../../../redux/geofenceSlice';
+import { fetchVehicleGeoFence, deleteGeofence } from '../../../redux/geofenceSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
@@ -69,23 +67,19 @@ function Geofence() {
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this Geo Fence?')) return;
 
-    try {
-      const res = await ApiService.delete(`${APIURL.GEOFENCE}/${row.geofenceID}`);
-      if (res.success) {
-        toast.success(res.message || 'Geofence deleted successfully!');
+    dispatch(deleteGeofence(row.geofenceID)).then((res) => {
+      if (deleteGeofence.fulfilled.match(res)) {
+        toast.success(res.payload || 'Geofence deleted successfully!');
         dispatch(fetchVehicleGeoFence(buildApiPayload())).then((res) => {
           const geofences = res?.payload?.geofences || [];
           if (geofences.length === 0 && page > 0) {
             setPage(page - 1);
           }
         });
-        window.location.reload();
       } else {
-        toast.error(res.message || 'Failed to delete Geo Fence');
+        toast.error(res.payload || 'Failed to delete Geo Fence');
       }
-    } catch {
-      toast.error('An error occurred while deleting.');
-    }
+    });
   };
 
   const handleExport = async () => {

@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
-import { fetchPlants, fetchPlantById, deletePlant } from '../../../redux/plantSlice';
+import { fetchPlants, fetchPlantById, deletePlant, uploadPlantData } from '../../../redux/plantSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import IModal from '../../../components/modal/Modal';
 import FilterOptions from '../../../components/FilterOption';
@@ -67,14 +65,9 @@ function Plant() {
 
     try {
       const res = await dispatch(deletePlant(row.plantID));
-      if (res.meta.requestStatus === 'fulfilled') {
+      if (deletePlant.fulfilled.match(res)) {
         toast.success('Plant deleted successfully!');
-        dispatch(fetchPlants(buildApiPayload()))
-          .unwrap()
-          .then((data) => {
-            if (data.plants.length === 0 && page > 0) setPage(page - 1);
-          });
-        window.location.reload();
+        dispatch(fetchPlants(buildApiPayload()));
       } else {
         toast.error('Failed to delete plant');
       }
@@ -97,19 +90,16 @@ function Plant() {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=plant`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+    dispatch(uploadPlantData(formData)).then((res) => {
+      if (uploadPlantData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         dispatch(fetchPlants(buildApiPayload()));
       } else {
-        toast.error(res.message || 'Upload failed');
+        toast.error(res.payload || 'Upload failed');
       }
-    } catch {
-      toast.error('Upload failed.');
-    }
+    });
   };
 
   const handleExport = async () => {

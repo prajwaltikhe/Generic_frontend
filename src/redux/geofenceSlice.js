@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 export const vehicleGeofenceReport = createAsyncThunk('geofence/getVehicleGeofence', async (params = {}, thunkAPI) => {
   try {
@@ -128,16 +129,88 @@ const geofenceSliceReducer = createSlice({
       .addCase(fetchRouteViolation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Create Geofence
+      .addCase(createGeofence.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createGeofence.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(createGeofence.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update Geofence
+      .addCase(updateGeofence.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateGeofence.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(updateGeofence.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
+// Fetch Geofences
 export const fetchVehicleGeoFence = createAsyncThunk('geofence/fetchVehicleGeoFence', async (params, thunkAPI) => {
   try {
-    const res = await ApiService.get('geofence', params);
+    const res = await ApiService.get(APIURL.GEOFENCE, params);
     return res?.data || [];
   } catch (error) {
     return thunkAPI.rejectWithValue(error.message);
+  }
+});
+
+export const createGeofence = createAsyncThunk('geofence/createGeofence', async (payload, { rejectWithValue }) => {
+  try {
+    const res = await ApiService.post(APIURL.GEOFENCE, payload);
+    if (!res.success) return rejectWithValue(res.message);
+    return res.data;
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
+
+export const updateGeofence = createAsyncThunk(
+  'geofence/updateGeofence',
+  async ({ id, payload }, { rejectWithValue }) => {
+    try {
+      const res = await ApiService.put(`${APIURL.GEOFENCE}/${id}`, payload);
+      if (!res.success) return rejectWithValue(res.message);
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const uploadGeofenceData = createAsyncThunk(
+  'geofence/uploadGeofenceData',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=geofence`, formData);
+      if (!response.success) return rejectWithValue(response.message || 'Upload failed');
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Upload failed');
+    }
+  },
+);
+
+export const deleteGeofence = createAsyncThunk('geofence/deleteGeofence', async (id, { rejectWithValue }) => {
+  try {
+    const res = await ApiService.delete(`${APIURL.GEOFENCE}/${id}`);
+    if (res.success) {
+      return res.message || 'Geofence deleted successfully';
+    } else {
+      return rejectWithValue(res.message || 'Failed to delete geofence');
+    }
+  } catch (error) {
+    return rejectWithValue(error.message || 'An error occurred while deleting');
   }
 });
 

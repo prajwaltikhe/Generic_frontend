@@ -1,22 +1,25 @@
 import { Autocomplete, TextField } from '@mui/material';
 import { toast } from 'react-toastify';
-import { ApiService } from '../../../../services';
-import { APIURL } from '../../../../constants';
+import { useDispatch } from 'react-redux';
+import { updateRouteChangeRequest } from '../../../../redux/routeChangeRequestSlice';
 
 export default function StatusDropdown({ row, onStatusChange, statusOptions }) {
+  const dispatch = useDispatch();
   const handleChange = async (_, newValue) => {
     if (!newValue) return;
-    try {
-      const res = await ApiService.put(`${APIURL.ROUTECHANGEREQ}/${row.id}`, {
-        route_change_request_status_id: newValue.id,
-      });
-      res.success
-        ? (toast.success('Status updated successfully'),
-          onStatusChange(row.route_change_request_status_id, newValue.id))
-        : toast.error('Failed to update status: ' + (res.message || 'Unknown error'));
-    } catch {
-      toast.error('Error updating status');
-    }
+    const action = updateRouteChangeRequest({
+      id: row.id,
+      payload: { route_change_request_status_id: newValue.id },
+    });
+
+    dispatch(action).then((res) => {
+      if (updateRouteChangeRequest.fulfilled.match(res)) {
+        toast.success('Status updated successfully');
+        onStatusChange(row.route_change_request_status_id, newValue.id);
+      } else {
+        toast.error('Failed to update status: ' + (res.payload || 'Unknown error'));
+      }
+    });
   };
 
   return (

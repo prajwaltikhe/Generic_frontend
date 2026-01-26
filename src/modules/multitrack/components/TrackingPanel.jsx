@@ -1,6 +1,4 @@
 import moment from 'moment';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '@mui/icons-material';
 import { useState, useMemo, useEffect } from 'react';
@@ -9,7 +7,7 @@ import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
 import ISearch, { LateSvg, OnTimeSvg, TotalSvg } from './ISearch';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { FaBatteryFull, FaBolt, FaKey, FaWifi } from 'react-icons/fa';
-import { setActiveTab, setIsTrackShow } from '../../../redux/multiTrackSlice';
+import { setActiveTab, setIsTrackShow, fetchLateArrivalStats } from '../../../redux/multiTrackSlice';
 
 const statusTabs = [
   { label: 'Running', bg: '#00800026', color: 'green' },
@@ -36,6 +34,7 @@ const selectState = (s) => ({
   activeTab: s.multiTrackStatus.activeTab,
   offline: s.multiTrackStatus.offlineVehicleData,
   isTrackShow: s.multiTrackStatus.isTrackShow,
+  weekChart: s.multiTrackStatus.weekChart,
 });
 
 const StatCard = ({ icon, label, value, bg, color, onClick }) => (
@@ -61,7 +60,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow } = useSelector(
+  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow, weekChart } = useSelector(
     selectState,
     shallowEqual,
   );
@@ -95,21 +94,16 @@ const TrackingPanel = ({ handleRightPanel }) => {
   const [arrivalStats, setArrivalStats] = useState({ onTime: 0, late: 0 });
 
   useEffect(() => {
-    const fetchArrivalStats = async () => {
-      try {
-        const res = await ApiService.get(APIURL.LATEARRIVAL);
-        if (res?.success && Array.isArray(res.data?.weekChart)) {
-          const today = moment().format('ddd');
-          const todayData = res.data.weekChart.find((d) => d.day === today);
-          const lateCount = todayData?.current || 0;
-          setArrivalStats((prev) => ({ ...prev, late: lateCount }));
-        }
-      } catch (err) {
-        console.error('Error fetching arrival stats:', err);
-      }
-    };
-    fetchArrivalStats();
-  }, []);
+    dispatch(fetchLateArrivalStats());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (Array.isArray(weekChart) && weekChart.length > 0) {
+      const today = moment().format('ddd');
+      const todayData = weekChart.find((d) => d.day === today);
+      setArrivalStats((prev) => ({ ...prev, late: todayData?.current || 0 }));
+    }
+  }, [weekChart]);
 
   const totalVehicles = cleaned.All.length;
   const onTimeCount = Math.max(0, totalVehicles - arrivalStats.late);

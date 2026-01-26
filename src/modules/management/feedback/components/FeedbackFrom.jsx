@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../../constants';
-import { ApiService } from '../../../../services';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { updateFeedbackReport } from '../../../../redux/feedBackReportSlice';
 import { TextField, Grid, Box, Button, Paper, Divider } from '@mui/material';
 
 const FeedbackFrom = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { state: data, pathname } = useLocation();
   const isEdit = pathname.includes('/edit');
   const [action, setAction] = useState('');
@@ -15,13 +16,14 @@ const FeedbackFrom = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await ApiService.put(`${APIURL.FEEDBACK}/${data.id}`, { action });
-    if (res?.success) {
-      toast.success(res.message || 'Feedback updated successfully!');
-      navigate('/management/feedbacks');
-    } else {
-      toast.error(res?.message || 'Something went wrong.');
-    }
+    dispatch(updateFeedbackReport({ id: data.id, payload: { action } })).then((res) => {
+      if (updateFeedbackReport.fulfilled.match(res)) {
+        toast.success('Feedback updated successfully!');
+        navigate('/management/feedbacks');
+      } else {
+        toast.error(res.payload || 'Something went wrong.');
+      }
+    });
   };
 
   return (

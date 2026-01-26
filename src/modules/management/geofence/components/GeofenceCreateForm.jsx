@@ -2,10 +2,9 @@ import * as Yup from 'yup';
 import { Formik } from 'formik';
 import { toast } from 'react-toastify';
 import ColorPicker from './ColorPicker';
-import { APIURL } from '../../../../constants';
-import { ApiService } from '../../../../services';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { createGeofence, updateGeofence } from '../../../../redux/geofenceSlice';
 import { fetchVehicles } from '../../../../redux/vehiclesSlice';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, TextField, Autocomplete, Checkbox, Chip } from '@mui/material';
@@ -83,25 +82,27 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
       coordinates: JSON.stringify(coors.map(([la, lo]) => `${la},${lo}`)),
       color: v.color,
     };
-    const res = rowData.id
-      ? await ApiService.put(`${APIURL.GEOFENCE}/${rowData.id}`, payload)
-      : await ApiService.post(APIURL.GEOFENCE, payload);
-    if (res.success) {
-      toast.success(rowData.id ? 'Geofence updated successfully!' : 'Geofence created successfully!');
-      navigate('/management/geofence');
-      resetForm();
-      handleClear();
-    } else {
-      toast.error(res.message || 'Something went wrong.');
-    }
+
+    const action = rowData.id ? updateGeofence({ id: rowData.id, payload }) : createGeofence(payload);
+
+    dispatch(action).then((res) => {
+      if (createGeofence.fulfilled.match(res) || updateGeofence.fulfilled.match(res)) {
+        toast.success(rowData.id ? 'Geofence updated successfully!' : 'Geofence created successfully!');
+        navigate('/management/geofence');
+        resetForm();
+        handleClear();
+      } else {
+        toast.error(res.payload || 'Something went wrong.');
+      }
+    });
   }
 
   const getVehicleDisplay = (selected, all) =>
     !Array.isArray(selected) || !selected.length
       ? []
       : selected.length === all.length || selected.includes('SELECT_ALL')
-      ? [selectAllOpt]
-      : all.filter((o) => selected.includes(o.value));
+        ? [selectAllOpt]
+        : all.filter((o) => selected.includes(o.value));
   const getVehicleOptions = (arr) => (arr && arr.length ? [selectAllOpt, ...arr] : []);
   const handleVehicleChange = (all, setFieldValue, values) => (_, nv) => {
     const isAll = nv.some((o) => o.value === 'SELECT_ALL');
@@ -111,7 +112,7 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
         ? (values.bus?.length || 0) === all.length || values.bus?.includes('SELECT_ALL')
           ? []
           : all.map((o) => o.value)
-        : nv.filter((o) => o.value !== 'SELECT_ALL').map((o) => o.value)
+        : nv.filter((o) => o.value !== 'SELECT_ALL').map((o) => o.value),
     );
   };
 

@@ -1,10 +1,9 @@
 import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
-import { APIURL } from '../../../../constants';
-import { ApiService } from '../../../../services';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { createAnnouncement, updateAnnouncement } from '../../../../redux/announcementSlice';
 import { Autocomplete, TextField, Checkbox, Chip, ListItemText } from '@mui/material';
 
 const cols = ['Announcement Title', 'Sender Name', 'Vehicle Route', 'Message'];
@@ -21,7 +20,7 @@ export default function AnnouncementForm() {
   const [msg, setMsg] = useState(ed?.message || '');
   const [routeOpts, setRouteOpts] = useState([]);
   const [routeValue, setRouteValue] = useState(
-    ed?.id && ed?.vehicle_route_id && ed?.route_name ? { label: ed.route_name, value: ed.vehicle_route_id } : []
+    ed?.id && ed?.vehicle_route_id && ed?.route_name ? { label: ed.route_name, value: ed.vehicle_route_id } : [],
   );
   const sender = ed?.sender_name || 'Super Admin';
 
@@ -56,27 +55,31 @@ export default function AnnouncementForm() {
           vehicle_route_ids:
             routeValue.length === routeOpts.length ? routeOpts.map((r) => r.value) : routeValue.map((r) => r.value),
         };
-    try {
-      const res = ed?.id
-        ? await ApiService.put(`${APIURL.ANNOUNCEMENT}/${ed.id}`, payload)
-        : await ApiService.post(APIURL.ANNOUNCEMENT, payload);
-      if (res?.success) {
+    const action = ed?.id
+      ? updateAnnouncement({
+          id: ed.id,
+          data: payload,
+        })
+      : createAnnouncement(payload);
+
+    disp(action).then((res) => {
+      // Check if the action was fulfilled (success)
+      if (createAnnouncement.fulfilled.match(res) || updateAnnouncement.fulfilled.match(res)) {
         toast.success(`Announcement ${ed?.id ? 'updated' : 'created'} successfully!`);
         nav('/management/announcements');
       } else {
-        toast.error(res?.message || 'Something went wrong.');
+        // payload is the error message from rejectWithValue
+        toast.error(res.payload || 'Something went wrong.');
       }
-    } catch {
-      toast.error('An error occurred while saving the announcement.');
-    }
+    });
   };
 
   const viewRoute =
     ed?.id || isView
       ? routeValue?.label || ed?.route_name || '-'
       : Array.isArray(routeValue) && routeValue.length
-      ? routeValue.map((r) => r.label).join(', ')
-      : '-';
+        ? routeValue.map((r) => r.label).join(', ')
+        : '-';
 
   const selectableOpts = isCreate ? [{ label: 'Select All', value: SELECT_ALL_VALUE }, ...routeOpts] : routeOpts;
   const getCreateValue = () =>

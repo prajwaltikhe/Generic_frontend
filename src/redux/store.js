@@ -13,6 +13,10 @@ import multiTrackStatusReducer from './multiTrackSlice';
 import emergencyReportAlertReducer from './emergencyReportAlertSlice';
 import feedBackReportReducer from './feedBackReportSlice';
 import vehicleActivityReducer from './vehicleActivitySlice';
+import announcementReducer from './announcementSlice';
+import plantInTimeReducer from './plantInTimeSlice';
+import routeChangeRequestReducer from './routeChangeRequestSlice';
+import dashboardReducer from './dashboardSlice';
 
 const store = configureStore({
   reducer: {
@@ -30,6 +34,10 @@ const store = configureStore({
     multiTrackStatus: multiTrackStatusReducer,
     feedbackReport: feedBackReportReducer,
     vehicleActivity: vehicleActivityReducer,
+    announcement: announcementReducer,
+    plantInTime: plantInTimeReducer,
+    routeChangeRequest: routeChangeRequestReducer,
+    dashboard: dashboardReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });

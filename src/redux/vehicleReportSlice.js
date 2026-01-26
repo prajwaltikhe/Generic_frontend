@@ -6,9 +6,7 @@ export const fetchVehicleReport = createAsyncThunk(
   'vehicleReport/fetchVehicleReport',
   async ({ company_id, from_date, to_date }, thunkAPI) => {
     try {
-      const response = await ApiService.get('/vehicle', {
-        params: { company_id, from_date, to_date },
-      });
+      const response = await ApiService.get('/vehicle', { company_id, from_date, to_date });
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);

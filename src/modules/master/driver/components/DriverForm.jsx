@@ -1,10 +1,11 @@
 import L from 'leaflet';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../../constants';
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { Autocomplete, TextField } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AddressServices, ApiService } from '../../../../services';
+import { AddressServices } from '../../../../services';
+import { createDriver, updateDriver } from '../../../../redux/driverSlice';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
 const customIcon = new L.Icon({
@@ -14,6 +15,7 @@ const customIcon = new L.Icon({
 });
 
 const DriverForm = () => {
+  const dispatch = useDispatch();
   const [formValues, setFormValues] = useState({
     firstName: '',
     lastName: '',
@@ -138,24 +140,18 @@ const DriverForm = () => {
         profile_photo: profileImageBytes,
       };
 
-      if (rowData?.rowData) {
-        const res = await ApiService.put(`${APIURL.DRIVER}/${rowData.rowData.actual_id}`, payload);
+      const action = rowData?.rowData
+        ? updateDriver({ id: rowData.rowData.actual_id, payload })
+        : createDriver(payload);
 
-        if (res.success) {
-          toast.success('Driver updated successfully');
+      dispatch(action).then((res) => {
+        if (createDriver.fulfilled.match(res) || updateDriver.fulfilled.match(res)) {
+          toast.success(rowData?.rowData ? 'Driver updated successfully' : 'Driver created successfully');
           navigate('/master/driver');
         } else {
-          toast.error(res.message || 'Failed to update driver.');
+          toast.error(res.payload || `Failed to ${rowData?.rowData ? 'update' : 'create'} driver.`);
         }
-      } else {
-        const res = await ApiService.post(APIURL.DRIVER, payload);
-        if (res.success) {
-          toast.success('Driver created successfully');
-          navigate('/master/driver');
-        } else {
-          toast.error(res.message || 'Failed to create driver.');
-        }
-      }
+      });
     } catch {
       toast.error('Something went wrong. Please try again.');
     }

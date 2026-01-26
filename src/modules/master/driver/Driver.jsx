@@ -1,12 +1,10 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useEffect, useRef, useState } from 'react';
 import IModal from '../../../components/modal/Modal';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchDrivers } from '../../../redux/driverSlice';
+import { fetchDrivers, deleteDriver, changeDriverStatus, uploadDriverData } from '../../../redux/driverSlice';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommonTable from '../../../components/table/CommonTable';
@@ -113,37 +111,28 @@ function Driver() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Driver?')) return;
-    try {
-      const res = await ApiService.delete(`${APIURL.DRIVER}/${id}`);
-      if (res.success) {
-        toast.success('Driver deleted successfully!');
+    dispatch(deleteDriver(id)).then((res) => {
+      if (deleteDriver.fulfilled.match(res)) {
+        toast.success(res.payload || 'Driver deleted successfully!');
         dispatch(fetchDrivers(buildApiPayload()));
-        window.location.reload();
       } else {
-        toast.error(res.message || 'Failed to delete driver');
+        toast.error(res.payload || 'Failed to delete driver');
       }
-    } catch {
-      toast.error('Delete failed.');
-    }
+    });
   };
 
   const handleStatusChange = async () => {
     if (!selectedDriver) return;
-    try {
-      const newStatusId = selectedDriver.status === 'Active' ? 2 : 1;
-      const res = await ApiService.put(`${APIURL.DRIVER}/${selectedDriver.actual_id}`, {
-        active: newStatusId,
-      });
-      if (res.success) {
-        toast.success('Status updated!');
+    const newStatusId = selectedDriver.status === 'Active' ? 2 : 1;
+    dispatch(changeDriverStatus({ id: selectedDriver.actual_id, newStatusId })).then((res) => {
+      if (changeDriverStatus.fulfilled.match(res)) {
+        toast.success(res.payload || 'Status updated!');
         setIsStatusModalOpen(false);
         dispatch(fetchDrivers(buildApiPayload()));
       } else {
-        toast.error('Failed to update status.');
+        toast.error(res.payload || 'Failed to update status.');
       }
-    } catch {
-      toast.error('Status update failed.');
-    }
+    });
   };
 
   const handleFormSubmit = (e) => {
@@ -166,14 +155,16 @@ function Driver() {
     if (!file) return toast.error('Please select a file');
     const formData = new FormData();
     formData.append('file', file);
-    const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=driver`, formData);
-    if (res.success) {
-      toast.success(res.message);
-      if (fileInputRef.current) fileInputRef.current.value = null;
-      dispatch(fetchDrivers(buildApiPayload()));
-    } else {
-      toast.error(res.message || 'Upload failed');
-    }
+
+    dispatch(uploadDriverData(formData)).then((res) => {
+      if (uploadDriverData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'Upload successful');
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        dispatch(fetchDrivers(buildApiPayload()));
+      } else {
+        toast.error(res.payload || 'Upload failed');
+      }
+    });
   };
 
   const handleExport = async () => {
@@ -288,7 +279,7 @@ function Driver() {
         columns={columns.map((c) =>
           c.key === 'status'
             ? { ...c, render: (_, row) => c.render(_, row, setSelectedDriver, setIsStatusModalOpen) }
-            : c
+            : c,
         )}
         data={tableData}
         page={page}

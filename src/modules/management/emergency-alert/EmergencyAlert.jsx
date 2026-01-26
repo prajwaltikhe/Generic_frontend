@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
+
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import {
+  fetchEmergencyReportAlert,
+  deleteEmergencyReportAlert,
+  uploadEmergencyReportAlert,
+} from '../../../redux/emergencyReportAlertSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import { useNavigate } from 'react-router-dom';
 import FmdGoodIcon from '@mui/icons-material/FmdGood';
@@ -93,22 +97,17 @@ function EmergencyAlert() {
 
   const fetchAlerts = async () => {
     setLoading(true);
-    try {
-      const res = await ApiService.get(APIURL.EMERGENCY, buildApiPayload());
-      if (res?.success) {
-        const list = Array.isArray(res.data?.alerts) ? res.data.alerts : [];
+    dispatch(fetchEmergencyReportAlert(buildApiPayload())).then((res) => {
+      if (fetchEmergencyReportAlert.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.alerts) ? res.payload.alerts : [];
         setFilteredData(list);
-        setTotalCount(res.data?.pagination?.total ?? list.length ?? 0);
+        setTotalCount(res.payload?.pagination?.total ?? list.length ?? 0);
       } else {
         setFilteredData([]);
         setTotalCount(0);
       }
-    } catch {
-      setFilteredData([]);
-      setTotalCount(0);
-    } finally {
       setLoading(false);
-    }
+    });
   };
 
   const handleFormSubmit = (e) => {
@@ -130,62 +129,59 @@ function EmergencyAlert() {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=emergency_alert`, formData);
-      if (res.success) {
-        toast.success(res.message || 'File uploaded successfully!');
+    dispatch(uploadEmergencyReportAlert(formData)).then((res) => {
+      if (uploadEmergencyReportAlert.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'File uploaded successfully!');
         if (fileInputRef.current) fileInputRef.current.value = null;
         setFile(null);
         fetchAlerts();
       } else {
-        toast.error(res.message || 'Upload failed');
+        toast.error(res.payload || 'Upload failed');
       }
-    } catch {
-      toast.error('Upload failed.');
-    }
+    });
   };
 
   const handleExport = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.EMERGENCY, exportPayload);
-      const list = Array.isArray(res.data?.alerts) ? res.data.alerts : [];
-
-      if (!list.length) {
-        toast.error('No data available to export.');
-        return;
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchEmergencyReportAlert(exportPayload)).then((res) => {
+      if (fetchEmergencyReportAlert.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.alerts) ? res.payload.alerts : [];
+        if (!list.length) {
+          toast.error('No data available to export.');
+          return;
+        }
+        exportToExcel({
+          columns,
+          rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
+          fileName: 'emergency_alerts.xlsx',
+        });
+        fetchAlerts(); // Restore view
+      } else {
+        toast.error('Export failed');
       }
-
-      exportToExcel({
-        columns,
-        rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
-        fileName: 'emergency_alerts.xlsx',
-      });
-    } catch {
-      toast.error('Export failed');
-    }
+    });
   };
 
   const handleExportPDF = async () => {
-    try {
-      const exportPayload = buildApiPayload(1, 100);
-      const res = await ApiService.get(APIURL.EMERGENCY, exportPayload);
-      const list = Array.isArray(res.data?.alerts) ? res.data.alerts : [];
-
-      if (!list.length) {
-        toast.error('No data available to export.');
-        return;
+    const exportPayload = buildApiPayload(1, 100);
+    dispatch(fetchEmergencyReportAlert(exportPayload)).then((res) => {
+      if (fetchEmergencyReportAlert.fulfilled.match(res)) {
+        const list = Array.isArray(res.payload?.alerts) ? res.payload.alerts : [];
+        if (!list.length) {
+          toast.error('No data available to export.');
+          return;
+        }
+        exportToPDF({
+          columns,
+          rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
+          fileName: 'emergency_alerts.pdf',
+          orientation: 'landscape',
+        });
+        fetchAlerts();
+      } else {
+        toast.error('Export PDF failed');
       }
-
-      exportToPDF({
-        columns,
-        rows: buildExportRows({ columns, data: formatEmergencyAlert(list) }),
-        fileName: 'emergency_alerts.pdf',
-        orientation: 'landscape',
-      });
-    } catch {
-      toast.error('Export PDF failed');
-    }
+    });
   };
 
   const handleSample = () =>
@@ -218,19 +214,15 @@ function EmergencyAlert() {
 
   const handleDelete = async (row) => {
     if (!window.confirm('Are you sure you want to delete this Alert?')) return;
-    try {
-      const response = await ApiService.delete(`${APIURL.EMERGENCY}/${row.emergencyID}`);
-      if (response && response.success) {
+    dispatch(deleteEmergencyReportAlert(row.emergencyID)).then((res) => {
+      if (deleteEmergencyReportAlert.fulfilled.match(res)) {
         toast.success('Alert deleted successfully!');
         if (filteredData.length === 1 && page > 0) setPage(page - 1);
         else fetchAlerts();
-        window.location.reload();
       } else {
-        toast.error('Failed to delete alert.');
+        toast.error(res.payload || 'Failed to delete alert.');
       }
-    } catch {
-      toast.error('An error occurred while deleting.');
-    }
+    });
   };
 
   const actionHandlers = {
@@ -268,7 +260,7 @@ function EmergencyAlert() {
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         <CommonTable
           columns={columns.map((c) =>
-            c.key === 'actions' ? { ...c, render: (_, row) => c.render(_, row, actionHandlers) } : c
+            c.key === 'actions' ? { ...c, render: (_, row) => c.render(_, row, actionHandlers) } : c,
           )}
           data={tableData}
           page={page}

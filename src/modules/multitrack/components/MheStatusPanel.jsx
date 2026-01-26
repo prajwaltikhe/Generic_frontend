@@ -39,7 +39,7 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
   const [dt, setDt] = useState('');
 
   useEffect(() => {
-    setDt(moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm'));
+    setDt(moment().tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm'));
   }, []);
 
   const status = vehicle?.status ?? 'Unknown';

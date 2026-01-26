@@ -1,14 +1,12 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { APIURL } from '../../../constants';
-import { ApiService } from '../../../services';
 import { useEffect, useRef, useState } from 'react';
 import IModal from '../../../components/modal/Modal';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
-import { fetchEmployees } from '../../../redux/employeeSlice';
+import { fetchEmployees, deleteEmployee, changeEmployeeStatus, uploadEmployeeData } from '../../../redux/employeeSlice';
 import CommonTable from '../../../components/table/CommonTable';
 import { fetchDepartments } from '../../../redux/departmentSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
@@ -95,9 +93,9 @@ function formatEmp(data, offset = 0) {
     vehicle_route_id: emp?.vehicle_route_name || emp.route?.name || '',
     address: emp.address || '',
     boarding_latitude:
-      emp.boarding_latitude ?? emp.latitude ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
+      (emp.boarding_latitude ?? emp.latitude) ? Number(emp.boarding_latitude ?? emp.latitude).toFixed(7) : '',
     boarding_longitude:
-      emp.boarding_longitude ?? emp.longitude ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
+      (emp.boarding_longitude ?? emp.longitude) ? Number(emp.boarding_longitude ?? emp.longitude).toFixed(7) : '',
     boarding_address: emp.boarding_address_Stop || '',
     status:
       emp.active === 1 || (typeof emp.status === 'string' && emp.status.trim().toLowerCase() === 'active')
@@ -133,7 +131,7 @@ function Employee() {
   useEffect(() => {
     if (company_id)
       dispatch(fetchEmployees({ company_id, department: filterData.department, limit: 3000, page: 1 })).then((res) =>
-        setAllEmployeeOptions(res?.payload?.employes || [])
+        setAllEmployeeOptions(res?.payload?.employes || []),
       );
   }, [dispatch, company_id, filterData.department]);
 
@@ -165,33 +163,24 @@ function Employee() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Employee?')) return;
-    try {
-      const res = await ApiService.delete(`${APIURL.EMPLOYEE}/${id}`);
-      if (res.success) {
-        toast.success('Employee deleted successfully!');
+    dispatch(deleteEmployee(id)).then((res) => {
+      if (deleteEmployee.fulfilled.match(res)) {
+        toast.success(res.payload || 'Employee deleted successfully!');
         dispatch(fetchEmployees(buildApiPayload()));
-        window.location.reload();
-      } else toast.error(res.message || 'Failed to delete Employee');
-    } catch {
-      toast.error('Delete failed.');
-    }
+      } else toast.error(res.payload || 'Failed to delete Employee');
+    });
   };
 
   const handleStatusChange = async () => {
     if (!selectedEmp) return;
-    try {
-      const newStatus = selectedEmp.status === 'Active' ? 2 : 1;
-      const res = await ApiService.put(`${APIURL.EMPLOYEE}/${selectedEmp.actual_id}`, {
-        active: newStatus,
-      });
-      if (res.success) {
-        toast.success('Status updated!');
+    const newStatus = selectedEmp.status === 'Active' ? 2 : 1;
+    dispatch(changeEmployeeStatus({ id: selectedEmp.actual_id, status: newStatus })).then((res) => {
+      if (changeEmployeeStatus.fulfilled.match(res)) {
+        toast.success(res.payload || 'Status updated!');
         setIsStatusModalOpen(false);
         dispatch(fetchEmployees(buildApiPayload()));
-      } else toast.error('Failed to update status.');
-    } catch {
-      toast.error('Status update failed.');
-    }
+      } else toast.error(res.payload || 'Failed to update status.');
+    });
   };
 
   const handleFormSubmit = (e) => {
@@ -214,12 +203,13 @@ function Employee() {
     if (!file) return toast.error('Please select a file');
     const formData = new FormData();
     formData.append('file', file);
-    const res = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=employee`, formData);
-    if (res.success) {
-      toast.success(res.message);
-      if (fileInputRef.current) fileInputRef.current.value = null;
-      dispatch(fetchEmployees(buildApiPayload()));
-    } else toast.error(res.message || 'Upload failed');
+    dispatch(uploadEmployeeData(formData)).then((res) => {
+      if (uploadEmployeeData.fulfilled.match(res)) {
+        toast.success(res.payload?.message || 'Upload successful');
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        dispatch(fetchEmployees(buildApiPayload()));
+      } else toast.error(res.payload || 'Upload failed');
+    });
   };
 
   const handleExport = async () => {
@@ -332,7 +322,7 @@ function Employee() {
           columns={columns.map((c) =>
             c.key === 'status'
               ? { ...c, render: (_, row) => c.render(_, row, setSelectedEmp, setIsStatusModalOpen) }
-              : c
+              : c,
           )}
           data={tableData}
           page={page}

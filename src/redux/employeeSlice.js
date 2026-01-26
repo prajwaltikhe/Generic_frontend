@@ -28,7 +28,7 @@ export const updateEmployee = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
-  }
+  },
 );
 
 // Async thunk for fetching list of employees
@@ -52,7 +52,7 @@ export const fetchEmployeeOnboard = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
-  }
+  },
 );
 
 // Async thunk for fetching the destination arrival female report (like onboard)
@@ -68,7 +68,46 @@ export const fetchDestinationArrivalFemale = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
+  },
+);
+
+// Async thunk for deleting employee
+export const deleteEmployee = createAsyncThunk('employee/deleteEmployee', async (id, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.delete(`${APIURL.EMPLOYEE}/${id}`);
+    if (!response.success) return rejectWithValue(response.message || 'Failed to delete employee');
+    return response.message;
+  } catch (error) {
+    return rejectWithValue(error.message || 'Something went wrong');
   }
+});
+
+// Async thunk for changing employee status
+export const changeEmployeeStatus = createAsyncThunk(
+  'employee/changeEmployeeStatus',
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.put(`${APIURL.EMPLOYEE}/${id}`, { active: status });
+      if (!response.success) return rejectWithValue(response.message || 'Failed to update status');
+      return response.message;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Something went wrong');
+    }
+  },
+);
+
+// Async thunk for uploading employee data
+export const uploadEmployeeData = createAsyncThunk(
+  'employee/uploadEmployeeData',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=employee`, formData);
+      if (!response.success) return rejectWithValue(response.message || 'Upload failed');
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Upload failed');
+    }
+  },
 );
 
 // Async thunk for fetching all employee details
@@ -81,7 +120,7 @@ export const fetchAllEmployeeDetails = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || 'Something went wrong');
     }
-  }
+  },
 );
 
 const initialState = {

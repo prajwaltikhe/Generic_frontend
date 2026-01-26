@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
+import { APIURL } from '../constants';
 
 function getTodayEmergencyCount(data) {
   const arr = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
@@ -16,7 +17,7 @@ export const fetchEmergencyReportAlert = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const fetchTodayEmergency = createAsyncThunk(
@@ -28,7 +29,7 @@ export const fetchTodayEmergency = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 const initialState = {
@@ -37,6 +38,52 @@ const initialState = {
   loading: false,
   error: null,
 };
+
+// Async thunk to delete emergency report alert
+export const deleteEmergencyReportAlert = createAsyncThunk(
+  'emergencyReportAlert/deleteEmergencyReportAlert',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.delete(`${APIURL.EMERGENCY}/${id}`);
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to delete alert');
+      }
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Network error');
+    }
+  },
+);
+
+// Async thunk to upload emergency report alert
+export const uploadEmergencyReportAlert = createAsyncThunk(
+  'emergencyReportAlert/uploadEmergencyReportAlert',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=emergency_alert`, formData);
+      if (!response.success) return rejectWithValue(response.message || 'Upload failed');
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Upload failed');
+    }
+  },
+);
+
+export const updateEmergencyReportAlert = createAsyncThunk(
+  'emergencyReportAlert/updateEmergencyReportAlert',
+  async ({ id, payload, company_id }, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.put(`${APIURL.EMERGENCY}/${id}`, payload, { company_id });
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || 'Failed to update alert');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message || 'Network error');
+    }
+  },
+);
 
 const emergencyReportAlertReducer = createSlice({
   name: 'emergencyReportAlert',
@@ -67,6 +114,28 @@ const emergencyReportAlertReducer = createSlice({
         state.todayEmergency = action.payload;
       })
       .addCase(fetchTodayEmergency.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // deleteEmergencyReportAlert
+      .addCase(deleteEmergencyReportAlert.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteEmergencyReportAlert.fulfilled, (state) => {
+        state.loading = false;
+        // Optionally update the list if needed, or rely on refetch
+      })
+      .addCase(deleteEmergencyReportAlert.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateEmergencyReportAlert.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateEmergencyReportAlert.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(updateEmergencyReportAlert.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

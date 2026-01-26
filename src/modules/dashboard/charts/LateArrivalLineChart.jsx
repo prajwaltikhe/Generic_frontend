@@ -3,11 +3,11 @@ import ReactApexChart from 'react-apexcharts';
 const LateArrivalLineChart = ({ previousData, currentData, categories, text }) => (
   <ReactApexChart
     type='line'
-    height={250}
+    height={275}
     options={{
       chart: { id: 'line' },
-      xaxis: { categories, title: { text: 'Week', style: { fontWeight: 400, fontSize: 14 } } },
-      title: { text, align: 'left', style: { fontWeight: 400, fontSize: 14 } },
+      xaxis: { categories },
+      title: { text, align: 'left', style: { fontWeight: 550, fontSize: 16 } },
       stroke: { curve: 'smooth', width: 2 },
       markers: { size: 4 },
       legend: { position: 'top' },

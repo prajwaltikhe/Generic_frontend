@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { APIURL } from '../../constants';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import RoutingMatching from './RoutingMatching';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import lastVehicleData from '../../services/lastVehicleData';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPlaybackData } from '../../redux/multiTrackSlice';
 import { IconButton, Paper, Slider, Button, TextField, Chip, Stack } from '@mui/material';
 import { Menu as MenuIcon, Close as CloseIcon, PlayArrow as PlayIcon, Pause as PauseIcon } from '@mui/icons-material';
 
@@ -16,8 +16,17 @@ export default function Playback() {
   const [speed, setSpeed] = useState(10);
   const [isPlay, setIsPlay] = useState(false);
 
+  const dispatch = useDispatch();
   const { state } = useLocation();
   const selectedVehicle = state?.selectedVehicle;
+
+  const { playbackData, loadingPlayback } = useSelector((s) => s.multiTrackStatus);
+
+  useEffect(() => {
+    if (playbackData.length) {
+      setRouteCoordinate(playbackData.map((i) => [i.latitude, i.longitude]));
+    }
+  }, [playbackData]);
 
   const setShortcutDates = (type) => {
     const d = new Date();
@@ -35,27 +44,22 @@ export default function Playback() {
   const handlePlay = async () => {
     if (isPlay) return setIsPlay(false);
     if (!fromDate || !toDate) return alert('Select From/To dates');
-    try {
-      const res = await lastVehicleData.post(
-        APIURL.PLAYBACK,
-        {},
-        {
-          from: new Date(fromDate).toISOString(),
-          to: new Date(toDate).toISOString(),
-          imei: selectedVehicle.imei_number,
-        }
-      );
-      if (res.success && res.data.length) {
-        setRouteCoordinate(res.data.map((i) => [i.latitude, i.longitude]));
+    const params = {
+      from: new Date(fromDate).toISOString(),
+      to: new Date(toDate).toISOString(),
+      imei: selectedVehicle.imei_number,
+    };
+    dispatch(fetchPlaybackData(params)).then((res) => {
+      if (fetchPlaybackData.fulfilled.match(res)) {
         setIsPlay(true);
-      } else alert('No data found');
-    } catch (e) {
-      console.error(e);
-    }
+      } else {
+        alert(res.payload || 'No data found');
+      }
+    });
   };
 
   const filteredCoordinate = routeCoordinate.filter(
-    (c, i, arr) => i === 0 || c[0] !== arr[i - 1][0] || c[1] !== arr[i - 1][1]
+    (c, i, arr) => i === 0 || c[0] !== arr[i - 1][0] || c[1] !== arr[i - 1][1],
   );
 
   return (
@@ -144,9 +148,10 @@ export default function Playback() {
             <Button
               variant='contained'
               color='primary'
+              disabled={loadingPlayback}
               startIcon={isPlay ? <PauseIcon /> : <PlayIcon />}
               onClick={handlePlay}>
-              {isPlay ? 'Pause' : 'Play'}
+              {loadingPlayback ? 'Loading...' : isPlay ? 'Pause' : 'Play'}
             </Button>
           </div>
         </Paper>

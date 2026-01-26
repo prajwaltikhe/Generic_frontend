@@ -1,11 +1,18 @@
 import L from 'leaflet';
 import AutoFlyTo from './AutoFly';
 import AddIcon from '@mui/icons-material/Add';
-import { APIURL } from '../../../../constants';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useEffect, useState, useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AddressServices, ApiService } from '../../../../services';
+import { useDispatch } from 'react-redux';
+import { AddressServices } from '../../../../services';
+import {
+  createVehicleRoute,
+  updateVehicleRoute,
+  fetchVehicleRoutes,
+  fetchVehicleRouteStops,
+} from '../../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../../redux/vehiclesSlice';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Autocomplete, TextField, FormControl, RadioGroup } from '@mui/material';
 import { FormControlLabel, Radio, Button, CircularProgress } from '@mui/material';
@@ -84,6 +91,7 @@ const toTimeInputValue = (val) => {
 };
 
 const VehicleRouteForm = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const addressTimeoutRefs = useRef({});
@@ -109,57 +117,42 @@ const VehicleRouteForm = () => {
     const searchKey = initialRowData?.route_name;
     if (!searchKey || initialRowData?.name) return;
 
-    (async () => {
-      try {
-        const res = await ApiService.get(`${APIURL.VEHICLE_ROUTE}?search=${encodeURIComponent(searchKey)}`);
-        const routes = res?.data?.routes || [];
-        if (routes.length > 0) setRowData(routes[0]);
-      } catch (err) {
-        console.error('Failed to fetch route:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, [initialRowData?.route_name, initialRowData?.name, companyID]);
+    // Use dispatch to fetch routes based on search
+    dispatch(fetchVehicleRoutes({ search: searchKey })).then((res) => {
+      const routes = res.payload?.routes || [];
+      if (routes.length > 0) setRowData(routes[0]);
+      setIsLoading(false);
+    });
+  }, [initialRowData?.route_name, initialRowData?.name, companyID, dispatch]);
 
   useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const res = await ApiService.get(`${APIURL.VEHICLE}?company_id=${companyID}&limit=500`);
-        if (Array.isArray(res?.data?.vehicles)) setVehicles(res.data.vehicles);
-      } catch (error) {
-        console.error('Failed to fetch vehicles:', error);
+    dispatch(fetchVehicles({ company_id: companyID, limit: 500 })).then((res) => {
+      if (fetchVehicles.fulfilled.match(res)) {
+        setVehicles(res.payload?.vehicles || []);
       }
-    };
-    fetchVehicles();
-  }, [companyID]);
+    });
+  }, [companyID, dispatch]);
 
   useEffect(() => {
     if (!rowData?.id) return;
 
-    const fetchStops = async () => {
-      try {
-        const res = await ApiService.get(`${APIURL.VEHICLE_ROUTE}/${rowData.id}/stops`);
-        if (res?.data?.stops?.length) {
-          setStopPoints(
-            res.data.stops.map((s) => ({
-              id: s.id || Date.now() + Math.random(),
-              address: s.address || '',
-              latitude: s.latitude || '',
-              longitude: s.longitude || '',
-              time: toTimeInputValue(s.time),
-              returnTime: toTimeInputValue(s.return_time),
-              distance: s.distance || '',
-            }))
-          );
-        }
-      } catch (error) {
-        console.error('Failed to fetch stops:', error);
+    dispatch(fetchVehicleRouteStops(rowData.id)).then((res) => {
+      const stops = res.payload?.stops || [];
+      if (stops.length) {
+        setStopPoints(
+          stops.map((s) => ({
+            id: s.id || Date.now() + Math.random(),
+            address: s.address || '',
+            latitude: s.latitude || '',
+            longitude: s.longitude || '',
+            time: toTimeInputValue(s.time),
+            returnTime: toTimeInputValue(s.return_time),
+            distance: s.distance || '',
+          })),
+        );
       }
-    };
-
-    fetchStops();
-  }, [rowData?.id]);
+    });
+  }, [rowData?.id, dispatch]);
 
   useEffect(() => {
     if (!rowData || !vehicles.length) return;
@@ -191,7 +184,7 @@ const VehicleRouteForm = () => {
             time: toTimeInputValue(s.time),
             returnTime: toTimeInputValue(s.return_time),
             distance: s.distance || '',
-          }))
+          })),
         );
       }
     }
@@ -265,7 +258,7 @@ const VehicleRouteForm = () => {
     }
 
     const invalidStops = stopPoints.filter(
-      (s) => !s.latitude || !s.longitude || isNaN(parseFloat(s.latitude)) || isNaN(parseFloat(s.longitude))
+      (s) => !s.latitude || !s.longitude || isNaN(parseFloat(s.latitude)) || isNaN(parseFloat(s.longitude)),
     );
 
     if (invalidStops.length > 0) {
@@ -303,25 +296,19 @@ const VehicleRouteForm = () => {
 
     try {
       const id = rowData?.routeID || rowData?.id;
-      let res;
 
-      if (id) {
-        res = await ApiService.put(`${APIURL.VEHICLE_ROUTE}/${id}?company_id=${companyID}`, payload);
-        if (res.success) {
-          alert('Route updated successfully!');
+      const action = id
+        ? updateVehicleRoute({ id, payload: { ...payload, company_id: companyID } }) // Ensure query params if needed are handled in thunk or params
+        : createVehicleRoute(payload);
+
+      dispatch(action).then((res) => {
+        if (createVehicleRoute.fulfilled.match(res) || updateVehicleRoute.fulfilled.match(res)) {
+          alert(`Route ${id ? 'updated' : 'created'} successfully!`);
           navigate('/management/vehicle-route');
         } else {
-          throw new Error(res.message || 'Update failed');
+          throw new Error(res.payload || 'Operation failed');
         }
-      } else {
-        res = await ApiService.post(APIURL.VEHICLE_ROUTE, payload);
-        if (res.success) {
-          alert('Route created successfully!');
-          navigate('/management/vehicle-route');
-        } else {
-          throw new Error(res.message || 'Creation failed');
-        }
-      }
+      });
     } catch (error) {
       console.error('Submit error:', error);
       alert(error.message || 'Something went wrong! Please try again.');
@@ -641,7 +628,7 @@ const VehicleRouteForm = () => {
                       </div>
                     </Popup>
                   </Marker>
-                ) : null
+                ) : null,
               )}
               <FitBounds stopPoints={stopPoints} />
               {latestSelectedCoords && <AutoFlyTo coords={latestSelectedCoords} />}

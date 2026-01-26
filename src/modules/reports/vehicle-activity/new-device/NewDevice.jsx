@@ -90,15 +90,15 @@ export default function NewDevice() {
         <h1 className='text-2xl font-bold text-[#07163d]'>
           New Device Report{typeof totalCount === 'number' ? ` (Total: ${totalCount})` : ''}
         </h1>
-        <div className='flex gap-2'>
+        <div className='flex w-fit gap-2.5'>
           <button
-            className='bg-[#0f172a] text-white px-4 py-2 rounded font-medium text-sm'
+            className='min-w-40 text-white bg-[#1d31a6] hover:bg-[#1d31a6] font-medium rounded-sm text-sm w-full px-5 py-2.5 cursor-pointer'
             type='button'
             onClick={handleExport}>
-            Export CSV
+            Export Excel
           </button>
           <button
-            className='bg-[#0f172a] text-white px-4 py-2 rounded font-medium text-sm'
+            className='min-w-40 text-white bg-red-600 hover:bg-red-700 font-medium rounded-sm text-sm w-full px-5 py-2.5 cursor-pointer'
             type='button'
             onClick={handleExportPDF}>
             Export PDF

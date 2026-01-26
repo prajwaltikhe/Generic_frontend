@@ -37,17 +37,15 @@ export const updateVehicle = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Delete Vehicle
-export const deleteVehicle = createAsyncThunk('vehicles/deleteVehicle', async (id, { rejectWithValue, dispatch }) => {
+export const deleteVehicle = createAsyncThunk('vehicles/deleteVehicle', async (id, { rejectWithValue }) => {
   try {
     const response = await ApiService.delete(`${APIURL.VEHICLE}/${id}`);
     if (!response.success) return rejectWithValue(response.message);
 
-    // Re-fetch list after delete
-    dispatch(fetchVehicles({ page: 1, limit: 10 }));
     return id;
   } catch (error) {
     return rejectWithValue(error.message);
@@ -61,15 +59,29 @@ export const changeVehicleStatus = createAsyncThunk(
       const res = await ApiService.put(`${APIURL.VEHICLE}/${id}`, {
         vehicle_status_id: newStatusId,
       });
-      if (res.data) {
-        return res.vehicle;
+      if (res.success) {
+        return res.data;
       } else {
         return rejectWithValue(res.message || 'Failed to update status');
       }
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
+);
+
+// Upload Vehicle Data (Excel/CSV)
+export const uploadVehicleData = createAsyncThunk(
+  'vehicles/uploadVehicleData',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.postFormData(`${APIURL.UPLOAD}?folder=vehicle`, formData);
+      if (!response.success) return rejectWithValue(response.message || 'Upload failed');
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Upload failed');
+    }
+  },
 );
 
 // ---- Initial State ----
@@ -95,7 +107,7 @@ const vehiclesSlice = createSlice({
       if (!updatedIMEI) return;
       state.vehicles = Array.isArray(state.vehicles)
         ? state.vehicles.map((v) =>
-            v.imei_number === updatedIMEI ? { ...v, ...payload, imei_number: v.imei_number } : v
+            v.imei_number === updatedIMEI ? { ...v, ...payload, imei_number: v.imei_number } : v,
           )
         : state.vehicles;
     },
