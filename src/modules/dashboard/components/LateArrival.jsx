@@ -1,18 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchLateArrival } from '../../../redux/dashboardSlice';
 import LateArrivalLineChart from '../charts/LateArrivalLineChart';
 
 export default function LateArrival() {
   const dispatch = useDispatch();
-  const { previousData, currentData, days } = useSelector((state) => {
-    const data = state.dashboard?.lateArrival?.weekChart || [];
+  const weekChart = useSelector((state) => state.dashboard?.lateArrival?.weekChart);
+
+  const { previousData, currentData, days } = useMemo(() => {
+    const data = weekChart || [];
     return {
       previousData: data.map((d) => d.previous ?? 0),
       currentData: data.map((d) => d.current ?? 0),
       days: data.map((d) => d.day),
     };
-  });
+  }, [weekChart]);
   const loading = useSelector((state) => state.dashboard?.loading);
 
   useEffect(() => {
