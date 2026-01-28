@@ -11,8 +11,8 @@ const DistanceCoveredBarChart = ({ previousData, currentData, categories, text }
     options={{
       chart: { id: 'distance-covered-bar' },
       xaxis: { categories },
-      yaxis: { labels: { formatter: (val) => `${(val / 1000).toFixed(0)} km`, }, },
-      tooltip: { y: { formatter: (val) => `${(val / 1000).toFixed(2)} km`, }, },
+      yaxis: { labels: { formatter: (val) => `${(val).toFixed(0)} km`, }, },
+      tooltip: { y: { formatter: (val) => `${(val).toFixed(2)} km`, }, },
       title: { text, align: 'left', style: { fontWeight: 550, fontSize: 16 }, },
       legend: { position: 'top' },
       plotOptions: { bar: { borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '50%', }, },
