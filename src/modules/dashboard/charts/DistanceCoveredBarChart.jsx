@@ -2,7 +2,7 @@ import ReactApexChart from 'react-apexcharts';
 
 const DistanceCoveredBarChart = ({ previousData, currentData, categories, text }) => (
   <ReactApexChart
-    type='bar'
+    type="bar"
     height={250}
     series={[
       { name: 'Previous', data: previousData, color: '#4285f4' },
@@ -11,10 +11,11 @@ const DistanceCoveredBarChart = ({ previousData, currentData, categories, text }
     options={{
       chart: { id: 'distance-covered-bar' },
       xaxis: { categories },
-      yaxis: { labels: { formatter: (val) => `${(val / 1000).toFixed(0)} km` } },
-      title: { text, align: 'left', style: { fontWeight: 550, fontSize: 16 } },
+      yaxis: { labels: { formatter: (val) => `${(val / 1000).toFixed(0)} km`, }, },
+      tooltip: { y: { formatter: (val) => `${(val / 1000).toFixed(2)} km`, }, },
+      title: { text, align: 'left', style: { fontWeight: 550, fontSize: 16 }, },
       legend: { position: 'top' },
-      plotOptions: { bar: { borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '50%' } },
+      plotOptions: { bar: { borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '50%', }, },
       dataLabels: { enabled: false },
     }}
   />
