@@ -1,13 +1,12 @@
-import moment from 'moment';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '@mui/icons-material';
-import { useState, useMemo, useEffect } from 'react';
 import ArrowLeftIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
 import ISearch, { LateSvg, OnTimeSvg, TotalSvg } from './ISearch';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { FaBatteryFull, FaBolt, FaKey, FaWifi } from 'react-icons/fa';
-import { setActiveTab, setIsTrackShow, fetchLateArrivalStats } from '../../../redux/multiTrackSlice';
+import { setActiveTab, setIsTrackShow } from '../../../redux/multiTrackSlice';
 
 const statusTabs = [
   { label: 'Running', bg: '#00800026', color: 'green' },
@@ -60,7 +59,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow, weekChart } = useSelector(
+  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow } = useSelector(
     selectState,
     shallowEqual,
   );
@@ -76,6 +75,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
     }),
     [devices, newDevices, running, parked, idle, offline],
   );
+  const totalVehicles = cleaned.All.length;
 
   const tabCounts = useMemo(
     () => Object.fromEntries(statusTabs.map((t) => [t.label, cleaned[t.label]?.length || 0])),
@@ -90,23 +90,6 @@ const TrackingPanel = ({ handleRightPanel }) => {
   );
 
   const defaultShiftId = '2f7d76b8-87a9-4dc1-822a-a39e99b314e9';
-
-  const [arrivalStats, setArrivalStats] = useState({ onTime: 0, late: 0 });
-
-  useEffect(() => {
-    dispatch(fetchLateArrivalStats());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (Array.isArray(weekChart) && weekChart.length > 0) {
-      const today = moment().format('ddd');
-      const todayData = weekChart.find((d) => d.day === today);
-      setArrivalStats((prev) => ({ ...prev, late: todayData?.current || 0 }));
-    }
-  }, [weekChart]);
-
-  const totalVehicles = cleaned.All.length;
-  const onTimeCount = Math.max(0, totalVehicles - arrivalStats.late);
 
   const handleOnTimeClick = () => {
     navigate(`/report/vehicle-arrival-time/${defaultShiftId}?status=ON_TIME`);
@@ -132,19 +115,12 @@ const TrackingPanel = ({ handleRightPanel }) => {
         <StatCard
           icon={<OnTimeSvg />}
           label='On time'
-          value={onTimeCount}
+          value='-'
           bg='#00800026'
           color='#0e7c13'
           onClick={handleOnTimeClick}
         />
-        <StatCard
-          icon={<LateSvg />}
-          label='Late'
-          value={arrivalStats.late}
-          bg='#FF000026'
-          color='#d70b0b'
-          onClick={handleLateClick}
-        />
+        <StatCard icon={<LateSvg />} label='Late' value='-' bg='#FF000026' color='#d70b0b' onClick={handleLateClick} />
       </div>
       <div className='border border-[#1d31a6] rounded-md flex flex-col flex-1 min-h-0 relative'>
         <div className='flex'>

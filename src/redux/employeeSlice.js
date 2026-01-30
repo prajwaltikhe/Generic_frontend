@@ -20,7 +20,8 @@ export const updateEmployee = createAsyncThunk(
   'employee/updateEmployee',
   async ({ id, formData }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.put(`employee/${id}`, formData);
+      const company_id = localStorage.getItem('company_id');
+      const response = await ApiService.put(`${APIURL.EMPLOYEE}/${id}`, formData, { company_id });
 
       if (!response.success) return rejectWithValue(response.message || 'Failed to update employee');
 
