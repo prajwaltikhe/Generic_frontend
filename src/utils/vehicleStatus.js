@@ -1,46 +1,58 @@
-const isDataOld = (d) => !!d && !isNaN((d = new Date(d))) && Date.now() - d > 600000;
-
-const colorOfDot = (ign, mov, time, isNew, speed) =>
-  isNew
-    ? 'gray'
-    : (ign && mov) || speed > 0
-      ? 'rgb(0,128,0)'
-      : isDataOld(time)
-        ? 'rgb(0,0,255)'
-        : ign
-          ? 'rgb(255,255,0)'
-          : !ign && !mov
-            ? 'rgb(255,0,0)'
-            : 'gray';
+const ONE_HOUR = 3600000;
 
 export const processVehicles = (vehicles) => {
-  const devs = (vehicles || []).filter(Boolean).map((v) => {
+  const result = {
+    devices: [],
+    runningDevices: [],
+    idelDevices: [],
+    parkedDevices: [],
+    offlineVehicleData: [],
+    newDevices: [],
+  };
+
+  if (!Array.isArray(vehicles)) return result;
+
+  const now = Date.now();
+
+  result.devices = vehicles.filter(Boolean).map((v) => {
     const io = Array.isArray(v.ioElements) ? v.ioElements : [];
-    const get = (id) => io.find((i) => i.id === id)?.value ?? 0;
-    const ign = get(239) === 1,
-      mov = get(240) === 1;
-    const speed = Number(v.speed) || 0;
-    const hasTs = !!v.timestamp && !isNaN(new Date(v.timestamp));
-    const hasLat = v.latitude != null && +v.latitude !== 0;
-    const hasLng = v.longitude != null && +v.longitude !== 0;
-    const isNew = !hasTs || !hasLat || !hasLng;
-    const localTime = hasTs ? new Date(v.timestamp).toISOString() : '';
-    const name =
-      v.driver?.first_name || v.driver?.last_name
-        ? `${v.driver?.first_name ?? ''} ${v.driver?.last_name ?? ''}`.trim()
-        : '-';
+    const getVal = (id) => io.find((i) => i.id === id)?.value ?? 0;
 
-    const status = isNew
-      ? 'New'
-      : (ign && mov) || speed > 0
-        ? 'Running'
-        : isDataOld(localTime)
-          ? 'Offline'
-          : ign
-            ? 'Idle'
-            : 'Parked';
+    const ign = getVal(239) === 1;
+    const mov = getVal(240) === 1;
+    const bat = getVal(68) > 0;
+    const pwr = getVal(66) > 0;
 
-    return {
+    const speedVal = Number(v.speed);
+    const speed = isNaN(speedVal) ? 0 : speedVal;
+
+    const tsDate = v.timestamp ? new Date(v.timestamp) : null;
+    const savedDate = !!tsDate && !isNaN(tsDate.getTime());
+    const lat = +v.latitude || 0;
+    const lng = +v.longitude || 0;
+
+    const isNew = !savedDate;
+    const isOffline = savedDate && now - tsDate.getTime() > ONE_HOUR;
+
+    let status, color;
+    if (isNew) {
+      status = 'New';
+      color = 'gray';
+    } else if (isOffline) {
+      status = 'Offline';
+      color = 'rgb(0,0,255)';
+    } else if (speed > 0) {
+      status = 'Running';
+      color = 'rgb(0,128,0)';
+    } else if (ign) {
+      status = 'Idle';
+      color = 'rgb(255,255,0)';
+    } else {
+      status = 'Parked';
+      color = 'rgb(255,0,0)';
+    }
+
+    const device = {
       id: v.id ?? '-',
       imei_number: v.imei_number ?? '-',
       vehicle_name: v.vehicle_name ?? '-',
@@ -50,35 +62,37 @@ export const processVehicles = (vehicles) => {
       seats: v.seats ?? '-',
       assigned_seats: v.AssignedSeats ?? '-',
       onboarded_employee: v.EmployeeOnboardCount ?? '-',
-      speed: v.speed != null && !isNaN(Number(v.speed)) ? `${Number(v.speed)} km/h` : '-',
-      driver_name: name,
+      speed: v.speed != null && !isNaN(speedVal) ? `${speedVal} km/h` : '-',
+      driver_name:
+        v.driver?.first_name || v.driver?.last_name
+          ? `${v.driver?.first_name ?? ''} ${v.driver?.last_name ?? ''}`.trim()
+          : '-',
       driver_number: v.driver?.phone_number ?? '-',
       address: v.address ?? '-',
-      timestamp: localTime,
-      speed_limit: v.speed_limit ?? v.speed ?? 0,
-      lat: +v.latitude || 0,
-      lng: +v.longitude || 0,
-      hasGPS: hasLat && hasLng,
+      timestamp: savedDate ? tsDate.toISOString() : '',
+      speed_limit: v.speed_limit ?? speed,
+      lat,
+      lng,
+      hasGPS: lat !== 0 && lng !== 0,
       hasIgnition: ign,
-      hasBattery: get(68) > 0,
-      hasExternalPower: get(66) > 0,
+      hasBattery: bat,
+      hasExternalPower: pwr,
       movement: mov,
-      color: colorOfDot(ign, mov, localTime, isNew, speed),
-      isOffline: isDataOld(localTime),
+      color,
+      isOffline,
       status,
     };
+
+    if (status === 'Running') result.runningDevices.push(device);
+    else if (status === 'Idle') result.idelDevices.push(device);
+    else if (status === 'Parked') result.parkedDevices.push(device);
+    else if (status === 'Offline') result.offlineVehicleData.push(device);
+    else if (status === 'New') result.newDevices.push(device);
+
+    return device;
   });
 
-  const pick = (s) => devs.filter((d) => d.status === s);
-
-  return {
-    devices: devs,
-    runningDevices: pick('Running'),
-    idelDevices: pick('Idle'),
-    parkedDevices: pick('Parked'),
-    offlineVehicleData: pick('Offline'),
-    newDevices: pick('New'),
-  };
+  return result;
 };
 
 export const intervalOptions = [
