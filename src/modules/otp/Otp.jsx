@@ -45,8 +45,8 @@ function Otp() {
           localStorage.setItem('company_id', user.company_id);
 
           // Load initial data
-          dispatch(fetchDepartments({ limit: 100 }));
-          dispatch(fetchPlants({ limit: 100 }));
+          dispatch(fetchDepartments({ limit: 10 }));
+          dispatch(fetchPlants({ limit: 50 }));
 
           localStorage.removeItem('user_id');
           localStorage.removeItem('pendingUserEmail');

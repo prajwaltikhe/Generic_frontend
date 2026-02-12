@@ -86,7 +86,7 @@ function Vehicle() {
   const [filterData, setFilterData] = useState({ routes: [], vehicles: [] });
 
   useEffect(() => {
-    dispatch(fetchVehicleRoutes({ limit: 100 }));
+    dispatch(fetchVehicleRoutes({ limit: 150 }));
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({

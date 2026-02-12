@@ -87,7 +87,7 @@ function PlantInTimeForm() {
   });
 
   useEffect(() => {
-    if (companyId) dispatch(fetchVehicleRoutes({ company_id: companyId, limit: 100 }));
+    if (companyId) dispatch(fetchVehicleRoutes({ company_id: companyId, limit: 150 }));
   }, [dispatch, companyId]);
 
   return (

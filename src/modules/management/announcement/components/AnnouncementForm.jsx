@@ -25,7 +25,7 @@ export default function AnnouncementForm() {
   const sender = ed?.sender_name || 'Super Admin';
 
   useEffect(() => {
-    if (!routes.length) disp(fetchVehicleRoutes({ limit: 100 }));
+    if (!routes.length) disp(fetchVehicleRoutes({ limit: 150 }));
   }, [routes.length, disp]);
   useEffect(() => {
     setRouteOpts(routes.map((r) => ({ label: r.name, value: r.id })));

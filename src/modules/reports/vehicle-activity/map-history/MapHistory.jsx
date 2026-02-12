@@ -201,7 +201,7 @@ function MapHistory() {
   const dataFilter = useRef(filterData);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
   }, [dispatch, company_id]);
 
   const validMapPoints = useMemo(() => filteredData.filter(isValidPoint), [filteredData]);

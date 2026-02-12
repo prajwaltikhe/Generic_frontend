@@ -76,7 +76,7 @@ function EmergencyAlert() {
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
   }, [dispatch, company_id]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -99,7 +99,7 @@ function EmergencyAlert() {
     setLoading(true);
     dispatch(fetchEmergencyReportAlert(buildApiPayload())).then((res) => {
       if (fetchEmergencyReportAlert.fulfilled.match(res)) {
-        const list = Array.isArray(res.payload?.alerts) ? res.payload.alerts : [];
+        const list = Array.isArray(res.payload?.data) ? res.payload.data : [];
         setFilteredData(list);
         setTotalCount(res.payload?.pagination?.total ?? list.length ?? 0);
       } else {
@@ -145,7 +145,7 @@ function EmergencyAlert() {
     const exportPayload = buildApiPayload(1, 100);
     dispatch(fetchEmergencyReportAlert(exportPayload)).then((res) => {
       if (fetchEmergencyReportAlert.fulfilled.match(res)) {
-        const list = Array.isArray(res.payload?.alerts) ? res.payload.alerts : [];
+        const list = Array.isArray(res.payload?.data) ? res.payload.data : [];
         if (!list.length) {
           toast.error('No data available to export.');
           return;

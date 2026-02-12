@@ -8,7 +8,7 @@ export const fetchEnrichedVehicles = createAsyncThunk(
   'multiTrackStatus/fetchEnrichedVehicles',
   async (_, { dispatch, rejectWithValue }) => {
     try {
-      const res = await dispatch(fetchVehicles({ limit: 100 })).unwrap();
+      const res = await dispatch(fetchVehicles({ limit: 150 })).unwrap();
       const vehicles = res.vehicles || [];
       const validVehicles = vehicles.filter((v) => v?.imei_number);
 

@@ -87,7 +87,7 @@ function Driver() {
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
-    dispatch(fetchVehicleRoutes({ limit: 100 }));
+    dispatch(fetchVehicleRoutes({ limit: 150 }));
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({

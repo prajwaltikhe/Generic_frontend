@@ -65,7 +65,7 @@ function Idle() {
   const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || {});
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
   }, [dispatch, company_id]);
 
   const buildApiPayload = useCallback(
@@ -150,7 +150,7 @@ function Idle() {
   };
 
   const handleExport = async () => {
-    const res = await dispatch(fetchVehicleActivityData({ ...buildApiPayload({ page: 1, limit: total || 100 }) }));
+    const res = await dispatch(fetchVehicleActivityData({ ...buildApiPayload({ page: 1, limit: total || 150 }) }));
     const exportRows = formatIdleRows(res?.payload?.data || []);
     exportToExcel({
       columns,
@@ -160,7 +160,7 @@ function Idle() {
   };
 
   const handleExportPDF = async () => {
-    const res = await dispatch(fetchVehicleActivityData({ ...buildApiPayload({ page: 1, limit: total || 100 }) }));
+    const res = await dispatch(fetchVehicleActivityData({ ...buildApiPayload({ page: 1, limit: total || 150 }) }));
     const exportRows = formatIdleRows(res?.payload?.data || []);
     exportToPDF({
       columns,

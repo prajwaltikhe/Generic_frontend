@@ -63,7 +63,7 @@ export default function NewDevice() {
   }, [company_id, page, limit, dispatch]);
 
   const handleExport = async () => {
-    const res = await dispatch(fetchVehicleMissingInflux({ company_id, page: 1, limit: totalCount || 100 }));
+    const res = await dispatch(fetchVehicleMissingInflux({ company_id, page: 1, limit: totalCount || 150 }));
     const exportRows = formatNewDeviceRows(res?.payload?.data || []);
     exportToExcel({
       columns,
@@ -73,7 +73,7 @@ export default function NewDevice() {
   };
 
   const handleExportPDF = async () => {
-    const res = await dispatch(fetchVehicleMissingInflux({ company_id, page: 1, limit: totalCount || 100 }));
+    const res = await dispatch(fetchVehicleMissingInflux({ company_id, page: 1, limit: totalCount || 150 }));
     const exportRows = formatNewDeviceRows(res?.payload?.data || []);
     exportToPDF({
       columns,

@@ -130,7 +130,7 @@ function Employee() {
   const [allEmployeeOptions, setAllEmployeeOptions] = useState([]);
   useEffect(() => {
     if (company_id)
-      dispatch(fetchEmployees({ company_id, department: filterData.department, limit: 3000, page: 1 })).then((res) =>
+      dispatch(fetchEmployees({ company_id, department: filterData.department, limit: 3500, page: 1 })).then((res) =>
         setAllEmployeeOptions(res?.payload?.employes || []),
       );
   }, [dispatch, company_id, filterData.department]);

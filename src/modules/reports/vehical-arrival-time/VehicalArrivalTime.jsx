@@ -47,7 +47,7 @@ function VehicalArrivalTime() {
 
   const tabs = useMemo(
     () => shifts.map((shift) => ({ name: shift.name, path: `/report/vehicle-arrival-time/${shift.id}` })),
-    []
+    [],
   );
 
   const currentPathId = location.pathname.split('/').pop();
@@ -116,7 +116,7 @@ function VehicalArrivalTime() {
   }, []);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
   }, [dispatch, company_id]);
 
   const buildApiPayload = useCallback(() => {

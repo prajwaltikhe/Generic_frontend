@@ -24,9 +24,11 @@ const GeofenceCreateForm = ({ selectedColor, onColorChange, handleClear, cordina
   const [isCordsEmpty, setIsCordsEmpty] = useState(false);
   const vehicleList = useSelector((s) => s.vehicles?.vehicles || []);
   const [vehicleOptions, setVehicleOptions] = useState([]);
+
   useEffect(() => {
-    dispatch(fetchVehicles({ page: 1, limit: 1000 }));
+    dispatch(fetchVehicles({ page: 1, limit: 150 }));
   }, [dispatch]);
+
   useEffect(() => {
     setVehicleOptions(vehicleList?.map?.((v) => ({ label: v.vehicle_name, value: String(v.id) })) || []);
   }, [vehicleList]);

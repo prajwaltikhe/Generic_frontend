@@ -71,13 +71,13 @@ function EmergencyAlert() {
   const { routes: vehicleRoutes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || {}) || {};
 
   useEffect(() => {
-    company_id && dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    company_id && dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
   }, [dispatch, company_id]);
 
   useEffect(() => {
     company_id &&
       dispatch(fetchEmergencyReportAlert({ company_id, page: page + 1, limit })).then((res) =>
-        setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : [])
+        setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
       );
   }, [dispatch, company_id, page, limit]);
 
@@ -126,7 +126,7 @@ function EmergencyAlert() {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     dispatch(fetchEmergencyReportAlert(buildApiPayload())).then((res) =>
-      setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : [])
+      setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
     );
   };
 

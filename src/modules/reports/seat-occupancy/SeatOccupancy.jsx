@@ -44,7 +44,7 @@ function SeatOccupancy() {
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
   }, [dispatch, company_id]);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ function SeatOccupancy() {
   };
 
   const handleExport = async () => {
-    const res = await dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: 1, limit: totalCount || 10000 }));
+    const res = await dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: 1, limit: totalCount || 150 }));
     if (res?.payload?.success) {
       exportToExcel({
         columns,
@@ -82,7 +82,7 @@ function SeatOccupancy() {
   };
 
   const handleExportPDF = async () => {
-    const res = await dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: 1, limit: totalCount || 10000 }));
+    const res = await dispatch(fetchSeatOccupancyReport({ ...buildApiPayload(), page: 1, limit: totalCount || 150 }));
     if (res?.payload?.success) {
       exportToPDF({
         columns,

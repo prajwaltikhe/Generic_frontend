@@ -70,9 +70,9 @@ function DestinationArrivalFemale() {
   useEffect(() => {
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchDepartments({ limit: 10 }));
-    dispatch(fetchVehicleRoutes({ limit: 100 }));
+    dispatch(fetchVehicleRoutes({ limit: 150 }));
     dispatch(fetchPlants({ limit: 50 }));
-    if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3000 }));
+    if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3500 }));
   }, [dispatch]);
 
   const mapResponseData = (data) => {

@@ -23,7 +23,7 @@ function VehicleForm() {
       vehicleOverspeed: '',
       seats: '',
     }),
-    []
+    [],
   );
   const [formVal, setFormVal] = useState(initialFormVal);
 
@@ -34,7 +34,7 @@ function VehicleForm() {
     refetch,
   } = useDropdownOpt({
     apiUrl: APIURL.DRIVER,
-    query: { page: 1, limit: 100, search: '' },
+    query: { page: 1, limit: 150, search: '' },
     labelSelector: (d) => `${d.first_name} ${d.last_name}`,
     dataKey: 'drivers',
     valueSelector: (d) => d.id,
@@ -45,7 +45,7 @@ function VehicleForm() {
     let selectedDriver = rowData.selectedDriver || rowData.driverID || '';
     if ((rowData.action || '').toLowerCase() === 'edit' && rowData.driverName && driverOptions?.length) {
       const found = driverOptions.find(
-        (opt) => (opt.label || '').trim().toLowerCase() === (rowData.driverName || '').trim().toLowerCase()
+        (opt) => (opt.label || '').trim().toLowerCase() === (rowData.driverName || '').trim().toLowerCase(),
       );
       if (found) selectedDriver = found.value;
     }
@@ -58,7 +58,6 @@ function VehicleForm() {
       vehicleOverspeed: rowData.speedLimit ?? '',
       seats: rowData.seatCount ?? '',
     });
-     
   }, [rowData, driverOptions, initialFormVal]);
 
   const handleChange = (e) => setFormVal((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -88,7 +87,7 @@ function VehicleForm() {
     }
   };
 
-  const v = (key, alt) => (isView ? rowData?.[key] ?? rowData?.[alt] ?? '' : formVal[key]);
+  const v = (key, alt) => (isView ? (rowData?.[key] ?? rowData?.[alt] ?? '') : formVal[key]);
 
   return (
     <div className='w-full h-full p-2'>
@@ -216,7 +215,7 @@ function VehicleForm() {
                     fullWidth
                     required
                     placeholder='Vehicle Overspeed'
-                    value={isView ? rowData?.speedLimit ?? '' : formVal.vehicleOverspeed}
+                    value={isView ? (rowData?.speedLimit ?? '') : formVal.vehicleOverspeed}
                     onChange={handleChange}
                   />
                 </div>
@@ -233,7 +232,7 @@ function VehicleForm() {
                     fullWidth
                     required
                     placeholder='Seats'
-                    value={isView ? rowData?.seatCount ?? '' : formVal.seats}
+                    value={isView ? (rowData?.seatCount ?? '') : formVal.seats}
                     onChange={handleChange}
                   />
                 </div>

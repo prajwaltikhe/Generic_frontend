@@ -126,7 +126,7 @@ const VehicleRouteForm = () => {
   }, [initialRowData?.route_name, initialRowData?.name, companyID, dispatch]);
 
   useEffect(() => {
-    dispatch(fetchVehicles({ company_id: companyID, limit: 500 })).then((res) => {
+    dispatch(fetchVehicles({ company_id: companyID, limit: 150 })).then((res) => {
       if (fetchVehicles.fulfilled.match(res)) {
         setVehicles(res.payload?.vehicles || []);
       }

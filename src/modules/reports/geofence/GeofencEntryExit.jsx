@@ -49,7 +49,7 @@ function GeofencEntryExit() {
   );
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 100 }));
+    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
     if (company_id) dispatch(fetchVehicleGeoFence({ company_id, limit: 500 }));
   }, [company_id, dispatch]);
 
@@ -113,7 +113,7 @@ function GeofencEntryExit() {
   };
 
   const handleExport = async () => {
-    const res = await dispatch(vehicleGeofenceReport(buildApiPayload({ page: 1, limit: totalCount || 100 })));
+    const res = await dispatch(vehicleGeofenceReport(buildApiPayload({ page: 1, limit: totalCount || 150 })));
     const exportData = formatData(res?.payload?.reports || []);
     exportToExcel({
       columns,
@@ -123,7 +123,7 @@ function GeofencEntryExit() {
   };
 
   const handleExportPDF = async () => {
-    const res = await dispatch(vehicleGeofenceReport(buildApiPayload({ page: 1, limit: totalCount || 100 })));
+    const res = await dispatch(vehicleGeofenceReport(buildApiPayload({ page: 1, limit: totalCount || 150 })));
     const exportData = formatData(res?.payload?.reports || []);
     exportToPDF({
       columns,
