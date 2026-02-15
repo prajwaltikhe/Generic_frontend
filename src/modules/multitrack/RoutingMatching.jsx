@@ -2,7 +2,7 @@ import L from 'leaflet';
 import 'leaflet-routing-machine';
 import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
   const map = useMap();
@@ -18,9 +18,17 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
       iconSize: [30, 35],
       iconAnchor: [15, 34],
       popupAnchor: [0, -34],
+      className: 'bg-white',
     });
 
-  // Routing and marker initialization
+  const popHtml = useCallback(
+    (lat, lng) =>
+      `<h1 style="font-size:1rem; font-weight:bold;">${vehicle_number || ''}</h1>
+        <div>Lat: ${lat != null ? lat.toFixed(7) : 'N/A'}</div>
+        <div>Lng: ${lng != null ? lng.toFixed(7) : 'N/A'}</div>`,
+    [vehicle_number],
+  );
+
   useEffect(() => {
     if (!map || coordinates?.length < 2) return;
     if (routingRef.current) map.removeControl(routingRef.current);
@@ -44,9 +52,10 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
       posRef.current = 0;
       if (markerRef.current) map.removeLayer(markerRef.current);
       if (routeCoords.current.length) {
+        const { lat, lng } = routeCoords.current[0];
         markerRef.current = L.marker(routeCoords.current[0], { icon: getCarIcon() })
           .addTo(map)
-          .bindPopup('', { closeButton: false, autoClose: false })
+          .bindPopup(popHtml(lat, lng), { closeButton: false, autoClose: false })
           .openPopup();
       }
     });
@@ -57,16 +66,11 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
       if (markerRef.current) map.removeLayer(markerRef.current);
       clearInterval(intervalRef.current);
     };
-  }, [map, coordinates]);
+  }, [map, coordinates, vehicle_number, popHtml]);
 
   useEffect(() => {
     const coords = routeCoords.current;
     if (!coords.length) return;
-
-    const popHtml = (lat, lng) =>
-      `<h1 style="font-size:1rem; font-weight:bold;">${vehicle_number || ''}</h1>
-        <div>Lat: ${lat != null ? lat.toFixed(7) : 'N/A'}</div>
-        <div>Lng: ${lng != null ? lng.toFixed(7) : 'N/A'}</div>`;
 
     if (!markerRef.current) {
       const { lat, lng } = coords[0] || {};
@@ -93,7 +97,7 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
       }, delay);
     }
     return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed, map, vehicle_number]);
+  }, [isPlaying, speed, map, vehicle_number, popHtml]);
 
   return null;
 };

@@ -125,7 +125,6 @@ function Announcement() {
           rows: buildExportRows({ columns, data: formatAnnouncement(list) }),
           fileName: 'announcements.xlsx',
         });
-        toast.success('Export to Excel successful.');
         loadAnnouncements(); // Reload to restore table view
       } else {
         toast.error('Export to Excel failed.');
@@ -144,7 +143,6 @@ function Announcement() {
           fileName: 'announcements.pdf',
           orientation: 'landscape',
         });
-        toast.success('Export to PDF successful.');
         loadAnnouncements(); // Reload to restore table view
       } else {
         toast.error('Export PDF failed.');

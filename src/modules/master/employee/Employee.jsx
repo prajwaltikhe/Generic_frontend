@@ -76,6 +76,7 @@ const columns = [
 function formatEmp(data, offset = 0) {
   return data.map((emp, idx) => ({
     id: offset + idx + 1,
+    srNo: offset + idx + 1,
     actual_id: emp.id || '',
     first_name: emp.first_name || '',
     last_name: emp.last_name || '',
@@ -87,7 +88,9 @@ function formatEmp(data, offset = 0) {
     plant: emp.plant_name || emp.plant?.plant_name || emp.plant || '',
     department: emp.department_name || emp.department?.department_name || emp.department || '',
     date_of_joining: emp.date_of_joining ? dayjs(emp.date_of_joining).format('YYYY-MM-DD') : '',
+    doj: emp.date_of_joining ? dayjs(emp.date_of_joining).format('YYYY-MM-DD') : '',
     date_of_birth: emp.date_of_birth ? dayjs(emp.date_of_birth).format('YYYY-MM-DD') : '',
+    dob: emp.date_of_birth ? dayjs(emp.date_of_birth).format('YYYY-MM-DD') : '',
     created_at: emp.created_at ? dayjs(emp.created_at).format('YYYY-MM-DD HH:mm') : '',
     gender: emp.gender || '',
     vehicle_route_id: emp?.vehicle_route_name || emp.route?.name || '',

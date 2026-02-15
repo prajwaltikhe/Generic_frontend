@@ -44,6 +44,7 @@ const columns = [
 function formatDriver(data, offset = 0) {
   return data.map((driver, idx) => ({
     id: offset + idx + 1,
+    srNo: offset + idx + 1,
     actual_id: driver.id || '',
     driverName: [driver.first_name, driver.last_name].filter(Boolean).join(' '),
     driverEmail: driver.email || '',

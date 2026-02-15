@@ -35,18 +35,20 @@ const selectDevices = (s) => [
   ...(s.multiTrackStatus.newDevices || []),
 ];
 
-function MapEffects({ selectedVehicle, markerRefs }) {
+function MapEffects({ selectedVehicle, markerRefs, mapCenter }) {
   const map = useMap();
   useEffect(() => {
     if (selectedVehicle?.id && markerRefs.current[selectedVehicle.id]) {
       markerRefs.current[selectedVehicle.id].openPopup();
       map.flyTo([selectedVehicle.lat, selectedVehicle.lng], 16, { animate: true, duration: 1.2 });
+    } else if (mapCenter) {
+      map.setView(mapCenter);
     }
-  }, [selectedVehicle, markerRefs, map]);
+  }, [selectedVehicle, markerRefs, map, mapCenter]);
   return null;
 }
 
-const DEFAULT_CENTER = [20.5937, 78.9629];
+const DEFAULT_CENTER = [12.8827, 79.3707];
 
 function InlineRouteLabel({ lat, lng, content }) {
   const map = useMap(),
@@ -103,10 +105,6 @@ const MapComponent = ({ selectedVehicle }) => {
   const mapCenter = useMemo(() => {
     if (selectedVehicle?.lat && selectedVehicle?.lng) return [selectedVehicle.lat, selectedVehicle.lng];
     if (devices.length === 1) return [devices[0].lat, devices[0].lng];
-    if (devices.length > 1) {
-      const [latSum, lngSum] = devices.reduce(([la, ln], d) => [la + d.lat, ln + d.lng], [0, 0]);
-      return [latSum / devices.length, lngSum / devices.length];
-    }
     return DEFAULT_CENTER;
   }, [selectedVehicle, devices]);
 
@@ -114,7 +112,7 @@ const MapComponent = ({ selectedVehicle }) => {
     <div className='h-screen w-full relative'>
       <MapContainer
         center={mapCenter}
-        zoom={5}
+        zoom={10}
         minZoom={1}
         maxZoom={18}
         className='w-full h-full'
@@ -169,7 +167,7 @@ const MapComponent = ({ selectedVehicle }) => {
             )}
           </Marker>
         ))}
-        <MapEffects selectedVehicle={selectedVehicle} markerRefs={markerRefs} />
+        <MapEffects selectedVehicle={selectedVehicle} markerRefs={markerRefs} devices={devices} mapCenter={mapCenter} />
       </MapContainer>
     </div>
   );

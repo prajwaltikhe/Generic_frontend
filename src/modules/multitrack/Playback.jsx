@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import RoutingMatching from './RoutingMatching';
@@ -23,17 +24,17 @@ export default function Playback() {
   const { playbackData, loadingPlayback } = useSelector((s) => s.multiTrackStatus);
 
   useEffect(() => {
-    if (playbackData.length) {
-      setRouteCoordinate(playbackData.map((i) => [i.latitude, i.longitude]));
-    }
+    if (playbackData.length) setRouteCoordinate(playbackData.map((i) => [i.latitude, i.longitude]));
   }, [playbackData]);
-
   const setShortcutDates = (type) => {
-    const d = new Date();
-    if (type === 'yesterday') d.setDate(d.getDate() - 1);
-    const dateStr = d.toISOString().slice(0, 10);
-    setFromDate(`${dateStr}T00:00`);
-    setToDate(`${dateStr}T23:59`);
+    const format = 'YYYY-MM-DDTHH:mm';
+    if (type === 'last1hour') {
+      setFromDate(moment().subtract(1, 'hours').format(format));
+      setToDate(moment().format(format));
+    } else if (type === 'today') {
+      setFromDate(moment().startOf('day').format(format));
+      setToDate(moment().endOf('day').format(format));
+    }
   };
 
   const handleShortcutChip = (type) => {
@@ -45,8 +46,8 @@ export default function Playback() {
     if (isPlay) return setIsPlay(false);
     if (!fromDate || !toDate) return alert('Select From/To dates');
     const params = {
-      from: new Date(fromDate).toISOString(),
-      to: new Date(toDate).toISOString(),
+      from: moment(fromDate).toISOString(),
+      to: moment(toDate).toISOString(),
       imei: selectedVehicle.imei_number,
     };
     dispatch(fetchPlaybackData(params)).then((res) => {
@@ -111,21 +112,21 @@ export default function Playback() {
             <label className='text-sm'>Shortcut</label>
             <Stack direction='row' spacing={1} className='mb-1 w-full'>
               <Chip
-                label='Today'
-                color={shortcut === 'today' ? 'primary' : 'default'}
+                label='Last 1 Hr'
+                color={shortcut === 'last1hour' ? 'primary' : 'default'}
                 clickable
-                onClick={() => handleShortcutChip('today')}
-                variant={shortcut === 'today' ? 'filled' : 'outlined'}
+                onClick={() => handleShortcutChip('last1hour')}
+                variant={shortcut === 'last1hour' ? 'filled' : 'outlined'}
                 size='small'
                 className='flex-1'
                 style={{ width: '100%' }}
               />
               <Chip
-                label='Yesterday'
-                color={shortcut === 'yesterday' ? 'primary' : 'default'}
+                label='Today'
+                color={shortcut === 'today' ? 'primary' : 'default'}
                 clickable
-                onClick={() => handleShortcutChip('yesterday')}
-                variant={shortcut === 'yesterday' ? 'filled' : 'outlined'}
+                onClick={() => handleShortcutChip('today')}
+                variant={shortcut === 'today' ? 'filled' : 'outlined'}
                 size='small'
                 className='flex-1'
                 style={{ width: '100%' }}

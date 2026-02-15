@@ -113,7 +113,10 @@ function Vehicle() {
     dispatch(deleteVehicle(id)).then((res) => {
       if (deleteVehicle.fulfilled.match(res)) {
         toast.success('Vehicle deleted successfully!');
-        dispatch(fetchVehicles(buildApiPayload()));
+        dispatch(fetchVehicles(buildApiPayload())).then((res) => {
+          setFilteredData(res?.payload?.vehicles || []);
+          setTotalCount(res?.payload?.pagination?.total ?? res?.payload?.vehicles?.length ?? 0);
+        });
       } else {
         toast.error(res.payload || 'Failed to delete vehicle');
       }
