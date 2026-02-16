@@ -9,6 +9,7 @@ import ReportTable from '../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchOverSpeedReport } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import { formatDuration } from '../../../utils/formatters';
 
 const columns = [
   {
@@ -26,12 +27,19 @@ const columns = [
   {
     key: 'max_over_speed_duration',
     header: 'Max Over Speed Duration',
-    render: (_, r) => r?.max_over_speed_duration ?? '-',
+    render: (_, r) => formatDuration(r?.max_over_speed_duration),
   },
   {
     key: 'max_overspeed_lat_long',
     header: 'Max Over Speed Lat-Long',
-    render: (_, r) => r?.max_overspeed_lat_long ?? '-',
+    render: (_, r) => {
+      if (!r?.max_overspeed_lat_long) return '-';
+      const parts = r.max_overspeed_lat_long.split(',').map((p) => parseFloat(p.trim()));
+      if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        return `${parts[0].toFixed(6)}, ${parts[1].toFixed(6)}`;
+      }
+      return r.max_overspeed_lat_long;
+    },
   },
   { key: 'nearest_location', header: 'Nearest Location', render: (_, r) => r?.nearest_location ?? '-' },
   {
@@ -105,6 +113,7 @@ function Overspeed() {
       id: item.id || item._id || item.vehicle_id || i + 1,
       vehicle_id: item.vehicle_id || item.id || item._id,
       ...item,
+      max_over_speed_duration: formatDuration(item.max_over_speed_duration),
     }));
 
   const data = formatData(filteredData);
@@ -137,7 +146,7 @@ function Overspeed() {
     const allData = res?.payload?.overspeedData || [];
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: allData }),
+      rows: buildExportRows({ columns, data: formatData(allData) }),
       fileName: 'overspeed_report.xlsx',
     });
   };
@@ -147,7 +156,7 @@ function Overspeed() {
     const allData = res?.payload?.overspeedData || [];
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: allData }),
+      rows: buildExportRows({ columns, data: formatData(allData) }),
       fileName: 'overspeed_report.pdf',
       orientation: 'landscape',
     });

@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { IoArrowBack } from 'react-icons/io5';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -72,7 +73,14 @@ function MovementDetails() {
       setLoading(false);
       if (res?.payload?.success) {
         const items = res?.payload?.data || [];
-        setData(Array.isArray(items) ? items : [items]);
+        const formattedItems = (Array.isArray(items) ? items : [items]).map((item) => ({
+          ...item,
+          lat_long:
+            item.latitude && item.longitude
+              ? `${item.latitude}, ${item.longitude}`
+              : item.lat_long || item.start_lat_long || '-',
+        }));
+        setData(formattedItems);
         setTotalCount(res?.payload?.pagination?.total || items.length || 0);
       } else {
         setData([]);
@@ -154,8 +162,9 @@ function MovementDetails() {
           <button
             type='button'
             onClick={() => navigate(-1)}
-            className='text-gray-600 hover:text-gray-800 font-medium text-sm flex items-center gap-1'>
-            ← Back
+            className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+            <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+            Back
           </button>
           <h1 className='text-2xl font-bold text-[#07163d]'>Movement Details (Total: {totalCount})</h1>
         </div>

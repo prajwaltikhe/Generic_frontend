@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { IoArrowBack } from 'react-icons/io5';
 import { Autocomplete, TextField } from '@mui/material';
 
 const departments = [
@@ -20,6 +21,7 @@ const fields = [
 
 export default function UserPermissionForm() {
   const rowData = useLocation().state;
+  const navigate = useNavigate();
   const [formValues, setFormValues] = useState({
     employeeId: '',
     name: '',
@@ -40,7 +42,16 @@ export default function UserPermissionForm() {
 
   return (
     <div className='bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]'>
-      <h1 className='text-2xl font-bold p-3 text-[#07163d]'>Operator Details</h1>
+      <div className='flex items-center gap-4 p-3'>
+        <button
+          type='button'
+          onClick={() => navigate(-1)}
+          className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+          <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+          Back
+        </button>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Operator Details</h1>
+      </div>
       <p className='mx-3 mb-2'>
         <span className='text-red-500'>*</span> indicates required field
       </p>

@@ -1,4 +1,5 @@
 import moment from 'moment-timezone';
+import { IoArrowBack } from 'react-icons/io5';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -7,6 +8,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchOverspeedReportDetails } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import { formatDuration } from '../../../utils/formatters';
 
 const columns = [
   {
@@ -24,7 +26,16 @@ const columns = [
     render: (_, row) => row?.driver_contact_number ?? '-',
   },
   { key: 'max_speed', header: 'Over Speed', render: (_, row) => row?.max_speed ?? '-' },
-  { key: 'over_speed_duration', header: 'Over Speed Duration', render: (_, row) => row?.over_speed_duration ?? '-' },
+  {
+    key: 'over_speed_duration',
+    header: 'Over Speed Duration',
+    render: (_, row) => formatDuration(row?.over_speed_duration),
+  },
+  {
+    key: 'max_speed_lat_long',
+    header: 'Max Over Speed Lat-Long',
+    render: (_, row) => row?.max_speed_lat_long ?? '-',
+  },
   { key: 'start_lat_long', header: 'Start Lat-Long', render: (_, row) => row?.start_lat_long ?? '-' },
   { key: 'end_lat_long', header: 'End Lat-Long', render: (_, row) => row?.end_lat_long ?? '-' },
   { key: 'nearest_location', header: 'Nearest Location', render: (_, row) => row?.nearest_location ?? '-' },
@@ -84,7 +95,22 @@ function OverspeedReportDetails() {
         // Handle nested data structure: res.payload.data.data contains the records
         const responseData = res?.payload?.data;
         const items = responseData?.data || res?.payload?.overspeedData || [];
-        setData(Array.isArray(items) ? items : [items]);
+        const formattedItems = (Array.isArray(items) ? items : [items]).map((item) => ({
+          ...item,
+          start_lat_long:
+            item.start_latitude && item.start_longitude
+              ? `${parseFloat(item.start_latitude).toFixed(6)}, ${parseFloat(item.start_longitude).toFixed(6)}`
+              : item.start_lat_long || '-',
+          end_lat_long:
+            item.end_latitude && item.end_longitude
+              ? `${parseFloat(item.end_latitude).toFixed(6)}, ${parseFloat(item.end_longitude).toFixed(6)}`
+              : item.end_lat_long || '-',
+          max_speed_lat_long:
+            item.max_speed_latitude && item.max_speed_longitude
+              ? `${parseFloat(item.max_speed_latitude).toFixed(6)}, ${parseFloat(item.max_speed_longitude).toFixed(6)}`
+              : item.max_speed_lat_long || '-',
+        }));
+        setData(formattedItems);
         // Pagination from data.pagination or root level pagination
         const pagination = responseData?.pagination || res?.payload?.pagination;
         setTotalCount(pagination?.total || items.length || 0);
@@ -131,7 +157,13 @@ function OverspeedReportDetails() {
     const allData = responseData?.data || res?.payload?.overspeedData || [];
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: allData }),
+      rows: buildExportRows({
+        columns,
+        data: (Array.isArray(allData) ? allData : [allData]).map((r) => ({
+          ...r,
+          over_speed_duration: formatDuration(r.over_speed_duration),
+        })),
+      }),
       fileName: 'overspeed_details.xlsx',
     });
   };
@@ -151,7 +183,13 @@ function OverspeedReportDetails() {
     const allData = responseData?.data || res?.payload?.overspeedData || [];
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: allData }),
+      rows: buildExportRows({
+        columns,
+        data: (Array.isArray(allData) ? allData : [allData]).map((r) => ({
+          ...r,
+          over_speed_duration: formatDuration(r.over_speed_duration),
+        })),
+      }),
       fileName: 'overspeed_details.pdf',
       orientation: 'landscape',
     });
@@ -164,8 +202,9 @@ function OverspeedReportDetails() {
           <button
             type='button'
             onClick={() => navigate(-1)}
-            className='text-gray-600 hover:text-gray-800 font-medium text-sm flex items-center gap-1'>
-            ← Back
+            className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+            <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+            Back
           </button>
           <h1 className='text-2xl font-bold text-[#07163d]'>Over Speed Details (Total: {totalCount})</h1>
         </div>

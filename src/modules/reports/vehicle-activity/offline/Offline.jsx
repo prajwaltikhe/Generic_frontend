@@ -11,6 +11,7 @@ import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
+import { formatDuration } from '../../../../utils/formatters';
 
 const columns = [
   {
@@ -45,8 +46,8 @@ function formatOfflineRows(data, offset = 0) {
       route_details: r.route_details ?? null,
       driver_name: r.driver_name ?? null,
       driver_contact_number: r.driver_contact_number ?? null,
-      total_offline_duration: r.total_offline_duration ?? null,
-      max_offline_duration: r.max_offline_duration ?? null,
+      total_offline_duration: formatDuration(r.total_offline_duration),
+      max_offline_duration: formatDuration(r.max_offline_duration),
       no_of_offline: r.no_of_offline ?? null,
     };
   });

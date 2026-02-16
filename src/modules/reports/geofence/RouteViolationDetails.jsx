@@ -1,4 +1,5 @@
 import moment from 'moment-timezone';
+import { IoArrowBack } from 'react-icons/io5';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -17,7 +18,10 @@ const columns = [
   {
     key: 'violation_start_time',
     header: 'Violation Start Time',
-    render: (_, row) => (row?.violation_start_time ? moment(row.violation_start_time).format('HH:mm:ss') : '-'),
+    render: (_, row) =>
+      row?.violation_start_time
+        ? moment(row.violation_start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('HH:mm:ss')
+        : '-',
   },
   { key: 'violation_start_lat_long', header: 'Violation Start Lat-Long', render: (v) => v ?? '-' },
   {
@@ -39,7 +43,10 @@ const columns = [
   {
     key: 'violation_end_time',
     header: 'Violation End Time',
-    render: (_, row) => (row?.violation_end_time ? moment(row.violation_end_time).format('HH:mm:ss') : '-'),
+    render: (_, row) =>
+      row?.violation_end_time
+        ? moment(row.violation_end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('HH:mm:ss')
+        : '-',
   },
   { key: 'violation_end_lat_long', header: 'Violation End Lat-Long', render: (v) => v ?? '-' },
   {
@@ -191,8 +198,9 @@ function RouteViolationDetails() {
           <button
             type='button'
             onClick={() => navigate(-1)}
-            className='text-gray-600 hover:text-gray-800 font-medium text-sm flex items-center gap-1'>
-            ← Back
+            className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+            <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+            Back
           </button>
           <h1 className='text-2xl font-bold text-[#07163d]'>Route Violation Details (Total: {totalCount})</h1>
         </div>

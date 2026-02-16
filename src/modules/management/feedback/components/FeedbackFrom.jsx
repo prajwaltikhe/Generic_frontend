@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { IoArrowBack } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
 import { updateFeedbackReport } from '../../../../redux/feedBackReportSlice';
 import { TextField, Grid, Box, Button, Paper, Divider } from '@mui/material';
@@ -28,8 +29,17 @@ const FeedbackFrom = () => {
 
   return (
     <Paper sx={{ borderRadius: 2, borderTop: 2, borderBottom: 2, p: 3 }}>
-      <Box mb={2} fontWeight={600} fontSize={20}>
-        Feedback Details
+      <Box display='flex' alignItems='center' gap={2} mb={2}>
+        <button
+          type='button'
+          onClick={() => navigate(-1)}
+          className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+          <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+          Back
+        </button>
+        <Box fontWeight={600} fontSize={20}>
+          Feedback Details
+        </Box>
       </Box>
       {isEdit && (
         <Box mb={2} fontSize={14}>

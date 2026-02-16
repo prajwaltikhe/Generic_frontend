@@ -1,4 +1,5 @@
 import moment from 'moment-timezone';
+import { IoArrowBack } from 'react-icons/io5';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -7,6 +8,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchGeofenceReportDetails } from '../../../redux/geofenceSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
+import { formatDuration } from '../../../utils/formatters';
 
 const parsePosition = (position) => {
   if (!position) return null;
@@ -140,7 +142,7 @@ function GeofenceReportDetails() {
       entry_position_parsed: parsePosition(item.entry_position),
       fence_exit_time: item.exit_time ?? item.fence_exit_time ?? null,
       exit_position_parsed: parsePosition(item.exit_position),
-      duration_in_fence: item.duration_in_fence ?? '-',
+      duration_in_fence: formatDuration(item.duration_in_fence),
     }));
 
   const handleFormSubmit = (e) => {
@@ -207,8 +209,9 @@ function GeofenceReportDetails() {
           <button
             type='button'
             onClick={() => navigate(-1)}
-            className='text-gray-600 hover:text-gray-800 font-medium text-sm flex items-center gap-1'>
-            ← Back
+            className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+            <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+            Back
           </button>
           <h1 className='text-2xl font-bold text-[#07163d]'>GeoFence Entry-Exit Details (Total: {totalCount})</h1>
         </div>

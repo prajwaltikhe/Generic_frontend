@@ -11,6 +11,20 @@ import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
+import { formatDuration } from '../../../../utils/formatters';
+
+const formatCoords = (coords) => {
+  if (!coords) return '-';
+  const parts = coords.toString().split(',');
+  if (parts.length >= 2) {
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+  }
+  return coords;
+};
 
 const columns = [
   {
@@ -27,16 +41,16 @@ const columns = [
     header: 'Driver Contact Number',
     render: (_, row) => row?.driver_contact_number ?? '-',
   },
-  { key: 'source', header: 'Source', render: (_, row) => row?.source ?? '-' },
-  { key: 'destination', header: 'Destination', render: (_, row) => row?.destination ?? '-' },
+  { key: 'source', header: 'Source', render: (_, row) => formatCoords(row?.source) },
+  { key: 'destination', header: 'Destination', render: (_, row) => formatCoords(row?.destination) },
   {
     key: 'employee_count',
     header: 'Employee Count',
     render: (_, row) => (typeof row?.employee_count === 'number' ? row.employee_count : '-'),
   },
   { key: 'speed', header: 'Speed', render: (_, row) => (typeof row?.speed === 'number' ? row.speed : '-') },
-  { key: 'start_lat_long', header: 'Start Lat-Long', render: (_, row) => row?.start_lat_long ?? '-' },
-  { key: 'end_lat_long', header: 'End Lat-Long', render: (_, row) => row?.end_lat_long ?? '-' },
+  { key: 'start_lat_long', header: 'Start Lat-Long', render: (_, row) => formatCoords(row?.start_lat_long) },
+  { key: 'end_lat_long', header: 'End Lat-Long', render: (_, row) => formatCoords(row?.end_lat_long) },
   { key: 'trip_distance', header: 'Trip Distance', render: (_, row) => row?.trip_distance ?? '-' },
   { key: 'covered_distance', header: 'Covered Distance', render: (_, row) => row?.covered_distance ?? '-' },
   { key: 'start_odometer', header: 'Start Odometer', render: (_, row) => row?.start_odometer ?? '-' },
@@ -87,11 +101,11 @@ function formatMovementRows(data, offset = 0) {
       end_odometer: r.end_odometer ?? null,
       total_distance: r.total_distance ?? 0,
       top_speed: r.top_speed ?? 0,
-      total_running_duration: r.total_running_duration ?? '0h 0m 0s',
-      total_idle_duration: r.total_idle_duration ?? '0h 0m 0s',
-      total_parked_duration: r.total_parked_duration ?? '0h 0m 0s',
+      total_running_duration: formatDuration(r.total_running_duration),
+      total_idle_duration: formatDuration(r.total_idle_duration),
+      total_parked_duration: formatDuration(r.total_parked_duration),
       no_of_parking: r.no_of_parking ?? 0,
-      total_offline_duration: r.total_offline_duration ?? '0h 0m 0s',
+      total_offline_duration: formatDuration(r.total_offline_duration),
     };
   });
 }

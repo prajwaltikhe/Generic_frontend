@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { IoArrowBack } from 'react-icons/io5';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -7,6 +8,7 @@ import FilterOption from '../../../../components/FilterOption';
 import ReportTable from '../../../../components/table/ReportTable';
 import { fetchMovementDetails } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
+import { formatDuration } from '../../../../utils/formatters';
 
 const columns = [
   {
@@ -22,14 +24,16 @@ const columns = [
   {
     key: 'start_time',
     header: 'Start Time',
-    render: (_, r) => (r?.start_time ? moment(r.start_time).format('HH:mm:ss') : '-'),
+    render: (_, r) =>
+      r?.start_time ? moment(r.start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('HH:mm:ss') : '-',
   },
   {
     key: 'end_time',
     header: 'End Time',
-    render: (_, r) => (r?.end_time ? moment(r.end_time).format('HH:mm:ss') : '-'),
+    render: (_, r) =>
+      r?.end_time ? moment(r.end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('HH:mm:ss') : '-',
   },
-  { key: 'duration', header: 'Duration', render: (_, r) => r?.duration ?? '-' },
+  { key: 'duration', header: 'Duration', render: (_, r) => formatDuration(r?.duration) },
   { key: 'lat_long', header: 'Lat-Long', render: (_, r) => r?.lat_long ?? '-' },
   {
     key: 'gmap',
@@ -76,7 +80,14 @@ function OfflineDetails() {
       setLoading(false);
       if (res?.payload?.success) {
         const items = res?.payload?.data || [];
-        setData(Array.isArray(items) ? items : [items]);
+        const formattedItems = (Array.isArray(items) ? items : [items]).map((item) => ({
+          ...item,
+          lat_long:
+            item.latitude && item.longitude
+              ? `${item.latitude}, ${item.longitude}`
+              : item.lat_long || item.start_lat_long || '-',
+        }));
+        setData(formattedItems);
         setTotalCount(res?.payload?.pagination?.total || items.length || 0);
       } else {
         setData([]);
@@ -123,7 +134,13 @@ function OfflineDetails() {
     }
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: Array.isArray(allData) ? allData : [allData] }),
+      rows: buildExportRows({
+        columns,
+        data: (Array.isArray(allData) ? allData : [allData]).map((r) => ({
+          ...r,
+          duration: formatDuration(r.duration),
+        })),
+      }),
       fileName: 'offline_details.xlsx',
     });
   };
@@ -145,7 +162,13 @@ function OfflineDetails() {
     }
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: Array.isArray(allData) ? allData : [allData] }),
+      rows: buildExportRows({
+        columns,
+        data: (Array.isArray(allData) ? allData : [allData]).map((r) => ({
+          ...r,
+          duration: formatDuration(r.duration),
+        })),
+      }),
       fileName: 'offline_details.pdf',
       orientation: 'landscape',
     });
@@ -160,8 +183,9 @@ function OfflineDetails() {
           <button
             type='button'
             onClick={() => navigate(-1)}
-            className='text-gray-600 hover:text-gray-800 font-medium text-sm flex items-center gap-1'>
-            ← Back
+            className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+            <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+            Back
           </button>
           <h1 className='text-2xl font-bold text-[#07163d]'>Offline Details (Total: {totalCount})</h1>
         </div>

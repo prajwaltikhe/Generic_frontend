@@ -1,7 +1,8 @@
 import OsmMap from './components/OsmMap';
 import { useEffect, useState } from 'react';
 import { useMapEvents } from 'react-leaflet';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { IoArrowBack } from 'react-icons/io5';
 import GeofenceCreateForm from './components/GeofenceCreateForm';
 
 const colorMap = {
@@ -15,6 +16,7 @@ const colorMap = {
 const mapColorToHex = (color) => (!color ? '#2196F3' : color.startsWith('#') ? color : colorMap[color] || '#2196F3');
 
 export default function GeofenceCreate() {
+  const navigate = useNavigate();
   const { state } = useLocation();
   const row = state?.rowData;
   const getCoords = () => (Array.isArray(row?.coordinates) ? row.coordinates.map((c) => c.map(Number)) : []);
@@ -33,7 +35,16 @@ export default function GeofenceCreate() {
   }, [state]);
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicle Geofence</h1>
+      <div className='flex items-center gap-4 mb-4'>
+        <button
+          type='button'
+          onClick={() => navigate(-1)}
+          className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+          <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+          Back
+        </button>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Vehicle Geofence</h1>
+      </div>
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] p-5'>
         <div className='flex flex-col-reverse md:grid md:grid-cols-3 gap-3'>
           <div className='md:col-span-1'>

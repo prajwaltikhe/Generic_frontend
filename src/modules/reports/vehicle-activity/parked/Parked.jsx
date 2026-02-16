@@ -11,6 +11,7 @@ import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
+import { formatDuration } from '../../../../utils/formatters';
 
 const columns = [
   {
@@ -45,8 +46,8 @@ function formatParkedRows(data, offset = 0) {
       route_details: r.route_details ?? null,
       driver_name: r.driver_name ?? null,
       driver_contact_number: r.driver_contact_number ?? null,
-      total_parked_duration: r.total_parked_duration ?? '0h 0m 0s',
-      max_parked_duration: r.max_parked_duration ?? '0h 0m 0s',
+      total_parked_duration: formatDuration(r.total_parked_duration),
+      max_parked_duration: formatDuration(r.max_parked_duration),
       no_of_parking: typeof r.no_of_parking === 'number' ? r.no_of_parking : 0,
     };
   });

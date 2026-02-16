@@ -4,6 +4,7 @@ import { APIURL } from '../../../../constants';
 import { useEffect, useMemo, useState } from 'react';
 import { Autocomplete, TextField } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IoArrowBack } from 'react-icons/io5';
 import { useDropdownOpt } from '../../../../hooks/useDropdownOpt';
 import { createVehicle, fetchVehicles, updateVehicle } from '../../../../redux/vehiclesSlice';
 
@@ -91,8 +92,17 @@ function VehicleForm() {
 
   return (
     <div className='w-full h-full p-2'>
-      <div className='flex justify-between items-center'>
-        <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehicle</h1>
+      <div className='flex justify-between items-center mb-4'>
+        <div className='flex items-center gap-4'>
+          <button
+            type='button'
+            onClick={() => navigate(-1)}
+            className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+            <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+            Back
+          </button>
+          <h1 className='text-2xl font-bold text-[#07163d]'>Vehicle</h1>
+        </div>
       </div>
       <form onSubmit={handleSubmit}>
         <div className='grid grid-col-1 gap-3'>

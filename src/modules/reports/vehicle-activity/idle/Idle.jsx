@@ -11,6 +11,7 @@ import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
+import { formatDuration } from '../../../../utils/formatters';
 
 const columns = [
   {
@@ -41,8 +42,8 @@ function formatIdleRows(data, offset = 0) {
       route_details: r.route_details ?? null,
       driver_name: r.driver_name ?? null,
       driver_contact_number: r.driver_contact_number ?? null,
-      total_idle_duration: r.total_idle_duration ?? null,
-      max_idle_duration: r.max_idle_duration ?? null,
+      total_idle_duration: formatDuration(r.total_idle_duration),
+      max_idle_duration: formatDuration(r.max_idle_duration),
       no_of_idle: r.no_of_idle ?? null,
     };
   });

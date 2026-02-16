@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { toast } from 'react-toastify';
 import { APIURL } from '../../../../constants';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IoArrowBack } from 'react-icons/io5';
 import { useDropdownOpt } from '../../../../hooks/useDropdownOpt';
 import { AddressServices } from '../../../../services';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -359,7 +360,16 @@ function EmployeeForm() {
 
   return (
     <div className='w-full p-2'>
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Employee</h1>
+      <div className='flex items-center gap-4 mb-4'>
+        <button
+          type='button'
+          onClick={() => navigate(-1)}
+          className='group flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 hover:shadow transition-all duration-200 ease-in-out text-gray-700 font-medium text-sm active:scale-95 cursor-pointer'>
+          <IoArrowBack className='w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1' />
+          Back
+        </button>
+        <h1 className='text-2xl font-bold text-[#07163d]'>Employee</h1>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
