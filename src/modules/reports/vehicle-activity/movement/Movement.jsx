@@ -8,6 +8,7 @@ import FilterOption from '../../../../components/FilterOption';
 import { intervalOptions } from '../../../../utils/vehicleStatus';
 import ReportTable from '../../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../../redux/vehiclesSlice';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleActivityData } from '../../../../redux/vehicleActivitySlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../../utils/exportUtils';
@@ -125,9 +126,13 @@ function Movement() {
   const dataFilter = useRef(filterData);
 
   const { routes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || {});
+  const { vehicles } = useSelector((s) => s?.vehicles || {});
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   const buildApiPayload = useCallback(
@@ -248,7 +253,7 @@ function Movement() {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={routes}
+          vehicles={vehicles}
           routes={availableRoutes}
           intervals={intervalOptions}
         />

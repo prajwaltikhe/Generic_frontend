@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { createPlantInTime, updatePlantInTime } from '../../../../redux/plantInTimeSlice';
 import { Autocomplete, TextField } from '@mui/material';
 import { IoArrowBack } from 'react-icons/io5';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 
 const FIELDS = [
@@ -177,13 +177,6 @@ function PlantInTimeForm() {
                 Save
               </button>
             )}
-            <Link to='/master/plant-in-time'>
-              <button
-                type='button'
-                className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
-                Back
-              </button>
-            </Link>
           </div>
         </form>
       </div>

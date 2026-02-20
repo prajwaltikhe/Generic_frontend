@@ -5,6 +5,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchFeedbackReport } from '../../../redux/feedBackReportSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -29,9 +30,13 @@ function Feedback() {
   const company_id = localStorage.getItem('company_id');
   const { feedbackReportData, loading, error } = useSelector((state) => state?.feedbackReport || {});
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
+  const { vehicles } = useSelector((state) => state?.vehicles || {});
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   useEffect(() => {
@@ -109,7 +114,7 @@ function Feedback() {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={vehicleRoutes}
+          vehicles={vehicles}
           routes={vehicleRoutes}
         />
       </form>

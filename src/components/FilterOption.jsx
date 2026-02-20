@@ -55,7 +55,10 @@ function FilterOption({
     label: `${e.employee_id || ''}`.trim(),
     value: e.employee_id,
   }));
-  const vehicleOptions = toArray(vehicles).map((v) => ({ label: v?.vehicle?.vehicle_number, value: v.vehicle_id }));
+  const vehicleOptions = toArray(vehicles).map((v) => ({
+    label: v?.vehicle?.vehicle_number || v?.vehicle_number,
+    value: v?.vehicle_id || v?.id,
+  }));
   const routeOptions = toArray(routes).map((r) => ({ label: r.name, value: r.id }));
   const plantOptions = toArray(plants).map((p) => ({ label: p.plant_name, value: p.id }));
   const departmentOptions = toArray(departments).map((d) => ({ label: d.department_name, value: d.id }));

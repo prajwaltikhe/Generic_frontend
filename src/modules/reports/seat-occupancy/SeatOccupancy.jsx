@@ -6,6 +6,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchSeatOccupancyReport } from '../../../redux/vehicleReportSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -42,9 +43,13 @@ function SeatOccupancy() {
   const company_id = localStorage.getItem('company_id');
   const { seatOccupancyReportData, loading, error } = useSelector((state) => state?.vehicleReport);
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
+  const { vehicles } = useSelector((state) => state?.vehicles || {});
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   useEffect(() => {
@@ -131,7 +136,7 @@ function SeatOccupancy() {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={vehicleRoutes}
+          vehicles={vehicles}
           routes={vehicleRoutes}
         />
       </form>

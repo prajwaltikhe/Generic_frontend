@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { fetchEmergencyReportAlert } from '../../../redux/emergencyReportAlertSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -69,9 +70,13 @@ function EmergencyAlert() {
   const company_id = localStorage.getItem('company_id');
   const { emergencyReportAlertData, loading, error } = useSelector((s) => s?.emergencyReportAlert || {});
   const { routes: vehicleRoutes } = useSelector((s) => s?.vehicleRoute?.vehicleRoutes || {}) || {};
+  const { vehicles } = useSelector((s) => s?.vehicles || {});
 
   useEffect(() => {
-    company_id && dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   useEffect(() => {
@@ -143,7 +148,7 @@ function EmergencyAlert() {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={vehicleRoutes}
+          vehicles={vehicles}
           routes={vehicleRoutes}
         />
       </form>

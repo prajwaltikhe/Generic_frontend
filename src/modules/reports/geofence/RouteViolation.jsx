@@ -7,6 +7,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchRouteViolation } from '../../../redux/geofenceSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -30,6 +31,7 @@ function RouteViolation() {
   const company_id = localStorage.getItem('company_id');
   const { loading, error } = useSelector((state) => state?.geofence);
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
+  const { vehicles } = useSelector((state) => state?.vehicles || {});
 
   const buildApiPayload = () => {
     const payload = { company_id };
@@ -41,7 +43,10 @@ function RouteViolation() {
   };
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   useEffect(() => {
@@ -138,7 +143,7 @@ function RouteViolation() {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={vehicleRoutes}
+          vehicles={vehicles}
           routes={vehicleRoutes}
         />
       </form>

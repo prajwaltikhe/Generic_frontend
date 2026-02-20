@@ -301,12 +301,6 @@ function VehicleForm() {
                     Save
                   </button>
                 )}
-                <button
-                  type='button'
-                  className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'
-                  onClick={() => navigate('/master/vehicle')}>
-                  Back
-                </button>
               </div>
             </div>
           </div>

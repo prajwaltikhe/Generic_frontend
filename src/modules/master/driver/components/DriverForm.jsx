@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { Autocomplete, TextField } from '@mui/material';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
 import { AddressServices } from '../../../../services';
 import { createDriver, updateDriver } from '../../../../redux/driverSlice';
@@ -540,13 +540,6 @@ const DriverForm = () => {
                     Save
                   </button>
                 )}
-                <Link to='/master/driver'>
-                  <button
-                    type='button'
-                    className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
-                    Back
-                  </button>
-                </Link>
               </div>
             </div>
           </div>

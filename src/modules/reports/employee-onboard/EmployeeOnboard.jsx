@@ -6,6 +6,8 @@ import ReportTable from '../../../components/table/ReportTable';
 import { fetchPlants } from '../../../redux/plantSlice';
 import { fetchDepartments } from '../../../redux/departmentSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
+
 import { fetchEmployeeOnboard, fetchAllEmployeeDetails } from '../../../redux/employeeSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -77,11 +79,13 @@ function EmployeeOnboard() {
   const { error, loading } = useSelector((s) => s.employee);
   const { plants } = useSelector((s) => s.plant);
   const { routes } = useSelector((s) => s.vehicleRoute.vehicleRoutes);
+  const { vehicles } = useSelector((s) => s.vehicles || {});
 
   useEffect(() => {
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchDepartments({ limit: 10 }));
     dispatch(fetchVehicleRoutes({ limit: 150 }));
+    dispatch(fetchVehicles({ limit: 150 }));
     dispatch(fetchPlants({ limit: 50 }));
     if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3500 }));
   }, [dispatch]);
@@ -173,7 +177,7 @@ function EmployeeOnboard() {
           handleFormReset={handleFormReset}
           routes={routes}
           departments={departments || []}
-          vehicles={routes || []}
+          vehicles={vehicles || []}
           employeeIds={employees || []}
           plants={plants || []}
           report={true}

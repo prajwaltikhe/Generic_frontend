@@ -7,6 +7,7 @@ import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
 import CommonTable from '../../../components/table/CommonTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { fetchAnnouncements, deleteAnnouncement, uploadAnnouncementData } from '../../../redux/announcementSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -39,6 +40,7 @@ function Announcement() {
   const company_id = localStorage.getItem('company_id');
 
   const { routes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes);
+  const { vehicles } = useSelector((state) => state.vehicles || {});
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -50,7 +52,10 @@ function Announcement() {
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -204,7 +209,7 @@ function Announcement() {
           fileInputRef={fileInputRef}
           setFile={setFile}
           routes={routes}
-          vehicles={routes}
+          vehicles={vehicles}
         />
       </form>
 

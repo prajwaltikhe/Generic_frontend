@@ -41,6 +41,7 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
       addWaypoints: false,
       fitSelectedRoutes: true,
       createMarker: () => null,
+      lineOptions: { styles: [{ color: 'red', opacity: 0.7, weight: 5 }] },
     }).addTo(map);
 
     routingRef.current = routing;

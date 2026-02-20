@@ -1,6 +1,6 @@
 import moment from 'moment';
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import RoutingMatching from './RoutingMatching';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,26 +14,29 @@ export default function Playback() {
   const [toDate, setToDate] = useState('');
   const [shortcut, setShortcut] = useState('');
   const [routeCoordinate, setRouteCoordinate] = useState([]);
-  const [speed, setSpeed] = useState(10);
+  const [speed, setSpeed] = useState(30);
   const [isPlay, setIsPlay] = useState(false);
+  const [lastFetchedRange, setLastFetchedRange] = useState(null);
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { state } = useLocation();
   const selectedVehicle = state?.selectedVehicle;
 
   const { playbackData, loadingPlayback } = useSelector((s) => s.multiTrackStatus);
 
   useEffect(() => {
-    if (playbackData.length) setRouteCoordinate(playbackData.map((i) => [i.latitude, i.longitude]));
+    setRouteCoordinate(playbackData.map((i) => [i.latitude, i.longitude]));
   }, [playbackData]);
+
   const setShortcutDates = (type) => {
     const format = 'YYYY-MM-DDTHH:mm';
-    if (type === 'last1hour') {
+    if (type === '30min') {
+      setFromDate(moment().subtract(30, 'minutes').format(format));
+      setToDate(moment().format(format));
+    } else if (type === '1hour') {
       setFromDate(moment().subtract(1, 'hours').format(format));
       setToDate(moment().format(format));
-    } else if (type === 'today') {
-      setFromDate(moment().startOf('day').format(format));
-      setToDate(moment().endOf('day').format(format));
     }
   };
 
@@ -42,9 +45,75 @@ export default function Playback() {
     setShortcutDates(type);
   };
 
+  useEffect(() => {
+    setShortcut('30min');
+    const format = 'YYYY-MM-DDTHH:mm';
+    const now = moment();
+    const start = moment().subtract(30, 'minutes');
+    const toVal = now.format(format);
+    const fromVal = start.format(format);
+
+    setFromDate(fromVal);
+    setToDate(toVal);
+
+    if (selectedVehicle?.imei_number) {
+      const params = {
+        from: start.toISOString(),
+        to: now.toISOString(),
+        imei: selectedVehicle.imei_number,
+      };
+
+      dispatch(fetchPlaybackData(params)).then((res) => {
+        if (fetchPlaybackData.fulfilled.match(res)) {
+          setLastFetchedRange({ from: fromVal, to: toVal, imei: selectedVehicle.imei_number });
+          setIsPlay(true);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleReset = () => {
+    setSpeed(0);
+    setFromDate('');
+    setToDate('');
+    setShortcut('');
+    setIsPlay(false);
+  };
+
+  const handleDetail = () => {
+    if (!selectedVehicle?.id) return;
+    const { status, id } = selectedVehicle;
+    let path = status || '';
+
+    if (path === 'New') path = 'new-device';
+    else if (path === 'Running') path = 'movement';
+    else path = path.toLowerCase();
+
+    navigate(`/report/${path}/details/${id}`);
+  };
+
   const handlePlay = async () => {
     if (isPlay) return setIsPlay(false);
     if (!fromDate || !toDate) return alert('Select From/To dates');
+
+    const currentRange = {
+      from: fromDate,
+      to: toDate,
+      imei: selectedVehicle?.imei_number,
+    };
+
+    if (
+      lastFetchedRange &&
+      lastFetchedRange.from === currentRange.from &&
+      lastFetchedRange.to === currentRange.to &&
+      lastFetchedRange.imei === currentRange.imei &&
+      routeCoordinate.length > 0
+    ) {
+      setIsPlay(true);
+      return;
+    }
+
     const params = {
       from: moment(fromDate).toISOString(),
       to: moment(toDate).toISOString(),
@@ -52,6 +121,7 @@ export default function Playback() {
     };
     dispatch(fetchPlaybackData(params)).then((res) => {
       if (fetchPlaybackData.fulfilled.match(res)) {
+        setLastFetchedRange(currentRange);
         setIsPlay(true);
       } else {
         alert(res.payload || 'No data found');
@@ -59,8 +129,9 @@ export default function Playback() {
     });
   };
 
-  const filteredCoordinate = routeCoordinate.filter(
-    (c, i, arr) => i === 0 || c[0] !== arr[i - 1][0] || c[1] !== arr[i - 1][1],
+  const filteredCoordinate = useMemo(
+    () => routeCoordinate.filter((c, i, arr) => i === 0 || c[0] !== arr[i - 1][0] || c[1] !== arr[i - 1][1]),
+    [routeCoordinate],
   );
 
   return (
@@ -112,21 +183,21 @@ export default function Playback() {
             <label className='text-sm'>Shortcut</label>
             <Stack direction='row' spacing={1} className='mb-1 w-full'>
               <Chip
-                label='Last 1 Hr'
-                color={shortcut === 'last1hour' ? 'primary' : 'default'}
+                label='30 Min'
+                color={shortcut === '30min' ? 'primary' : 'default'}
                 clickable
-                onClick={() => handleShortcutChip('last1hour')}
-                variant={shortcut === 'last1hour' ? 'filled' : 'outlined'}
+                onClick={() => handleShortcutChip('30min')}
+                variant={shortcut === '30min' ? 'filled' : 'outlined'}
                 size='small'
                 className='flex-1'
                 style={{ width: '100%' }}
               />
               <Chip
-                label='Today'
-                color={shortcut === 'today' ? 'primary' : 'default'}
+                label='1 Hour'
+                color={shortcut === '1hour' ? 'primary' : 'default'}
                 clickable
-                onClick={() => handleShortcutChip('today')}
-                variant={shortcut === 'today' ? 'filled' : 'outlined'}
+                onClick={() => handleShortcutChip('1hour')}
+                variant={shortcut === '1hour' ? 'filled' : 'outlined'}
                 size='small'
                 className='flex-1'
                 style={{ width: '100%' }}
@@ -138,10 +209,10 @@ export default function Playback() {
             <Slider value={speed} onChange={(_, v) => setSpeed(v)} min={0} max={100} className='w-full' />
           </div>
           <div className='flex justify-between'>
-            <Button variant='contained' color='success'>
-              Speed
+            <Button variant='contained' color='success' onClick={handleReset}>
+              Reset
             </Button>
-            <Button variant='contained' color='error'>
+            <Button variant='contained' color='error' onClick={handleDetail}>
               Detail
             </Button>
           </div>

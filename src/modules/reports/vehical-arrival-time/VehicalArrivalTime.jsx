@@ -7,6 +7,7 @@ import ReportTable from '../../../components/table/ReportTable';
 import CustomTab from '../vehicle-activity/components/CustomTab';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { fetchVehicleArrivalData } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -36,6 +37,7 @@ function VehicalArrivalTime() {
   const company_id = localStorage.getItem('company_id');
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
   const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
+  const { vehicles } = useSelector((state) => state?.vehicles || {});
 
   // Read status from URL query parameter on component mount
   useEffect(() => {
@@ -116,7 +118,10 @@ function VehicalArrivalTime() {
   }, []);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) {
+      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+    }
   }, [dispatch, company_id]);
 
   const buildApiPayload = useCallback(() => {
@@ -183,7 +188,7 @@ function VehicalArrivalTime() {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={vehicleRoutes}
+          vehicles={vehicles}
           routes={vehicleRoutes}
           statuses={statusOptions}
         />

@@ -7,6 +7,7 @@ import ReportTable from '../../../components/table/ReportTable';
 import { fetchDepartments } from '../../../redux/departmentSlice';
 import { fetchPuchLogReport } from '../../../redux/punchInOutSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { fetchAllEmployeeDetails } from '../../../redux/employeeSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -60,6 +61,7 @@ function PunchTimelog() {
   const { departments } = useSelector((s) => s.department);
   const { employes: employees } = useSelector((s) => s.employee.getAllEmployeeDetails);
   const { routes } = useSelector((s) => s.vehicleRoute.vehicleRoutes);
+  const { vehicles } = useSelector((s) => s.vehicles || {});
   const { plants } = useSelector((s) => s.plant);
   const { error, loading } = useSelector((s) => s.punchInOut);
 
@@ -67,6 +69,7 @@ function PunchTimelog() {
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchDepartments({ limit: 10 }));
     dispatch(fetchVehicleRoutes({ limit: 150 }));
+    dispatch(fetchVehicles({ limit: 150 }));
     dispatch(fetchPlants({ limit: 50 }));
     if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3500 }));
   }, [dispatch]);
@@ -153,7 +156,7 @@ function PunchTimelog() {
           handleFormReset={handleFormReset}
           routes={routes}
           departments={departments || []}
-          vehicles={routes || []}
+          vehicles={vehicles || []}
           employees={employees || []}
           plants={plants || []}
           report={true}

@@ -6,6 +6,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchDepartments } from '../../../redux/departmentSlice';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import { fetchDestinationArrivalFemale, fetchAllEmployeeDetails } from '../../../redux/employeeSlice';
 
@@ -65,12 +66,14 @@ function DestinationArrivalFemale() {
   const { departments } = useSelector((s) => s.department);
   const { employes: employees } = useSelector((s) => s.employee.getAllEmployeeDetails);
   const { routes } = useSelector((s) => s.vehicleRoute.vehicleRoutes);
+  const { vehicles } = useSelector((s) => s.vehicles || {});
   const { plants } = useSelector((s) => s.plant);
 
   useEffect(() => {
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchDepartments({ limit: 10 }));
     dispatch(fetchVehicleRoutes({ limit: 150 }));
+    dispatch(fetchVehicles({ limit: 150 }));
     dispatch(fetchPlants({ limit: 50 }));
     if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3500 }));
   }, [dispatch]);
@@ -174,7 +177,7 @@ function DestinationArrivalFemale() {
           handleFormReset={handleFormReset}
           routes={routes}
           departments={departments || []}
-          vehicles={routes || []}
+          vehicles={vehicles || []}
           employees={employees || []}
           plants={plants || []}
           report={true}

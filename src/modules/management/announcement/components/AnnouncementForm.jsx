@@ -222,12 +222,6 @@ export default function AnnouncementForm() {
                 Save
               </button>
             )}
-            <button
-              type='button'
-              className='text-white bg-gray-500 hover:bg-gray-500/90 font-medium rounded-md text-sm px-5 py-2.5 cursor-pointer'
-              onClick={() => nav('/management/announcements')}>
-              Back
-            </button>
           </div>
         </form>
       </div>

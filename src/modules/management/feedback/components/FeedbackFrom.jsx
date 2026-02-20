@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
 import { updateFeedbackReport } from '../../../../redux/feedBackReportSlice';
@@ -116,11 +116,6 @@ const FeedbackFrom = () => {
                   Save
                 </Button>
               )}
-              <Link to='/management/feedbacks' style={{ textDecoration: 'none' }}>
-                <Button type='button' variant='outlined'>
-                  Back
-                </Button>
-              </Link>
             </Box>
           </Grid>
         </Grid>

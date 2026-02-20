@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { TextField } from '@mui/material';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
 import { updateEmergencyReportAlert } from '../../../../redux/emergencyReportAlertSlice';
@@ -88,13 +88,6 @@ function EmergencyAlertForm() {
                 className='text-white bg-[#07163d] hover:bg-[#07163d]/90 focus:ring-4 focus:outline-none focus:ring-[#07163d]/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
                 Save
               </button>
-              <Link to='/management/emergency-alerts'>
-                <button
-                  type='button'
-                  className='text-white bg-gray-500 hover:bg-gray-500/90 focus:ring-4 focus:outline-none focus:ring-gray-500/30 font-medium rounded-md text-sm px-5 py-2.5 text-center cursor-pointer'>
-                  Back
-                </button>
-              </Link>
             </div>
           </div>
         </form>
