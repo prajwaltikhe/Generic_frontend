@@ -144,7 +144,7 @@ function EmployeeOnboard() {
   };
 
   const handleExport = async () => {
-    const res = dispatch(fetchEmployeeOnboard({ ...buildApiPayload(totalCount), page: 1 }));
+    const res = await dispatch(fetchEmployeeOnboard({ ...buildApiPayload(totalCount), page: 1 }));
     const allRecords = [].concat(res?.payload?.records || []);
     exportToExcel({
       columns,
@@ -154,7 +154,7 @@ function EmployeeOnboard() {
   };
 
   const handleExportPDF = async () => {
-    const res = dispatch(fetchEmployeeOnboard({ ...buildApiPayload(totalCount), page: 1 }));
+    const res = await dispatch(fetchEmployeeOnboard({ ...buildApiPayload(totalCount), page: 1 }));
     const allRecords = [].concat(res?.payload?.records || []);
     exportToPDF({
       columns,
