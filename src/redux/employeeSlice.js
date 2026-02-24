@@ -5,7 +5,7 @@ import { APIURL } from '../constants';
 // Async thunk for creating employee
 export const createEmployee = createAsyncThunk('employee/createEmployee', async (formData, { rejectWithValue }) => {
   try {
-    const response = await ApiService.post('employee', formData);
+      const response = await ApiService.post(APIURL.EMPLOYEE, formData);
 
     if (!response.success) return rejectWithValue(response.message || 'Failed to create employee');
 
