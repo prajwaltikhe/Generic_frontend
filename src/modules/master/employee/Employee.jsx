@@ -165,14 +165,25 @@ function Employee() {
   const handleEdit = (row) => navigate('/master/employee/edit', { state: { mode: 'edit', rowData: row } });
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this Employee?')) return;
-    dispatch(deleteEmployee(id)).then((res) => {
-      if (deleteEmployee.fulfilled.match(res)) {
-        toast.success(res.payload || 'Employee deleted successfully!');
-        dispatch(fetchEmployees(buildApiPayload()));
-      } else toast.error(res.payload || 'Failed to delete Employee');
-    });
-  };
+  if (!window.confirm('Are you sure you want to delete this Employee?')) return;
+
+  dispatch(deleteEmployee(id)).then((res) => {
+    if (deleteEmployee.fulfilled.match(res)) {
+      toast.success(res.payload || 'Employee deleted successfully!');
+
+      // if there was only 1 row on the current page AND we're not on first page
+      if (tableData.length === 1 && page > 0) {
+        setPage((prevPage) => prevPage - 1);
+        dispatch(fetchEmployees({ ...buildApiPayload(), page: page })); 
+        // page - 1 effectively
+      } else {
+        dispatch(fetchEmployees(buildApiPayload())); 
+      }
+
+    } else {
+      toast.error(res.payload || 'Failed to delete Employee');
+    }
+  })
 
   const handleStatusChange = async () => {
     if (!selectedEmp) return;
