@@ -7,7 +7,7 @@ export const APIURL = {
   DEPARTMENTS: 'department',
   PLANTS: 'plant',
   DRIVER: 'driver',
-  PLAYBACK: 'playback',
+  PLAYBACK: 'playback-optimized',
   VEHICLE_ROUTE: 'vehicleRoute',
   VEHICLE_ROUTE_STOP: 'vehicleRouteStop_id',
   GEOFENCE: 'geofence',

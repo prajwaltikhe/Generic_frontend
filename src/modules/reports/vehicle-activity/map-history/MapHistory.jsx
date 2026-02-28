@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
-import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../../redux/vehiclesSlice';
 import { useEffect, useState, useRef, useCallback, useMemo, memo } from 'react';
 import { fetchMapHistoryData } from '../../../../redux/vehicleActivitySlice';
 import { MapContainer, TileLayer, Popup, useMap } from 'react-leaflet';
@@ -197,12 +197,12 @@ function MapHistory() {
   const [isLoading, setIsLoading] = useState(false);
 
   const company_id = localStorage.getItem('company_id');
-  const vehicles = useSelector((s) => s?.vehicleRoute?.vehicleRoutes?.routes || []);
+  const vehicles = useSelector((s) => s?.vehicles?.vehicles || []);
   const dataFilter = useRef(filterData);
 
   useEffect(() => {
-    if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
-  }, [dispatch, company_id]);
+    dispatch(fetchVehicles({ limit: 150 }));
+  }, [dispatch]);
 
   const validMapPoints = useMemo(() => filteredData.filter(isValidPoint), [filteredData]);
 

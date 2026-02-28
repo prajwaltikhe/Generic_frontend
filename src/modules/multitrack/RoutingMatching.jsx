@@ -1,16 +1,32 @@
 import L from 'leaflet';
-import 'leaflet-routing-machine';
 import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
 import { useEffect, useRef, useCallback } from 'react';
 
 const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
   const map = useMap();
-  const markerRef = useRef(),
-    routingRef = useRef(),
-    intervalRef = useRef();
-  const routeCoords = useRef([]),
-    posRef = useRef(0);
+  const markerRef = useRef();
+  const polylineRef = useRef();
+  const sourceMarkerRef = useRef();
+  const destMarkerRef = useRef();
+  const intervalRef = useRef();
+  const posRef = useRef(0);
+
+  const getSourceIcon = () =>
+    L.divIcon({
+      html: '<div style="width:14px;height:14px;border-radius:50%;background:#22c55e;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+      className: '',
+    });
+
+  const getDestIcon = () =>
+    L.divIcon({
+      html: '<div style="width:14px;height:14px;border-radius:2px;background:#db4437;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+      className: '',
+    });
 
   const getCarIcon = () =>
     L.icon({
@@ -23,82 +39,111 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
 
   const popHtml = useCallback(
     (lat, lng) =>
-      `<h1 style="font-size:1rem; font-weight:bold;">${vehicle_number || ''}</h1>
-        <div>Lat: ${lat != null ? lat.toFixed(7) : 'N/A'}</div>
-        <div>Lng: ${lng != null ? lng.toFixed(7) : 'N/A'}</div>`,
+      `<div style="min-width:180px;padding:0px;font-family:system-ui,sans-serif;">
+        <div style="background:#4285f4;color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;font-size:13px;font-weight:600;letter-spacing:0.3px;">
+          ${vehicle_number || 'Vehicle'}
+        </div>
+        <div style="padding:8px 10px;background:#fff;border-radius:0 0 6px 6px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+            <span style="color:#6b7280;">Latitude</span>
+            <span style="color:#1f2937;font-weight:500;">${lat != null ? Number(lat).toFixed(6) : 'N/A'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;">
+            <span style="color:#6b7280;">Longitude</span>
+            <span style="color:#1f2937;font-weight:500;">${lng != null ? Number(lng).toFixed(6) : 'N/A'}</span>
+          </div>
+        </div>
+      </div>`,
     [vehicle_number],
   );
 
-  useEffect(() => {
-    if (!map || coordinates?.length < 2) return;
-    if (routingRef.current) map.removeControl(routingRef.current);
-    if (markerRef.current) map.removeLayer(markerRef.current);
-    routingRef.current = markerRef.current = null;
+  // Clean up all map layers
+  const cleanup = useCallback(() => {
+    clearInterval(intervalRef.current);
+    if (polylineRef.current) {
+      map.removeLayer(polylineRef.current);
+      polylineRef.current = null;
+    }
+    if (markerRef.current) {
+      map.removeLayer(markerRef.current);
+      markerRef.current = null;
+    }
+    if (sourceMarkerRef.current) {
+      map.removeLayer(sourceMarkerRef.current);
+      sourceMarkerRef.current = null;
+    }
+    if (destMarkerRef.current) {
+      map.removeLayer(destMarkerRef.current);
+      destMarkerRef.current = null;
+    }
+  }, [map]);
 
-    const routing = L.Routing.control({
-      waypoints: coordinates.map(([lat, lng]) => L.latLng(lat, lng)),
-      routeWhileDragging: false,
-      addWaypoints: false,
-      fitSelectedRoutes: true,
-      createMarker: () => null,
-      lineOptions: { styles: [{ color: 'red', opacity: 0.7, weight: 5 }] },
+  // Draw route polyline + markers when coordinates change
+  useEffect(() => {
+    if (!map || !coordinates?.length || coordinates.length < 2) return;
+
+    cleanup();
+
+    // Draw polyline directly from GPS coordinates
+    polylineRef.current = L.polyline(coordinates, {
+      color: '#4285f4',
+      weight: 5,
+      opacity: 1,
+      smoothFactor: 1,
+      lineCap: 'round',
+      lineJoin: 'round',
     }).addTo(map);
 
-    routingRef.current = routing;
-    const el = document.querySelector('.leaflet-top.leaflet-right');
-    if (el) el.style.display = 'none';
+    // Fit map bounds to polyline
+    map.fitBounds(polylineRef.current.getBounds(), { padding: [50, 50], maxZoom: 16 });
 
-    routing.on('routesfound', (e) => {
-      routeCoords.current = e.routes[0]?.coordinates || [];
-      posRef.current = 0;
-      if (markerRef.current) map.removeLayer(markerRef.current);
-      if (routeCoords.current.length) {
-        const { lat, lng } = routeCoords.current[0];
-        markerRef.current = L.marker(routeCoords.current[0], { icon: getCarIcon() })
-          .addTo(map)
-          .bindPopup(popHtml(lat, lng), { closeButton: false, autoClose: false })
-          .openPopup();
-      }
-    });
+    const first = coordinates[0];
+    const last = coordinates[coordinates.length - 1];
 
-    return () => {
-      routing.off('routesfound');
-      map.removeControl(routing);
-      if (markerRef.current) map.removeLayer(markerRef.current);
-      clearInterval(intervalRef.current);
-    };
-  }, [map, coordinates, vehicle_number, popHtml]);
+    // Source marker (black circle)
+    sourceMarkerRef.current = L.marker(first, { icon: getSourceIcon(), zIndexOffset: 1000 }).addTo(map);
 
+    // Destination marker (black square)
+    destMarkerRef.current = L.marker(last, { icon: getDestIcon(), zIndexOffset: 1000 }).addTo(map);
+
+    // Vehicle marker at start position
+    markerRef.current = L.marker(first, { icon: getCarIcon(), zIndexOffset: 2000 })
+      .addTo(map)
+      .bindPopup(popHtml(first[0], first[1]), { closeButton: false, autoClose: false })
+      .openPopup();
+
+    posRef.current = 0;
+
+    return cleanup;
+  }, [map, coordinates, vehicle_number, popHtml, cleanup]);
+
+  // Handle play/pause animation
   useEffect(() => {
-    const coords = routeCoords.current;
-    if (!coords.length) return;
-
-    if (!markerRef.current) {
-      const { lat, lng } = coords[0] || {};
-      markerRef.current = L.marker(coords[0], { icon: getCarIcon() })
-        .addTo(map)
-        .bindPopup(popHtml(lat, lng), { closeButton: false, autoClose: false })
-        .openPopup();
-    } else markerRef.current.setIcon(getCarIcon());
+    if (!coordinates?.length || coordinates.length < 2) return;
 
     clearInterval(intervalRef.current);
 
+    if (!markerRef.current) return;
+    markerRef.current.setIcon(getCarIcon());
+
     if (isPlaying) {
-      if (posRef.current >= coords.length) posRef.current = 0;
+      if (posRef.current >= coordinates.length) posRef.current = 0;
       const delay = Math.max(10, 1000 / Math.max(speed, 1));
+
       intervalRef.current = setInterval(() => {
-        if (posRef.current >= coords.length) {
+        if (posRef.current >= coordinates.length) {
           clearInterval(intervalRef.current);
           return;
         }
-        const { lat, lng } = coords[posRef.current];
+        const [lat, lng] = coordinates[posRef.current];
         markerRef.current.setLatLng([lat, lng]);
         markerRef.current.setPopupContent(popHtml(lat, lng));
         posRef.current++;
       }, delay);
     }
+
     return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed, map, vehicle_number, popHtml]);
+  }, [isPlaying, speed, coordinates, popHtml]);
 
   return null;
 };

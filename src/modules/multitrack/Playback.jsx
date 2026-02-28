@@ -31,11 +31,14 @@ export default function Playback() {
 
   const setShortcutDates = (type) => {
     const format = 'YYYY-MM-DDTHH:mm';
-    if (type === '30min') {
-      setFromDate(moment().subtract(30, 'minutes').format(format));
-      setToDate(moment().format(format));
-    } else if (type === '1hour') {
+    if (type === '1hour') {
       setFromDate(moment().subtract(1, 'hours').format(format));
+      setToDate(moment().format(format));
+    } else if (type === '1day') {
+      setFromDate(moment().subtract(1, 'days').format(format));
+      setToDate(moment().format(format));
+    } else if (type === '2days') {
+      setFromDate(moment().subtract(2, 'days').format(format));
       setToDate(moment().format(format));
     }
   };
@@ -46,10 +49,10 @@ export default function Playback() {
   };
 
   useEffect(() => {
-    setShortcut('30min');
+    setShortcut('1hour');
     const format = 'YYYY-MM-DDTHH:mm';
     const now = moment();
-    const start = moment().subtract(30, 'minutes');
+    const start = moment().subtract(1, 'hours');
     const toVal = now.format(format);
     const fromVal = start.format(format);
 
@@ -181,17 +184,7 @@ export default function Playback() {
           </div>
           <div className='my-2'>
             <label className='text-sm'>Shortcut</label>
-            <Stack direction='row' spacing={1} className='mb-1 w-full'>
-              <Chip
-                label='30 Min'
-                color={shortcut === '30min' ? 'primary' : 'default'}
-                clickable
-                onClick={() => handleShortcutChip('30min')}
-                variant={shortcut === '30min' ? 'filled' : 'outlined'}
-                size='small'
-                className='flex-1'
-                style={{ width: '100%' }}
-              />
+            <Stack direction='row' spacing={1} className='mb-1 w-full' flexWrap='wrap' useFlexGap>
               <Chip
                 label='1 Hour'
                 color={shortcut === '1hour' ? 'primary' : 'default'}
@@ -200,7 +193,27 @@ export default function Playback() {
                 variant={shortcut === '1hour' ? 'filled' : 'outlined'}
                 size='small'
                 className='flex-1'
-                style={{ width: '100%' }}
+                style={{ minWidth: '60px' }}
+              />
+              <Chip
+                label='1 Day'
+                color={shortcut === '1day' ? 'primary' : 'default'}
+                clickable
+                onClick={() => handleShortcutChip('1day')}
+                variant={shortcut === '1day' ? 'filled' : 'outlined'}
+                size='small'
+                className='flex-1'
+                style={{ minWidth: '60px' }}
+              />
+              <Chip
+                label='2 Days'
+                color={shortcut === '2days' ? 'primary' : 'default'}
+                clickable
+                onClick={() => handleShortcutChip('2days')}
+                variant={shortcut === '2days' ? 'filled' : 'outlined'}
+                size='small'
+                className='flex-1'
+                style={{ minWidth: '60px' }}
               />
             </Stack>
           </div>
