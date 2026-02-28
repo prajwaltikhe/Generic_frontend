@@ -174,16 +174,15 @@ function Employee() {
       // if there was only 1 row on the current page AND we're not on first page
       if (tableData.length === 1 && page > 0) {
         setPage((prevPage) => prevPage - 1);
-        dispatch(fetchEmployees({ ...buildApiPayload(), page: page })); 
-        // page - 1 effectively
+        dispatch(fetchEmployees({ ...buildApiPayload(), page: page }));
       } else {
-        dispatch(fetchEmployees(buildApiPayload())); 
+        dispatch(fetchEmployees(buildApiPayload()));
       }
-
     } else {
       toast.error(res.payload || 'Failed to delete Employee');
     }
-  })
+  });
+};
 
   const handleStatusChange = async () => {
     if (!selectedEmp) return;
