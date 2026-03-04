@@ -7,6 +7,7 @@ import { AuthService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Https';
 import EmailIcon from '@mui/icons-material/Email';
+import { useEffect } from 'react';
 import { Paper, TextField, Checkbox, FormControlLabel, Button, InputAdornment } from '@mui/material';
 
 const validationSchema = Yup.object({
@@ -16,6 +17,14 @@ const validationSchema = Yup.object({
 
 function Login() {
   const navigate = useNavigate();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
   const formik = useFormik({
     initialValues: {
       email: localStorage.getItem('rememberedEmail') || '',

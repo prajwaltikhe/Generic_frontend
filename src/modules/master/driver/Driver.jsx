@@ -9,6 +9,7 @@ import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommonTable from '../../../components/table/CommonTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -76,6 +77,7 @@ function Driver() {
   const fileInputRef = useRef();
 
   const { vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
+  const { vehicles: allVehicles } = useSelector((s) => s.vehicles || {});
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -89,6 +91,7 @@ function Driver() {
 
   useEffect(() => {
     dispatch(fetchVehicleRoutes({ limit: 150 }));
+    dispatch(fetchVehicles({ limit: 150 }));
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -271,7 +274,7 @@ function Driver() {
           fileInputRef={fileInputRef}
           setFile={setFile}
           routes={vehicleRoutes?.routes}
-          vehicles={vehicleRoutes?.routes}
+          vehicles={allVehicles || []}
           isDate={false}
         />
       </form>

@@ -43,15 +43,14 @@ function Otp() {
 
           login(idToken); // Context login
           localStorage.setItem('company_id', user.company_id);
-
-          // Load initial data
-          dispatch(fetchDepartments({ limit: 10 }));
-          dispatch(fetchPlants({ limit: 50 }));
-
           localStorage.removeItem('user_id');
           localStorage.removeItem('pendingUserEmail');
           toast.success('OTP verified');
           navigate('/dashboard');
+
+          // Load initial data in background (after navigation)
+          dispatch(fetchDepartments({ limit: 10 }));
+          dispatch(fetchPlants({ limit: 50 }));
         } else {
           toast.error(actionResult.payload || 'Invalid OTP');
         }

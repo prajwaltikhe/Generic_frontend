@@ -74,6 +74,7 @@ function Vehicle() {
   const fileInputRef = useRef();
 
   const { vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
+  const { vehicles: allVehicles } = useSelector((s) => s.vehicles || {});
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -87,6 +88,7 @@ function Vehicle() {
 
   useEffect(() => {
     dispatch(fetchVehicleRoutes({ limit: 150 }));
+    dispatch(fetchVehicles({ limit: 150 }));
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -272,7 +274,7 @@ function Vehicle() {
           fileInputRef={fileInputRef}
           setFile={setFile}
           routes={vehicleRoutes?.routes}
-          vehicles={vehicleRoutes?.routes}
+          vehicles={allVehicles || []}
           isDate={false}
         />
       </form>
