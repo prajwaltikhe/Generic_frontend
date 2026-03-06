@@ -93,7 +93,11 @@ function Vehicle() {
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
     ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
-    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
+    ...(filterData.vehicles?.length === allVehicles?.length && filterData.vehicles?.length > 0
+      ? { vehicles: 'all' }
+      : filterData.vehicles?.length
+        ? { vehicles: JSON.stringify(filterData.vehicles) }
+        : {}),
     ...(searchQuery?.trim() && { search: searchQuery.trim() }),
     page: customPage,
     limit: customLimit,

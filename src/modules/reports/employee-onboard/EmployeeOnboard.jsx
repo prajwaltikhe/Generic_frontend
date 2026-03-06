@@ -91,15 +91,23 @@ function EmployeeOnboard() {
   }, [dispatch]);
 
   const buildApiPayload = (fetchLimit) => {
-    const { fromDate, toDate, departments, employee_ids, routes, vehicles, plants } = filterData;
+    const { fromDate, toDate, departments, employee_ids, routes, vehicles: selectedVehicles, plants } = filterData;
     const company_id = localStorage.getItem('company_id');
     const payload = { company_id };
 
     payload.departments = departments?.length ? JSON.stringify(departments) : undefined;
-    payload.employee_ids = employee_ids?.length ? JSON.stringify(employee_ids) : undefined;
+    payload.employee_ids =
+      employee_ids?.length === employees?.length && employee_ids?.length > 0
+        ? 'all'
+        : employee_ids?.length
+          ? JSON.stringify(employee_ids)
+          : undefined;
     payload.plants = plants?.length ? JSON.stringify(plants) : undefined;
     payload.routes = JSON.stringify(Array.isArray(routes) ? routes : []);
-    payload.vehicles = JSON.stringify(Array.isArray(vehicles) ? vehicles : []);
+    payload.vehicles =
+      selectedVehicles?.length === vehicles?.length && selectedVehicles?.length > 0
+        ? 'all'
+        : JSON.stringify(Array.isArray(selectedVehicles) ? selectedVehicles : []);
 
     if (fromDate) payload.from_date = fromDate;
     if (toDate) payload.to_date = toDate;
