@@ -11,7 +11,15 @@ import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'date', header: 'Date', render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-') },
+  {
+    key: 'date',
+    header: 'Date',
+    render: (value) => {
+      if (!value || value === '-') return '-';
+      const m = moment(value);
+      return m.isValid() ? m.format('YYYY-MM-DD') : value;
+    },
+  },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (v) => v ?? '-' },
   { key: 'route_details', header: 'Route Details', render: (v) => v ?? '-' },
   { key: 'driver_name', header: 'Driver Name', render: (v) => v ?? '-' },
@@ -64,7 +72,7 @@ function RouteViolation() {
     items.map((item, i) => ({
       id: item.id || item._id || item.vehicle_id || i + 1,
       vehicle_id: item.vehicle_id || item.id || item._id,
-      date: item.date ?? '-',
+      date: item.date ?? null,
       vehicle_number: item.vehicle_number ?? '-',
       route_details: item.route_details ?? item.route_name ?? '-',
       driver_name: item.driver_name ?? '-',
