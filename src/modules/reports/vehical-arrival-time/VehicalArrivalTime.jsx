@@ -143,21 +143,36 @@ function VehicalArrivalTime() {
       });
   }, [dispatch, company_id, page, limit, buildApiPayload]);
 
-  const handleExport = () =>
+const handleExport = async () => {
+  const res = await dispatch( fetchVehicleArrivalData({ ...buildApiPayload(), page: 1, limit: totalCount || 1000, }));
+
+  if (res?.payload?.success) {
+    const allData = Array.isArray(res.payload.data) ? res.payload.data : [];
+
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: filteredData }),
+      rows: buildExportRows({ columns, data: allData }),
       fileName: 'vehicle_arrival_time_report.xlsx',
     });
+  }
+};
 
-  const handleExportPDF = () =>
+  const handleExportPDF = async () => {
+  const res = await dispatch(
+    fetchVehicleArrivalData({ ...buildApiPayload(), page: 1, limit: totalCount || 1000, })
+  );
+
+  if (res?.payload?.success) {
+    const allData = Array.isArray(res.payload.data) ? res.payload.data : [];
+
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: filteredData }),
+      rows: buildExportRows({ columns, data: allData }),
       fileName: 'vehicle_arrival_time_report.pdf',
       orientation: 'landscape',
     });
-
+  }
+};
   const handleFormSubmit = (e) => {
     e.preventDefault();
     dispatch(fetchVehicleArrivalData(buildApiPayload())).then((res) => {
