@@ -11,7 +11,7 @@ import CommanTable from '../../../components/table/CommonTable';
 
 const columns = [
   { key: 'id', header: 'Sr No' },
-  { key: 'busName', header: 'Vehicle Name' },
+  // { key: 'busName', header: 'Vehicle Name' },
   { key: 'geofenceName', header: 'Geofence Name' },
   { key: 'geofenceType', header: 'Geofence Type' },
   { key: 'createdAt', header: 'Created At' },
