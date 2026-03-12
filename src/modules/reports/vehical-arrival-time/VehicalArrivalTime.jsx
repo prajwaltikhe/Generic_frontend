@@ -62,7 +62,7 @@ function VehicalArrivalTime() {
         render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-'),
       },
       { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, row) => row?.vehicle_number || '-' },
-      { key: 'route_details', header: 'Route Details', render: (_v, row) => row?.route_name || '-' },
+      { key: 'route_name', header: 'Route Details', render: (_v, row) => row || '-' },
       { key: 'driver_name', header: 'Driver Name', render: (_v, row) => row?.driver_name || '-' },
       { key: 'driver_number', header: 'Driver Number', render: (_v, row) => row?.driver_number || '-' },
       {
