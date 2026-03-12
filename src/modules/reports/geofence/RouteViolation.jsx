@@ -96,20 +96,30 @@ function RouteViolation() {
 
   const tableColumns = [...columns, actionColumn];
 
-  const handleExport = () =>
-    exportToExcel({
-      columns,
-      rows: buildExportRows({ columns, data }),
-      fileName: 'route_violation_report.xlsx',
-    });
+  const handleExport = async () => {
+    const res = await dispatch(fetchRouteViolation({ ...buildApiPayload(), page: 1, limit: totalCount || 150 }));
+    if (res?.payload?.success) {
+      const allData = formatData(res.payload.data || []);
+      exportToExcel({
+        columns,
+        rows: buildExportRows({ columns, data: allData }),
+        fileName: 'route_violation_report.xlsx',
+      });
+    }
+  };
 
-  const handleExportPDF = () =>
-    exportToPDF({
-      columns,
-      rows: buildExportRows({ columns, data }),
-      fileName: 'route_violation_report.pdf',
-      orientation: 'landscape',
-    });
+  const handleExportPDF = async () => {
+    const res = await dispatch(fetchRouteViolation({ ...buildApiPayload(), page: 1, limit: totalCount || 150 }));
+    if (res?.payload?.success) {
+      const allData = formatData(res.payload.data || []);
+      exportToPDF({
+        columns,
+        rows: buildExportRows({ columns, data: allData }),
+        fileName: 'route_violation_report.pdf',
+        orientation: 'landscape',
+      });
+    }
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
