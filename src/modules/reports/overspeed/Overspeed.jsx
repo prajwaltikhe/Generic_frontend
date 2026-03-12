@@ -61,12 +61,12 @@ const columns = [
       );
     },
   },
-  // { key: 'trip_distance', header: 'Trip Distance', render: (_, r) => r?.trip_distance ?? '-' },
-  // {
-  //   key: 'trip_distance_covered',
-  //   header: 'Trip Distance Covered',
-  //   render: (_, r) => r?.trip_distance_covered ?? r?.covered_distance ?? '-',
-  // },
+  { key: 'trip_distance', header: 'Trip Distance', render: (_, r) => r?.trip_distance ?? '-' },
+  {
+    key: 'trip_distance_covered',
+    header: 'Trip Distance Covered',
+    render: (_, r) => r?.trip_distance_covered ?? r?.covered_distance ?? '-',
+  },
   // { key: 'start_odometer', header: 'Start Odometer', render: (_, r) => r?.start_odometer ?? '-' },
   // { key: 'end_odometer', header: 'End Odometer', render: (_, r) => r?.end_odometer ?? '-' },
   { key: 'total_distance', header: 'Total Distance', render: (_, r) => r?.total_distance ?? '-' },
