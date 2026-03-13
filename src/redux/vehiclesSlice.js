@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { ApiService } from '../services';
 import { APIURL } from '../constants';
 
-// Async thunk to fetch vehicles
+// Async thunk to fetch vehicles (paginated/filtered)
 export const fetchVehicles = createAsyncThunk('vehicle/fetchVehicles', async (params = {}, { rejectWithValue }) => {
   try {
     const response = await ApiService.get(APIURL.VEHICLE, params);
@@ -10,6 +10,19 @@ export const fetchVehicles = createAsyncThunk('vehicle/fetchVehicles', async (pa
 
     const { vehicles = [], pagination } = response.data;
     return { vehicles, pagination };
+  } catch (error) {
+    return rejectWithValue(error.message || 'Network error');
+  }
+});
+
+// Async thunk to fetch ALL vehicles (for dropdowns)
+export const fetchAllVehicles = createAsyncThunk('vehicle/fetchAllVehicles', async (params = { limit: 1000 }, { rejectWithValue }) => {
+  try {
+    const response = await ApiService.get(APIURL.VEHICLE, params);
+    if (!response.success) return rejectWithValue(response.message || 'Failed to fetch vehicles');
+
+    const { vehicles = [] } = response.data;
+    return vehicles;
   } catch (error) {
     return rejectWithValue(error.message || 'Network error');
   }
@@ -87,6 +100,7 @@ export const uploadVehicleData = createAsyncThunk(
 // ---- Initial State ----
 const initialState = {
   vehicles: [],
+  allVehicles: [],
   pagination: null,
   loading: false,
   error: null,
@@ -124,6 +138,18 @@ const vehiclesSlice = createSlice({
         state.pagination = action.payload.pagination;
       })
       .addCase(fetchVehicles.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // --- Fetch All ---
+      .addCase(fetchAllVehicles.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchAllVehicles.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allVehicles = action.payload;
+      })
+      .addCase(fetchAllVehicles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

@@ -8,8 +8,8 @@ import { fetchDrivers, deleteDriver, changeDriverStatus, uploadDriverData } from
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommonTable from '../../../components/table/CommonTable';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { fetchVehicles } from '../../../redux/vehiclesSlice';
+import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -76,8 +76,8 @@ function Driver() {
   const navigate = useNavigate();
   const fileInputRef = useRef();
 
-  const { vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
-  const { vehicles: allVehicles } = useSelector((s) => s.vehicles || {});
+  const { allRoutes: vehicleRoutes } = useSelector((s) => s.vehicleRoute || []);
+  const { allVehicles } = useSelector((s) => s.vehicles || []);
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -90,8 +90,8 @@ function Driver() {
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
-    dispatch(fetchVehicleRoutes({ limit: 150 }));
-    dispatch(fetchVehicles({ limit: 150 }));
+    dispatch(fetchAllVehicleRoutes({ limit: 1000 }));
+    dispatch(fetchAllVehicles({ limit: 1000 }));
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -277,7 +277,7 @@ function Driver() {
           handleFileUpload={handleFileUpload}
           fileInputRef={fileInputRef}
           setFile={setFile}
-          routes={vehicleRoutes?.routes}
+          routes={vehicleRoutes}
           vehicles={allVehicles || []}
           isDate={false}
         />

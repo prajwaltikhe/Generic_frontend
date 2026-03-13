@@ -6,8 +6,8 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import CustomTab from '../vehicle-activity/components/CustomTab';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { fetchVehicles } from '../../../redux/vehiclesSlice';
+import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
 import { fetchVehicleArrivalData } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -36,8 +36,8 @@ function VehicalArrivalTime() {
 
   const company_id = localStorage.getItem('company_id');
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
-  const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes || {});
-  const { vehicles } = useSelector((state) => state?.vehicles || {});
+  const { allRoutes } = useSelector((state) => state?.vehicleRoute || []);
+  const { allVehicles } = useSelector((state) => state?.vehicles || []);
 
   // Read status from URL query parameter on component mount
   useEffect(() => {
@@ -119,8 +119,8 @@ function VehicalArrivalTime() {
 
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
-      dispatch(fetchVehicles({ limit: 150 }));
+      dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
+      dispatch(fetchAllVehicles({ limit: 1000 }));
     }
   }, [dispatch, company_id]);
 
@@ -203,8 +203,8 @@ const handleExport = async () => {
           filterData={filterData}
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
-          vehicles={vehicles}
-          routes={vehicleRoutes}
+          vehicles={allVehicles}
+          routes={allRoutes}
           statuses={statusOptions}
         />
       </form>

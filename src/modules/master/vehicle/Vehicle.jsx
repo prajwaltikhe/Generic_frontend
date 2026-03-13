@@ -7,9 +7,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import FmdGoodIcon from '@mui/icons-material/FmdGood';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
-import { fetchVehicles, deleteVehicle, changeVehicleStatus, uploadVehicleData } from '../../../redux/vehiclesSlice';
+import { fetchVehicles, fetchAllVehicles, deleteVehicle, changeVehicleStatus, uploadVehicleData } from '../../../redux/vehiclesSlice';
 import CommonTable from '../../../components/table/CommonTable';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -73,8 +73,8 @@ function Vehicle() {
   const navigate = useNavigate();
   const fileInputRef = useRef();
 
-  const { vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
-  const { vehicles: allVehicles } = useSelector((s) => s.vehicles || {});
+  const { allRoutes } = useSelector((s) => s.vehicleRoute || {});
+  const { allVehicles } = useSelector((s) => s.vehicles || {});
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -87,8 +87,8 @@ function Vehicle() {
   const [filterData, setFilterData] = useState({ routes: [], vehicles: [] });
 
   useEffect(() => {
-    dispatch(fetchVehicleRoutes({ limit: 150 }));
-    dispatch(fetchVehicles({ limit: 150 }));
+    dispatch(fetchAllVehicleRoutes({ limit: 1000 }));
+    dispatch(fetchAllVehicles({ limit: 1000 }));
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -119,6 +119,7 @@ function Vehicle() {
     dispatch(deleteVehicle(id)).then((res) => {
       if (deleteVehicle.fulfilled.match(res)) {
         toast.success('Vehicle deleted successfully!');
+        dispatch(fetchAllVehicles({ limit: 1000 }));
         dispatch(fetchVehicles(buildApiPayload())).then((res) => {
           setFilteredData(res?.payload?.vehicles || []);
           setTotalCount(res?.payload?.pagination?.total ?? res?.payload?.vehicles?.length ?? 0);
@@ -136,6 +137,7 @@ function Vehicle() {
       if (changeVehicleStatus.fulfilled.match(res)) {
         toast.success('Status updated!');
         setIsStatusModalOpen(false);
+        dispatch(fetchAllVehicles({ limit: 1000 }));
         dispatch(fetchVehicles(buildApiPayload()));
       } else {
         toast.error(res.payload || 'Failed to update status.');
@@ -277,7 +279,7 @@ function Vehicle() {
           handleFileUpload={handleFileUpload}
           fileInputRef={fileInputRef}
           setFile={setFile}
-          routes={vehicleRoutes?.routes}
+          routes={allRoutes}
           vehicles={allVehicles || []}
           isDate={false}
         />

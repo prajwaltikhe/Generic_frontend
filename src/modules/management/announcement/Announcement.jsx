@@ -6,8 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
 import CommonTable from '../../../components/table/CommonTable';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { fetchVehicles } from '../../../redux/vehiclesSlice';
+import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
 import { fetchAnnouncements, deleteAnnouncement, uploadAnnouncementData } from '../../../redux/announcementSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -39,8 +39,8 @@ function Announcement() {
   const fileInputRef = useRef();
   const company_id = localStorage.getItem('company_id');
 
-  const { routes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes);
-  const { vehicles } = useSelector((state) => state.vehicles || {});
+  const { allRoutes: routes } = useSelector((state) => state?.vehicleRoute || []);
+  const { allVehicles: vehicles } = useSelector((state) => state.vehicles || []);
 
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -53,8 +53,8 @@ function Announcement() {
 
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
-      dispatch(fetchVehicles({ limit: 150 }));
+      dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
+      dispatch(fetchAllVehicles({ limit: 1000 }));
     }
   }, [dispatch, company_id]);
 

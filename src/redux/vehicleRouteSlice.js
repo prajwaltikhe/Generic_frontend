@@ -11,6 +11,15 @@ export const fetchVehicleRoutes = createAsyncThunk('vehicleRoute/fetchVehicleRou
   }
 });
 
+export const fetchAllVehicleRoutes = createAsyncThunk('vehicleRoute/fetchAllVehicleRoutes', async (params = { limit: 1000 }, thunkAPI) => {
+  try {
+    const res = await ApiService.get(APIURL.VEHICLE_ROUTE, params);
+    return res.data;
+  } catch (e) {
+    return thunkAPI.rejectWithValue(e.message);
+  }
+});
+
 export const createVehicleRoute = createAsyncThunk(
   'vehicleRoute/createVehicleRoute',
   async (payload, { rejectWithValue }) => {
@@ -79,6 +88,7 @@ export const uploadVehicleRouteData = createAsyncThunk(
 // Initial state
 const initialState = {
   vehicleRoutes: { routes: [] },
+  allRoutes: [],
   loading: false,
   error: null,
   routeStops: [],
@@ -104,6 +114,18 @@ const vehicleRouteReducer = createSlice({
         state.vehicleRoutes = action.payload || { routes: [] };
       })
       .addCase(fetchVehicleRoutes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch All
+      .addCase(fetchAllVehicleRoutes.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchAllVehicleRoutes.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allRoutes = action.payload?.routes || [];
+      })
+      .addCase(fetchAllVehicleRoutes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

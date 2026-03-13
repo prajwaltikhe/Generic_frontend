@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import OverSpeedChart from './charts/OverSpeedLineChart';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
-import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { fetchVehicles } from '../../../redux/vehiclesSlice';
+import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
 import { fetchOverSpeedReport } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import { formatDuration } from '../../../utils/formatters';
@@ -82,8 +82,8 @@ function Overspeed() {
   const [filteredData, setFilteredData] = useState([]);
 
   const company_id = localStorage.getItem('company_id');
-  const { routes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute?.vehicleRoutes);
-  const { vehicles } = useSelector((state) => state?.vehicles || {});
+  const { allRoutes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute || []);
+  const { allVehicles: vehicles } = useSelector((state) => state?.vehicles || []);
   const { speedOverReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
   const buildApiPayload = (customLimit) => {
@@ -98,8 +98,8 @@ function Overspeed() {
 
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
-      dispatch(fetchVehicles({ limit: 150 }));
+      dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
+      dispatch(fetchAllVehicles({ limit: 1000 }));
     }
   }, [dispatch, company_id]);
 
