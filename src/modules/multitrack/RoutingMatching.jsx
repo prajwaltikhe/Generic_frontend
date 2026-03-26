@@ -38,12 +38,16 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     });
 
   const popHtml = useCallback(
-    (lat, lng) =>
+    (lat, lng, currentSpeed) =>
       `<div style="min-width:180px;padding:0px;font-family:system-ui,sans-serif;">
         <div style="background:#4285f4;color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;font-size:13px;font-weight:600;letter-spacing:0.3px;">
           ${vehicle_number || 'Vehicle'}
         </div>
         <div style="padding:8px 10px;background:#fff;border-radius:0 0 6px 6px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+            <span style="color:#6b7280;">Speed</span>
+            <span style="color:#1f2937;font-weight:500;">${currentSpeed != null ? Number(currentSpeed) + ' km/h' : '0 km/h'}</span>
+          </div>
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
             <span style="color:#6b7280;">Latitude</span>
             <span style="color:#1f2937;font-weight:500;">${lat != null ? Number(lat).toFixed(6) : 'N/A'}</span>
@@ -101,15 +105,15 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     const last = coordinates[coordinates.length - 1];
 
     // Source marker (black circle)
-    sourceMarkerRef.current = L.marker(first, { icon: getSourceIcon(), zIndexOffset: 1000 }).addTo(map);
+    sourceMarkerRef.current = L.marker([first[0], first[1]], { icon: getSourceIcon(), zIndexOffset: 1000 }).addTo(map);
 
     // Destination marker (black square)
-    destMarkerRef.current = L.marker(last, { icon: getDestIcon(), zIndexOffset: 1000 }).addTo(map);
+    destMarkerRef.current = L.marker([last[0], last[1]], { icon: getDestIcon(), zIndexOffset: 1000 }).addTo(map);
 
     // Vehicle marker at start position
-    markerRef.current = L.marker(first, { icon: getCarIcon(), zIndexOffset: 2000 })
+    markerRef.current = L.marker([first[0], first[1]], { icon: getCarIcon(), zIndexOffset: 2000 })
       .addTo(map)
-      .bindPopup(popHtml(first[0], first[1]), { closeButton: false, autoClose: false })
+      .bindPopup(popHtml(first[0], first[1], first[2]), { closeButton: false, autoClose: false })
       .openPopup();
 
     posRef.current = 0;
@@ -135,9 +139,9 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
           clearInterval(intervalRef.current);
           return;
         }
-        const [lat, lng] = coordinates[posRef.current];
+        const [lat, lng, currentSpeed] = coordinates[posRef.current];
         markerRef.current.setLatLng([lat, lng]);
-        markerRef.current.setPopupContent(popHtml(lat, lng));
+        markerRef.current.setPopupContent(popHtml(lat, lng, currentSpeed));
         posRef.current++;
       }, delay);
     }

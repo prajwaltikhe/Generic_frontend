@@ -2,6 +2,9 @@ import L from 'leaflet';
 import AutoFlyTo from './AutoFly';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { useRef, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
@@ -15,7 +18,7 @@ import {
 } from '../../../../redux/vehicleRouteSlice';
 import { fetchVehicles } from '../../../../redux/vehiclesSlice';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Autocomplete, TextField, FormControl, RadioGroup } from '@mui/material';
+import { Autocomplete, TextField, FormControl, RadioGroup, IconButton, Tooltip } from '@mui/material';
 import { FormControlLabel, Radio, Button, CircularProgress } from '@mui/material';
 
 const customIcon = new L.Icon({
@@ -91,6 +94,13 @@ const toTimeInputValue = (val) => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
+const formatTo7Decimals = (val) => {
+  if (val === '' || val === null || val === undefined) return '';
+  const num = parseFloat(val);
+  if (isNaN(num)) return val.toString();
+  return Number(num.toFixed(7)).toString();
+};
+
 const VehicleRouteForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -144,11 +154,11 @@ const VehicleRouteForm = () => {
           stops.map((s) => ({
             id: s.id || Date.now() + Math.random(),
             address: s.address || '',
-            latitude: s.latitude || '',
-            longitude: s.longitude || '',
+            latitude: formatTo7Decimals(s.latitude),
+            longitude: formatTo7Decimals(s.longitude),
             time: toTimeInputValue(s.time),
             returnTime: toTimeInputValue(s.return_time),
-            distance: s.distance || '',
+            distance: formatTo7Decimals(s.distance),
           })),
         );
       }
@@ -180,11 +190,11 @@ const VehicleRouteForm = () => {
           stopsData.map((s) => ({
             id: s.id || Date.now() + Math.random(),
             address: s.address || '',
-            latitude: s.latitude || '',
-            longitude: s.longitude || '',
+            latitude: formatTo7Decimals(s.latitude),
+            longitude: formatTo7Decimals(s.longitude),
             time: toTimeInputValue(s.time),
             returnTime: toTimeInputValue(s.return_time),
-            distance: s.distance || '',
+            distance: formatTo7Decimals(s.distance),
           })),
         );
       }
@@ -235,8 +245,8 @@ const VehicleRouteForm = () => {
       handleStopChange(idx, 'address', selectedOption);
     } else if (selectedOption.otherData) {
       handleStopChange(idx, 'address', selectedOption.label);
-      handleStopChange(idx, 'latitude', selectedOption.otherData.lat);
-      handleStopChange(idx, 'longitude', selectedOption.otherData.lon);
+      handleStopChange(idx, 'latitude', formatTo7Decimals(selectedOption.otherData.lat));
+      handleStopChange(idx, 'longitude', formatTo7Decimals(selectedOption.otherData.lon));
     } else {
       handleStopChange(idx, 'address', selectedOption.label);
     }
@@ -286,12 +296,12 @@ const VehicleRouteForm = () => {
       Vehicle_Route_Stops: stopPoints.map((s) => ({
         company_id: companyID,
         shift_id: selectedShift,
-        latitude: parseFloat(s.latitude).toString(),
-        longitude: parseFloat(s.longitude).toString(),
+        latitude: formatTo7Decimals(s.latitude),
+        longitude: formatTo7Decimals(s.longitude),
         address: s.address.trim(),
         time: s.time || '',
         return_time: s.returnTime || '',
-        distance: s.distance ? parseFloat(s.distance).toString() : '0',
+        distance: s.distance ? formatTo7Decimals(s.distance) : '0',
       })),
     };
 
@@ -331,6 +341,44 @@ const VehicleRouteForm = () => {
       return;
     }
     setStopPoints((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const moveStopUp = (idx) => {
+    if (idx === 0) return;
+    setStopPoints((prev) => {
+      const newStops = [...prev];
+      const temp = newStops[idx - 1];
+      newStops[idx - 1] = newStops[idx];
+      newStops[idx] = temp;
+      return newStops;
+    });
+  };
+
+  const moveStopDown = (idx) => {
+    if (idx === stopPoints.length - 1) return;
+    setStopPoints((prev) => {
+      const newStops = [...prev];
+      const temp = newStops[idx + 1];
+      newStops[idx + 1] = newStops[idx];
+      newStops[idx] = temp;
+      return newStops;
+    });
+  };
+
+  const insertStopAfter = (idx) => {
+    setStopPoints((prev) => {
+      const newStops = [...prev];
+      newStops.splice(idx + 1, 0, {
+        id: Date.now(),
+        address: '',
+        latitude: '',
+        longitude: '',
+        time: '',
+        returnTime: '',
+        distance: '',
+      });
+      return newStops;
+    });
   };
 
   const vehicleOptions = vehicles.map((v) => ({
@@ -475,14 +523,14 @@ const VehicleRouteForm = () => {
 
           {/* Stops List - now all fields in single row */}
           <div className='space-y-4 overflow-x-auto'>
-            <div className='hidden md:grid md:grid-cols-7 gap-3 px-2 pb-1 border-b text-xs text-gray-600 font-bold'>
-              <div>Address</div>
+            <div className='hidden md:grid md:grid-cols-7 gap-3 px-2 pb-1 border-b text-sm text-gray-600 font-bold'>
+              <div className='col-span-1'>Address</div>
               <div>Latitude *</div>
               <div>Longitude *</div>
               <div>Pickup Time</div>
               <div>Return Time</div>
               <div>Distance (km)</div>
-              <div className='flex justify-end'>&nbsp;</div>
+              <div className='flex justify-end'>Actions</div>
             </div>
             {stopPoints.map((stop, idx) => (
               <div
@@ -532,6 +580,7 @@ const VehicleRouteForm = () => {
                     fullWidth
                     inputProps={{ step: 'any' }}
                     onChange={(e) => handleStopChange(idx, 'latitude', e.target.value)}
+                    onBlur={(e) => handleStopChange(idx, 'latitude', formatTo7Decimals(e.target.value))}
                   />
                 </div>
                 {/* Longitude */}
@@ -547,6 +596,7 @@ const VehicleRouteForm = () => {
                     fullWidth
                     inputProps={{ step: 'any' }}
                     onChange={(e) => handleStopChange(idx, 'longitude', e.target.value)}
+                    onBlur={(e) => handleStopChange(idx, 'longitude', formatTo7Decimals(e.target.value))}
                   />
                 </div>
                 {/* Pickup Time */}
@@ -587,23 +637,45 @@ const VehicleRouteForm = () => {
                     fullWidth
                     inputProps={{ step: 'any', min: 0 }}
                     onChange={(e) => handleStopChange(idx, 'distance', e.target.value)}
+                    onBlur={(e) => handleStopChange(idx, 'distance', formatTo7Decimals(e.target.value))}
                   />
                 </div>
-                {/* Remove Button */}
+                {/* Actions Button */}
                 <div className='flex items-center justify-end w-full h-full mt-2 md:mt-0'>
-                  <div className='flex gap-2 items-center'>
+                  <div className='flex gap-1 items-center'>
                     <span className='md:hidden font-semibold'>Stop {idx + 1}</span>
-                    {!isViewMode && stopPoints.length > 1 && (
-                      <Button
-                        size='small'
-                        color='error'
-                        onClick={() => removeStop(idx)}
-                        aria-label='delete stop'
-                        variant='outlined'
-                        startIcon={<DeleteIcon />}
-                        style={{ borderRadius: 0 }}>
-                        Remove
-                      </Button>
+                    {!isViewMode && (
+                      <div className='flex items-center'>
+                        <Tooltip title='Add Stop Below'>
+                          <IconButton size='small' color='primary' onClick={() => insertStopAfter(idx)}>
+                            <AddCircleOutlineIcon fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title='Move Up'>
+                          <span>
+                            <IconButton size='small' onClick={() => moveStopUp(idx)} disabled={idx === 0}>
+                              <ArrowUpwardIcon fontSize='small' />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                        <Tooltip title='Move Down'>
+                          <span>
+                            <IconButton
+                              size='small'
+                              onClick={() => moveStopDown(idx)}
+                              disabled={idx === stopPoints.length - 1}>
+                              <ArrowDownwardIcon fontSize='small' />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                        {stopPoints.length > 1 && (
+                          <Tooltip title='Remove Stop'>
+                            <IconButton size='small' color='error' onClick={() => removeStop(idx)}>
+                              <DeleteIcon fontSize='small' />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </div>
                     )}
                     {isViewMode && <span className='hidden md:block text-xs text-gray-500 p-2'>Stop {idx + 1}</span>}
                   </div>

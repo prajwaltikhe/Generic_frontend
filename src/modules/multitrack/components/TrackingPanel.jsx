@@ -34,6 +34,7 @@ const selectState = (s) => ({
   offline: s.multiTrackStatus.offlineVehicleData,
   isTrackShow: s.multiTrackStatus.isTrackShow,
   weekChart: s.multiTrackStatus.weekChart,
+  isProcessed: s.multiTrackStatus.isProcessed,
 });
 
 const StatCard = ({ icon, label, value, bg, color, onClick }) => (
@@ -59,7 +60,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow } = useSelector(
+  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow, isProcessed } = useSelector(
     selectState,
     shallowEqual,
   );
@@ -101,7 +102,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
 
   return (
     <div
-      className={`absolute transition-all top-0 left-0 rounded-md bg-white h-full p-3 z-[99999] w-[452px] flex flex-col ${
+      className={`absolute transition-all top-0 left-0 rounded-md bg-white h-full p-3 z-99999 w-[452px] flex flex-col ${
         isTrackShow ? '-translate-x-[452px]' : ''
       }`}
       style={{ minHeight: 0 }}>
@@ -148,38 +149,60 @@ const TrackingPanel = ({ handleRightPanel }) => {
           <ISearch onChange={(e) => setSearch(e.target.value)} value={search} />
         </div>
         <div className='mhe-list p-2 mt-2 flex-1 min-h-0 overflow-y-auto'>
-          {shownDevices.map((device) => (
-            <div
-              key={device.id}
-              className='flex items-center border-b border-gray-200 py-1 last:border-none cursor-pointer'>
-              <CheckBox fontSize='small' sx={{ marginRight: '10px' }} />
-              <div className='h-2 w-2 rounded-full mr-4' style={{ background: device.color }} />
-              <div className='flex-1'>
-                <div className='text-sm' onClick={() => handleRightPanel(device)}>
-                  {device.vehicle_name}
+          {!isProcessed ? (
+            <div className='space-y-4 pt-2'>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                <div key={i} className='flex items-center gap-3 animate-pulse px-2'>
+                  <div className='w-5 h-5 bg-gray-200 rounded'></div>
+                  <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
+                  <div className='flex-1 space-y-2'>
+                    <div className='h-4 bg-gray-200 rounded w-3/4'></div>
+                    <div className='h-3 bg-gray-200 rounded w-1/2'></div>
+                  </div>
+                  <div className='flex gap-2'>
+                    <div className='w-6 h-6 bg-gray-200 rounded-full'></div>
+                    <div className='w-6 h-6 bg-gray-200 rounded-full'></div>
+                    <div className='w-6 h-6 bg-gray-200 rounded-full'></div>
+                  </div>
                 </div>
-                {device.timestamp && (
-                  <div className='text-gray-500 text-xs'>{new Date(device.timestamp).toLocaleString()}</div>
-                )}
-              </div>
-              <span className='w-8 text-center text-sm'>{device.speed}</span>
-              {iconStatus.map(({ Icon, key }, i) => {
-                const status = key(device);
-                const cls =
-                  status == null
-                    ? 'text-gray-400 text-[15px]'
-                    : status
-                      ? 'text-green-600 text-[15px]'
-                      : 'text-red-400 text-[15px]';
-                return (
-                  <span key={i} className='w-8 text-center'>
-                    <Icon className={cls} />
-                  </span>
-                );
-              })}
-              <span className='ml-4 text-sm text-gray-600'>{device.address}</span>
+              ))}
             </div>
-          ))}
+          ) : shownDevices.length === 0 ? (
+            <div className='flex items-center justify-center p-4 text-gray-500 text-sm'>No vehicles found</div>
+          ) : (
+            shownDevices.map((device) => (
+              <div
+                key={device.id}
+                className='flex items-center border-b border-gray-200 py-1 last:border-none cursor-pointer'>
+                <CheckBox fontSize='small' sx={{ marginRight: '10px' }} />
+                <div className='h-2 w-2 rounded-full mr-4' style={{ background: device.color }} />
+                <div className='flex-1'>
+                  <div className='text-sm' onClick={() => handleRightPanel(device)}>
+                    {device.vehicle_name}
+                  </div>
+                  {device.timestamp && (
+                    <div className='text-gray-500 text-xs'>{new Date(device.timestamp).toLocaleString()}</div>
+                  )}
+                </div>
+                <span className='w-8 text-center text-sm'>{device.speed}</span>
+                {iconStatus.map(({ Icon, key }, i) => {
+                  const status = key(device);
+                  const cls =
+                    status == null
+                      ? 'text-gray-400 text-[15px]'
+                      : status
+                        ? 'text-green-600 text-[15px]'
+                        : 'text-red-400 text-[15px]';
+                  return (
+                    <span key={i} className='w-8 text-center'>
+                      <Icon className={cls} />
+                    </span>
+                  );
+                })}
+                <span className='ml-4 text-sm text-gray-600'>{device.address}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
