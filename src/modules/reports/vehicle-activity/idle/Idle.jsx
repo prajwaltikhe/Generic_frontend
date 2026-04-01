@@ -16,9 +16,14 @@ import { formatDuration } from '../../../../utils/formatters';
 
 const columns = [
   {
-    key: 'updated_at',
-    header: 'Date & Time',
-    render: (_, r) => (r?.updated_at ? moment(r.updated_at).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'date_only',
+    header: 'Date',
+    render: (_, row) => (row?.updated_at ? moment(row.updated_at).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'time_only',
+    header: 'Time',
+    render: (_, row) => (row?.updated_at ? moment(row.updated_at).format('hh:mm:ss A') : '-'),
   },
   { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type ?? 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number ?? '-' },
@@ -38,6 +43,8 @@ function formatIdleRows(data, offset = 0) {
       id: offset + idx + 1,
       vehicle_id: r.vehicle_id || row.vehicle_id,
       updated_at: r.updated_at ?? null,
+      date_only: r.updated_at ? moment(r.updated_at).format('YYYY-MM-DD') : '-',
+      time_only: r.updated_at ? moment(r.updated_at).format('hh:mm:ss A') : '-',
       vehicle_type: r.vehicle_type ?? 'Bus',
       vehicle_number: r.vehicle_number ?? null,
       route_details: r.route_details ?? null,
@@ -92,20 +99,23 @@ function Idle() {
 
   useEffect(() => {
     if (!company_id) return;
-    setIsLoading(true);
-    dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit }))).then((res) => {
-      setIsLoading(false);
-      if (res?.payload?.success) {
-        setFilteredData(res.payload.data);
-        setTotal(res.payload?.pagination?.total || 0);
-      } else {
-        setFilteredData([]);
-        setTotal(0);
-      }
+    Promise.resolve().then(() => {
+      setIsLoading(true);
+      dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit }))).then((res) => {
+        setIsLoading(false);
+        if (res?.payload?.success) {
+          const raw = res?.payload?.data;
+          setFilteredData(formatIdleRows(raw, page * limit));
+          setTotal(res?.payload?.pagination?.total ?? 0);
+        } else {
+          setFilteredData([]);
+          setTotal(0);
+        }
+      });
     });
   }, [company_id, page, limit, buildApiPayload, dispatch]);
 
-  const tableData = formatIdleRows(filteredData, page * limit);
+  const tableData = filteredData;
 
   const handleViewDetails = (row) => {
     const params = new URLSearchParams();

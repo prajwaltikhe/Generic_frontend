@@ -5,7 +5,8 @@ import { IoArrowBack } from 'react-icons/io5';
 import moment from 'moment';
 
 const columns = [
-  { key: 'date', header: 'Date time' },
+  { key: 'date', header: 'Date', render: (_, r) => (r?.date ? moment(r.date).format('YYYY-MM-DD') : '-') },
+  { key: 'time', header: 'Time', render: (_, r) => (r?.date ? moment(r.date).format('hh:mm:ss A') : '-') },
   { key: 'vehicleNo', header: 'Vehicle Number' },
   { key: 'routeNo', header: 'Route Number' },
   { key: 'routeName', header: 'Route Name' },

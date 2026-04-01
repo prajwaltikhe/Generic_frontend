@@ -135,6 +135,9 @@ const multiTrackSlice = createSlice({
         state.errorPlayback = action.payload;
         state.playbackData = [];
       })
+      .addCase(fetchEnrichedVehicles.pending, (state) => {
+        state.isProcessed = false;
+      })
       .addCase(fetchEnrichedVehicles.fulfilled, (state, action) => {
         const result = processVehicles(action.payload);
         state.devices = result.devices;

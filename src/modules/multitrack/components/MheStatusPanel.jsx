@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
 
 const statusColorMap = {
@@ -30,17 +30,13 @@ const renderValue = (v) => {
 };
 
 const Btn = ({ children }) => (
-  <button className='bg-gradient-to-r from-[#1d31a6] to-[#3b5998] px-3 py-2 text-white rounded-lg text-xs font-semibold shadow hover:from-[#3b5998] hover:to-[#1d31a6] transition-all duration-150 cursor-pointer'>
+  <button className='bg-linear-to-r from-[#1d31a6] to-[#3b5998] px-3 py-2 text-white rounded-lg text-xs font-semibold shadow hover:from-[#3b5998] hover:to-[#1d31a6] transition-all duration-150 cursor-pointer'>
     {children}
   </button>
 );
 
 const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
-  const [dt, setDt] = useState('');
-
-  useEffect(() => {
-    setDt(moment().tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm'));
-  }, []);
+  const [dt] = useState(() => moment().tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm'));
 
   const status = vehicle?.status ?? 'Unknown';
   const fields = [
@@ -58,9 +54,9 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
   return (
     <>
       {isShowPanel && (
-        <div className='fixed top-2/5 z-[100000] -translate-y-1/2 transition-all duration-300 left-[calc(100vw-360px)]'>
+        <div className='fixed top-2/5 z-100000 -translate-y-1/2 transition-all duration-300 left-[calc(100vw-360px)]'>
           <button
-            className='h-10 w-10 bg-gradient-to-br from-[#1d31a6] to-[#3b5998] cursor-pointer text-white flex items-center justify-center rounded-full shadow-lg border border-white'
+            className='h-10 w-10 bg-linear-to-br from-[#1d31a6] to-[#3b5998] cursor-pointer text-white flex items-center justify-center rounded-full shadow-lg border border-white'
             onClick={handleRightPanel}
             title='Hide Panel'
             type='button'>
@@ -71,9 +67,9 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
       <div
         className={`fixed transition-all top-0 ${
           isShowPanel ? 'right-0' : 'right-[-340px]'
-        } w-[340px] rounded-xl bg-white z-[99999] shadow-2xl border border-gray-200 flex flex-col overflow-hidden`}
+        } w-[340px] rounded-xl bg-white z-99999 shadow-2xl border border-gray-200 flex flex-col overflow-hidden`}
         style={{ transition: 'right 0.3s', minHeight: 0, maxHeight: 'calc(100vh - 5rem)' }}>
-        <div className='flex flex-col items-center bg-gradient-to-r from-[#1d31a6] to-[#3b5998] py-4 px-4 border-b border-gray-200'>
+        <div className='flex flex-col items-center bg-linear-to-r from-[#1d31a6] to-[#3b5998] py-4 px-4 border-b border-gray-200'>
           <p className='font-bold text-lg text-white mb-1 truncate w-full text-center'>
             {renderValue(vehicle?.vehicle_name)}
           </p>
@@ -101,7 +97,7 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
               </div>
             ))}
           </div>
-          <div className='flex flex-wrap justify-center gap-3 mt-4 w-full'>
+          <div className='mt-6 grid grid-cols-3 gap-2'>
             <Link
               to={`/report/${status === 'New' ? 'new-device' : status === 'Running' ? 'movement' : status || ''}/details/${vehicle?.id}`}>
               <Btn>Reports</Btn>
@@ -112,8 +108,12 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
             <Link to='/playback' state={{ selectedVehicle: vehicle }}>
               <Btn>Playback</Btn>
             </Link>
-            <Link to='/bus-multi-track/punch' state={{ selectedVehicle: vehicle }}>
-              <Btn>Employee Punch Report</Btn>
+          </div>
+          <div className='mt-3'>
+            <Link to='/bus-multi-track/punch' state={{ selectedVehicle: vehicle }} className='block w-full'>
+              <button className='w-full bg-[#1d31a6] text-white py-2.5 rounded-lg text-xs font-bold shadow-md hover:bg-[#3b5998] transition-all uppercase tracking-wide cursor-pointer'>
+                Employee Punch Report
+              </button>
             </Link>
           </div>
         </div>

@@ -6,7 +6,7 @@ import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
 import ISearch, { LateSvg, OnTimeSvg, TotalSvg } from './ISearch';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { FaBatteryFull, FaBolt, FaKey, FaWifi } from 'react-icons/fa';
-import { setActiveTab, setIsTrackShow } from '../../../redux/multiTrackSlice';
+import { setActiveTab, setIsTrackShow, fetchEnrichedVehicles } from '../../../redux/multiTrackSlice';
 
 const statusTabs = [
   { label: 'Running', bg: '#00800026', color: 'green' },
@@ -64,6 +64,10 @@ const TrackingPanel = ({ handleRightPanel }) => {
     selectState,
     shallowEqual,
   );
+
+  const handleRefresh = () => {
+    dispatch(fetchEnrichedVehicles());
+  };
 
   const cleaned = useMemo(
     () => ({
@@ -145,10 +149,10 @@ const TrackingPanel = ({ handleRightPanel }) => {
             </button>
           ))}
         </div>
-        <div className='p-1 border-b border-gray-300'>
-          <ISearch onChange={(e) => setSearch(e.target.value)} value={search} />
+        <div className='p-2 border-b border-gray-300'>
+          <ISearch onChange={(e) => setSearch(e.target.value)} value={search} onRefresh={handleRefresh} />
         </div>
-        <div className='mhe-list p-2 mt-2 flex-1 min-h-0 overflow-y-auto'>
+        <div className='mhe-list p-2 flex-1 min-h-0 overflow-y-auto'>
           {!isProcessed ? (
             <div className='space-y-4 pt-2'>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
@@ -173,33 +177,33 @@ const TrackingPanel = ({ handleRightPanel }) => {
             shownDevices.map((device) => (
               <div
                 key={device.id}
-                className='flex items-center border-b border-gray-200 py-1 last:border-none cursor-pointer'>
+                className='flex items-center border-b border-gray-200 py-1 last:border-none cursor-pointer hover:bg-gray-50 transition-colors'
+                onClick={() => handleRightPanel(device)}>
                 <CheckBox fontSize='small' sx={{ marginRight: '10px' }} />
                 <div className='h-2 w-2 rounded-full mr-4' style={{ background: device.color }} />
                 <div className='flex-1'>
-                  <div className='text-sm' onClick={() => handleRightPanel(device)}>
-                    {device.vehicle_name}
-                  </div>
+                  <div className='text-sm font-medium'>{device.vehicle_name}</div>
                   {device.timestamp && (
-                    <div className='text-gray-500 text-xs'>{new Date(device.timestamp).toLocaleString()}</div>
+                    <div className='text-gray-500 text-[10px] leading-tight'>
+                      {new Date(device.timestamp).toLocaleString()}
+                    </div>
                   )}
                 </div>
-                <span className='w-8 text-center text-sm'>{device.speed}</span>
+                <span className='w-12 text-center text-[11px] font-semibold text-gray-700'>{device.speed}</span>
                 {iconStatus.map(({ Icon, key }, i) => {
                   const status = key(device);
                   const cls =
                     status == null
-                      ? 'text-gray-400 text-[15px]'
+                      ? 'text-gray-400 text-[14px]'
                       : status
-                        ? 'text-green-600 text-[15px]'
-                        : 'text-red-400 text-[15px]';
+                        ? 'text-green-600 text-[14px]'
+                        : 'text-red-400 text-[14px]';
                   return (
-                    <span key={i} className='w-8 text-center'>
+                    <span key={i} className='w-6 text-center'>
                       <Icon className={cls} />
                     </span>
                   );
                 })}
-                <span className='ml-4 text-sm text-gray-600'>{device.address}</span>
               </div>
             ))
           )}

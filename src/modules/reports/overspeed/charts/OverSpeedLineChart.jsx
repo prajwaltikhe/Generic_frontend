@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'moment-timezone';
 import Chart from 'react-apexcharts';
 
 const OverSpeedChart = ({ data }) => {
@@ -8,7 +8,10 @@ const OverSpeedChart = ({ data }) => {
   rawData.forEach((item) => {
     const v = item?.vehicle_number;
     const time = item?.date_time;
-    if (time) (vehicleMap[v] = vehicleMap[v] || []).push({ x: moment(time).toDate(), y: item?.max_speed || 0 });
+    if (time) {
+      const istTime = moment.tz(time, 'Asia/Kolkata').valueOf();
+      (vehicleMap[v] = vehicleMap[v] || []).push({ x: istTime, y: item?.max_speed || 0 });
+    }
   });
   const keys = Object.keys(vehicleMap);
   const series = keys.map((v, i) => ({
@@ -20,7 +23,7 @@ const OverSpeedChart = ({ data }) => {
   const allDates = rawData
     .map((i) => i?.date_time)
     .filter(Boolean)
-    .map((d) => new Date(d));
+    .map((d) => moment.tz(d, 'Asia/Kolkata').valueOf());
   const minDate = allDates.length ? Math.min(...allDates) : undefined;
   const maxDate = allDates.length ? Math.max(...allDates) : undefined;
   const options = {
@@ -31,13 +34,19 @@ const OverSpeedChart = ({ data }) => {
       title: { text: 'Time' },
       min: minDate,
       max: maxDate,
-      labels: { datetimeFormatter: { year: 'yyyy', month: "MMM 'yy", day: 'dd MMM', hour: 'HH:mm' } },
+      labels: { datetimeFormatter: { year: 'yyyy', month: "MMM 'yy", day: 'dd MMM', hour: 'hh:mm A' } },
       tooltip: { enabled: true },
     },
     yaxis: { title: { text: 'Speed (km/h)' }, min: 0, labels: { formatter: (val) => Math.round(val) } },
     markers: { size: 6, hover: { size: 8 } },
     stroke: { curve: 'smooth', width: 3 },
-    tooltip: { x: { format: 'dd MMM yyyy HH:mm' }, y: { formatter: (val) => `${val} km/h` } },
+    tooltip: {
+      x: {
+        format: 'dd MMM yyyy hh:mm:ss A',
+        formatter: (val) => moment.tz(val, 'Asia/Kolkata').format('DD MMM YYYY hh:mm:ss A'),
+      },
+      y: { formatter: (val) => `${val} km/h` },
+    },
     grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
   };
   return (

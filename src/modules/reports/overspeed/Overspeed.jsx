@@ -13,11 +13,8 @@ import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/expo
 import { formatDuration } from '../../../utils/formatters';
 
 const columns = [
-  {
-    key: 'date_time',
-    header: 'Date & Time',
-    render: (_, r) => (r?.date_time ? moment(r.date_time).format('YYYY-MM-DD hh:mm:ss A') : '-'),
-  },
+  { key: 'date_only', header: 'Date', render: (_, r) => r?.date_only || '-' },
+  { key: 'time_only', header: 'Time', render: (_, r) => r?.time_only || '-' },
   { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type || 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number || '-' },
   { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details || '-' },
@@ -28,19 +25,12 @@ const columns = [
   {
     key: 'max_over_speed_duration',
     header: 'Max Over Speed Duration',
-    render: (_, r) => formatDuration(r?.max_over_speed_duration),
+    render: (_, r) => r?.max_over_speed_duration || '-',
   },
   {
-    key: 'max_overspeed_lat_long',
+    key: 'max_overspeed_lat_long_formatted',
     header: 'Max Over Speed Lat-Long',
-    render: (_, r) => {
-      if (!r?.max_overspeed_lat_long) return '-';
-      const parts = r.max_overspeed_lat_long.split(',').map((p) => parseFloat(p.trim()));
-      if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        return `${parts[0].toFixed(6)}, ${parts[1].toFixed(6)}`;
-      }
-      return r.max_overspeed_lat_long;
-    },
+    render: (_, r) => r?.max_overspeed_lat_long_formatted || '-',
   },
   { key: 'nearest_location', header: 'Nearest Location', render: (_, r) => r?.nearest_location ?? '-' },
   {
@@ -113,13 +103,30 @@ function Overspeed() {
     // eslint-disable-next-line
   }, [company_id, page, limit]);
 
+
+
   const formatData = (items) =>
-    items.map((item, i) => ({
-      id: item.id || item._id || item.vehicle_id || i + 1,
-      vehicle_id: item.vehicle_id || item.id || item._id,
-      ...item,
-      max_over_speed_duration: formatDuration(item.max_over_speed_duration),
-    }));
+    items.map((item, i) => {
+      let lat_long_formatted = '-';
+      if (item?.max_overspeed_lat_long) {
+        const parts = item.max_overspeed_lat_long.split(',').map((p) => parseFloat(p.trim()));
+        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          lat_long_formatted = `${parts[0].toFixed(6)}, ${parts[1].toFixed(6)}`;
+        } else {
+          lat_long_formatted = item.max_overspeed_lat_long;
+        }
+      }
+
+      return {
+        id: item.id || item._id || item.vehicle_id || i + 1,
+        vehicle_id: item.vehicle_id || item.id || item._id,
+        ...item,
+        date_only: item.date_time ? moment.tz(item.date_time, 'Asia/Kolkata').format('YYYY-MM-DD') : '-',
+        time_only: item.date_time ? moment.tz(item.date_time, 'Asia/Kolkata').format('hh:mm:ss A') : '-',
+        max_over_speed_duration: formatDuration(item.max_over_speed_duration),
+        max_overspeed_lat_long_formatted: lat_long_formatted,
+      };
+    });
 
   const data = formatData(filteredData);
 

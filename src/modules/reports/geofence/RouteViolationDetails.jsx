@@ -16,12 +16,14 @@ const columns = [
   { key: 'driver_name', header: 'Driver Name', render: (v) => v ?? '-' },
   { key: 'driver_number', header: 'Driver Number', render: (v) => v ?? '-' },
   {
-    key: 'violation_start_time',
-    header: 'Violation Start Time',
-    render: (_, row) =>
-      row?.violation_start_time
-        ? moment(row.violation_start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('HH:mm:ss')
-        : '-',
+    key: 'violation_start_date',
+    header: 'Start Date',
+    render: (_, row) => (row?.violation_start_date ? row.violation_start_date : '-'),
+  },
+  {
+    key: 'violation_start_time_only',
+    header: 'Start Time',
+    render: (_, row) => (row?.violation_start_time_only ? row.violation_start_time_only : '-'),
   },
   { key: 'violation_start_lat_long', header: 'Violation Start Lat-Long', render: (v) => v ?? '-' },
   {
@@ -41,12 +43,14 @@ const columns = [
     },
   },
   {
-    key: 'violation_end_time',
-    header: 'Violation End Time',
-    render: (_, row) =>
-      row?.violation_end_time
-        ? moment(row.violation_end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('HH:mm:ss')
-        : '-',
+    key: 'violation_end_date',
+    header: 'End Date',
+    render: (_, row) => (row?.violation_end_date ? row.violation_end_date : '-'),
+  },
+  {
+    key: 'violation_end_time_only',
+    header: 'End Time',
+    render: (_, row) => (row?.violation_end_time_only ? row.violation_end_time_only : '-'),
   },
   { key: 'violation_end_lat_long', header: 'Violation End Lat-Long', render: (v) => v ?? '-' },
   {
@@ -79,6 +83,41 @@ function RouteViolationDetails() {
     toDate: searchParams.get('to_date') || '',
   });
 
+  const formatData = (items) =>
+    items.map((item, i) => ({
+      id: item.id || i + 1,
+      date: item.date ?? '-',
+      vehicle_number: item.vehicle_number ?? '-',
+      route_details: item.route_details ?? item.route_name ?? '-',
+      driver_name: item.driver_name ?? '-',
+      driver_number: item.driver_number ?? item.driver_phone ?? '-',
+      violation_start_date: item.violation_start_time
+        ? moment(item.violation_start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('YYYY-MM-DD')
+        : '-',
+      violation_start_time_only: item.violation_start_time
+        ? moment(item.violation_start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('hh:mm:ss A')
+        : '-',
+      violation_start_time: item.violation_start_time ?? item.start_time ?? '-',
+      violation_start_lat_long:
+        item.violation_start_lat && item.violation_start_long
+          ? `${item.violation_start_lat}, ${item.violation_start_long}`
+          : '-',
+      start_gmap_url: item.start_gmap_url,
+      violation_end_date: item.violation_end_time
+        ? moment(item.violation_end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('YYYY-MM-DD')
+        : '-',
+      violation_end_time_only: item.violation_end_time
+        ? moment(item.violation_end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('hh:mm:ss A')
+        : '-',
+      violation_end_time: item.violation_end_time ?? item.end_time ?? '-',
+      violation_end_lat_long:
+        item.violation_end_lat && item.violation_end_long
+          ? `${item.violation_end_lat}, ${item.violation_end_long}`
+          : '-',
+      end_gmap_url: item.end_gmap_url,
+      violation_distance: item.violation_distance ?? '-',
+    }));
+
   const fetchData = () => {
     if (!id) return;
     setLoading(true);
@@ -107,32 +146,9 @@ function RouteViolationDetails() {
   };
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(() => fetchData());
     // eslint-disable-next-line
   }, [id]);
-
-  const formatData = (items) =>
-    items.map((item, i) => ({
-      id: item.id || i + 1,
-      date: item.date ?? '-',
-      vehicle_number: item.vehicle_number ?? '-',
-      route_details: item.route_details ?? item.route_name ?? '-',
-      driver_name: item.driver_name ?? '-',
-      driver_number: item.driver_number ?? item.driver_phone ?? '-',
-      violation_start_time: item.violation_start_time ?? item.start_time ?? '-',
-      violation_start_lat_long:
-        item.violation_start_lat && item.violation_start_long
-          ? `${item.violation_start_lat}, ${item.violation_start_long}`
-          : '-',
-      start_gmap_url: item.start_gmap_url,
-      violation_end_time: item.violation_end_time ?? item.end_time ?? '-',
-      violation_end_lat_long:
-        item.violation_end_lat && item.violation_end_long
-          ? `${item.violation_end_lat}, ${item.violation_end_long}`
-          : '-',
-      end_gmap_url: item.end_gmap_url,
-      violation_distance: item.violation_distance ?? '-',
-    }));
 
   const handleFormSubmit = (e) => {
     e.preventDefault();

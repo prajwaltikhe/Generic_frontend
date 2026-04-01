@@ -43,7 +43,9 @@ function VehicalArrivalTime() {
   useEffect(() => {
     const statusFromUrl = searchParams.get('status');
     if (statusFromUrl && statusOptions.some((opt) => opt.value === statusFromUrl)) {
-      setFilterData((prev) => ({ ...prev, status: statusFromUrl }));
+      Promise.resolve().then(() => {
+        setFilterData((prev) => ({ ...prev, status: statusFromUrl }));
+      });
     }
   }, [searchParams]);
 
@@ -56,11 +58,8 @@ function VehicalArrivalTime() {
 
   const columns = useMemo(() => {
     return [
-      {
-        key: 'date',
-        header: 'Date',
-        render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-'),
-      },
+      { key: 'date_only', header: 'Date', render: (_v, r) => r.date_only || '-' },
+      { key: 'time_only', header: 'Time', render: (_v, r) => r.time_only || '-' },
       { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, row) => row?.vehicle_number || '-' },
       { key: 'route_name', header: 'Route Details', render: (_v, row) => row?.route_name || '-' },
       { key: 'driver_name', header: 'Driver Name', render: (_v, row) => row?.driver_name || '-' },
@@ -76,18 +75,9 @@ function VehicalArrivalTime() {
         render: (_v, row) => row?.actual_arrival_time || '-',
       },
       {
-        key: 'lat_long',
+        key: 'lat_long_formatted',
         header: 'Lat-Long',
-        render: (_v, row) => {
-          let val = row?.lat_long;
-          if (val) {
-            val = val.replace('{', '').replace('}', '');
-            const parts = val.split(',');
-            if (parts.length === 2) return `${parts[1]}, ${parts[0]}`;
-            return val;
-          }
-          return '-';
-        },
+        render: (_v, row) => row?.lat_long_formatted || '-',
       },
       {
         key: 'gmap',
@@ -136,18 +126,37 @@ function VehicalArrivalTime() {
     return payload;
   }, [company_id, currentPathId, filterData]);
 
+  const formatRecords = useCallback((records) => {
+    return (records || []).map((r) => {
+      let lat_long_formatted = '-';
+      if (r?.lat_long) {
+        const val = r.lat_long.replace('{', '').replace('}', '');
+        const parts = val.split(',');
+        if (parts.length === 2) lat_long_formatted = `${parts[1]}, ${parts[0]}`;
+        else lat_long_formatted = val;
+      }
+
+      return {
+        ...r,
+        date_only: r.date ? moment(r.date).format('YYYY-MM-DD') : '-',
+        time_only: r.date ? moment(r.date).format('hh:mm:ss A') : '-',
+        lat_long_formatted,
+      };
+    });
+  }, []);
+
   useEffect(() => {
     if (company_id)
       dispatch(fetchVehicleArrivalData({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-        if (res?.payload?.success) setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
+        if (res?.payload?.success) setFilteredData(formatRecords(res?.payload?.data || []));
       });
-  }, [dispatch, company_id, page, limit, buildApiPayload]);
+  }, [dispatch, company_id, page, limit, buildApiPayload, formatRecords]);
 
 const handleExport = async () => {
   const res = await dispatch( fetchVehicleArrivalData({ ...buildApiPayload(), page: 1, limit: totalCount || 1000, }));
 
   if (res?.payload?.success) {
-    const allData = Array.isArray(res.payload.data) ? res.payload.data : [];
+    const allData = formatRecords(res.payload.data || []);
 
     exportToExcel({
       columns,
@@ -163,7 +172,7 @@ const handleExport = async () => {
   );
 
   if (res?.payload?.success) {
-    const allData = Array.isArray(res.payload.data) ? res.payload.data : [];
+    const allData = formatRecords(res.payload.data || []);
 
     exportToPDF({
       columns,
@@ -178,7 +187,7 @@ const handleExport = async () => {
     dispatch(fetchVehicleArrivalData(buildApiPayload())).then((res) => {
       if (res?.payload?.success) {
         toast.success(res?.payload?.message);
-        setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []);
+        setFilteredData(formatRecords(res?.payload?.data || []));
       } else {
         toast.error(res?.payload?.message);
       }

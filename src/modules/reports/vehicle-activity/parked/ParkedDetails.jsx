@@ -12,9 +12,14 @@ import { formatDuration } from '../../../../utils/formatters';
 
 const columns = [
   {
-    key: 'date_time',
-    header: 'Date & Time',
-    render: (_, r) => (r?.date_time ? moment(r.date_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'date_only',
+    header: 'Date',
+    render: (_, r) => (r?.date_time ? moment(r.date_time).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'time_only',
+    header: 'Time',
+    render: (_, r) => (r?.date_time ? moment(r.date_time).format('hh:mm:ss A') : '-'),
   },
   { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type ?? 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number ?? '-' },
@@ -82,6 +87,8 @@ function ParkedDetails() {
         const items = res?.payload?.data || [];
         const formattedItems = (Array.isArray(items) ? items : [items]).map((item) => ({
           ...item,
+          date_only: item.date_time ? moment(item.date_time).format('YYYY-MM-DD') : '-',
+          time_only: item.date_time ? moment(item.date_time).format('hh:mm:ss A') : '-',
           lat_long:
             item.latitude && item.longitude
               ? `${item.latitude}, ${item.longitude}`
@@ -97,7 +104,7 @@ function ParkedDetails() {
   };
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(() => fetchData());
     // eslint-disable-next-line
   }, [id]);
 

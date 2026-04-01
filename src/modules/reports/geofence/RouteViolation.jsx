@@ -12,13 +12,14 @@ import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/expo
 
 const columns = [
   {
-    key: 'date',
+    key: 'date_only',
     header: 'Date',
-    render: (value) => {
-      if (!value || value === '-') return '-';
-      const m = moment(value);
-      return m.isValid() ? m.format('YYYY-MM-DD') : value;
-    },
+    render: (_, row) => (row?.date_only ? row.date_only : '-'),
+  },
+  {
+    key: 'time_only',
+    header: 'Time',
+    render: (_, row) => (row?.time_only ? row.time_only : '-'),
   },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (v) => v ?? '-' },
   { key: 'route_details', header: 'Route Details', render: (v) => v ?? '-' },
@@ -72,7 +73,8 @@ function RouteViolation() {
     items.map((item, i) => ({
       id: item.id || item._id || item.vehicle_id || i + 1,
       vehicle_id: item.vehicle_id || item.id || item._id,
-      date: item.date ?? null,
+      date_only: item.date ? moment(item.date).format('YYYY-MM-DD') : '-',
+      time_only: item.date ? moment(item.date).format('hh:mm:ss A') : '-',
       vehicle_number: item.vehicle_number ?? '-',
       route_details: item.route_details ?? item.route_name ?? '-',
       driver_name: item.driver_name ?? '-',

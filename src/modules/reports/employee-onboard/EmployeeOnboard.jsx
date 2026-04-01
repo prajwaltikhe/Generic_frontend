@@ -12,23 +12,23 @@ import { fetchEmployeeOnboard, fetchAllEmployeeDetails } from '../../../redux/em
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'date', header: 'Date', render: (_v, r) => (r.date ? moment(r.date).format('YYYY-MM-DD') : '-') },
+  { key: 'date_only', header: 'Date', render: (_v, r) => r.date_only || '-' },
   {
-    key: 'boarding_in',
+    key: 'boarding_in_time',
     header: 'Boarding In',
-    render: (_v, r) => (r.boarding_in ? moment(r.boarding_in).format('HH:mm:ss') : '-'),
+    render: (_v, r) => r.boarding_in_time || '-',
   },
   {
-    key: 'boarding_out',
+    key: 'boarding_out_time',
     header: 'Boarding Out',
-    render: (_v, r) => (r.boarding_out ? moment(r.boarding_out).format('HH:mm:ss') : '-'),
+    render: (_v, r) => r.boarding_out_time || '-',
   },
-  { key: 'employee_name', header: 'Employee Name', render: (_v, r) => (r.employee_name ? r.employee_name : '-') },
-  { key: 'employee_id', header: 'Employee ID', render: (_v, r) => (r.employee_id ? r.employee_id : '-') },
-  { key: 'department', header: 'Department', render: (_v, r) => (r.department ? r.department : '-') },
-  { key: 'vehicle_route_name', header: 'Vehicle Route ID', render: (_v, r) => r.vehicle_route_name || '-' },
-  { key: 'source', header: 'Source', render: (_v, r) => (r.vehicle_source ? r.vehicle_source : '-') },
-  { key: 'destination', header: 'Destination', render: (_v, r) => (r.destination ? r.destination : '-') },
+  { key: 'employee_name', header: 'Employee Name', render: (v) => v || '-' },
+  { key: 'employee_id', header: 'Employee ID', render: (v) => v || '-' },
+  { key: 'department', header: 'Department', render: (v) => v || '-' },
+  { key: 'vehicle_route_name', header: 'Vehicle Route ID', render: (v) => v || '-' },
+  { key: 'source', header: 'Source', render: (v) => v || '-' },
+  { key: 'destination', header: 'Destination', render: (v) => v || '-' },
   {
     key: 'gmap',
     header: 'G-Map',
@@ -48,13 +48,13 @@ const columns = [
   {
     key: 'nearest_location',
     header: 'Nearest Location',
-    render: (_v, r) => (r.nearest_location ? r.nearest_location : '-'),
+    render: (v) => v || '-',
   },
-  { key: 'driver_name', header: 'Driver Name', render: (_v, r) => (r.driver_name ? r.driver_name : '-') },
+  { key: 'driver_name', header: 'Driver Name', render: (v) => v || '-' },
   {
     key: 'driver_contact',
     header: 'Driver Contact Number',
-    render: (_v, r) => (r.driver_contact_number ? r.driver_contact_number : '-'),
+    render: (v) => v || '-',
   },
 ];
 
@@ -82,13 +82,26 @@ function EmployeeOnboard() {
   const { vehicles } = useSelector((s) => s.vehicles || {});
 
   useEffect(() => {
-    const company_id = localStorage.getItem('company_id');
-    dispatch(fetchDepartments({ limit: 10 }));
-    dispatch(fetchVehicleRoutes({ limit: 150 }));
-    dispatch(fetchVehicles({ limit: 150 }));
-    dispatch(fetchPlants({ limit: 50 }));
-    if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3500 }));
+    Promise.resolve().then(() => {
+      const company_id = localStorage.getItem('company_id');
+      dispatch(fetchDepartments({ limit: 10 }));
+      dispatch(fetchVehicleRoutes({ limit: 150 }));
+      dispatch(fetchVehicles({ limit: 150 }));
+      dispatch(fetchPlants({ limit: 50 }));
+      if (company_id) dispatch(fetchAllEmployeeDetails({ company_id, limit: 3500 }));
+    });
   }, [dispatch]);
+
+  const formatRecords = (records) =>
+    (records || []).map((r) => ({
+      ...r,
+      date_only: r.date ? moment(r.date).format('YYYY-MM-DD') : '-',
+      boarding_in_time: r.boarding_in ? moment(r.boarding_in).format('hh:mm:ss A') : '-',
+      boarding_out_time: r.boarding_out ? moment(r.boarding_out).format('hh:mm:ss A') : '-',
+      source: r.vehicle_source || '-',
+      destination: r.destination || '-',
+      driver_contact: r.driver_contact_number || '-',
+    }));
 
   const buildApiPayload = (fetchLimit) => {
     const { fromDate, toDate, departments, employee_ids, routes, vehicles: selectedVehicles, plants } = filterData;
@@ -116,9 +129,11 @@ function EmployeeOnboard() {
   };
 
   useEffect(() => {
-    dispatch(fetchEmployeeOnboard({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.records || []));
-      setTotalCount(res?.payload?.pagination?.total || res?.payload?.records?.length || 0);
+    Promise.resolve().then(() => {
+      dispatch(fetchEmployeeOnboard({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
+        setFilteredData(formatRecords(res?.payload?.records || []));
+        setTotalCount(res?.payload?.pagination?.total || res?.payload?.records?.length || 0);
+      });
     });
     // eslint-disable-next-line
   }, [page, limit]);
@@ -127,7 +142,7 @@ function EmployeeOnboard() {
     e.preventDefault();
     setPage(0);
     dispatch(fetchEmployeeOnboard({ ...buildApiPayload(), page: 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.records || []));
+      setFilteredData(formatRecords(res?.payload?.records || []));
       setTotalCount(res?.payload?.pagination?.total || res?.payload?.records?.length || 0);
     });
   };
@@ -146,14 +161,14 @@ function EmployeeOnboard() {
     setPage(0);
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchEmployeeOnboard({ company_id, page: 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.records || []));
+      setFilteredData(formatRecords(res?.payload?.records || []));
       setTotalCount(res?.payload?.pagination?.total || res?.payload?.records?.length || 0);
     });
   };
 
   const handleExport = async () => {
     const res = await dispatch(fetchEmployeeOnboard({ ...buildApiPayload(totalCount), page: 1 }));
-    const allRecords = [].concat(res?.payload?.records || []);
+    const allRecords = formatRecords(res?.payload?.records || []);
     exportToExcel({
       columns,
       rows: buildExportRows({ columns, data: allRecords }),
@@ -163,7 +178,7 @@ function EmployeeOnboard() {
 
   const handleExportPDF = async () => {
     const res = await dispatch(fetchEmployeeOnboard({ ...buildApiPayload(totalCount), page: 1 }));
-    const allRecords = [].concat(res?.payload?.records || []);
+    const allRecords = formatRecords(res?.payload?.records || []);
     exportToPDF({
       columns,
       rows: buildExportRows({ columns, data: allRecords }),

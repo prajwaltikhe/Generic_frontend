@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { useFetchVehicles } from '../../hooks/useFetchVehicles';
 import TrackingPanel from './components/TrackingPanel';
 import MapComponent from './components/MapComponent';
@@ -6,24 +7,35 @@ import MheStatusPanel from './components/MheStatusPanel';
 
 export default function Multitrack() {
   useFetchVehicles();
-  const [showPanel, setShowPanel] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState(() => localStorage.getItem('selectedVehicleId'));
+  const [showPanel, setShowPanel] = useState(() => !!selectedVehicleId);
+  const devices = useSelector((s) => s.multiTrackStatus.devices);
+
+  const selectedVehicle = useMemo(() => {
+    if (!selectedVehicleId) return null;
+    return devices.find((d) => d.id === selectedVehicleId) || null;
+  }, [devices, selectedVehicleId]);
 
   const handleRightPanel = useCallback(
     (vehicle) => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       if (!vehicle) {
         setShowPanel(false);
-        setSelectedVehicle(null);
-      } else if (selectedVehicle?.id === vehicle.id) {
+        setSelectedVehicleId(null);
+        localStorage.removeItem('selectedVehicleId');
+      } else if (selectedVehicleId === vehicle.id) {
         setShowPanel(false);
-        setTimeout(() => setSelectedVehicle(null), 300);
+        setTimeout(() => {
+          setSelectedVehicleId(null);
+          localStorage.removeItem('selectedVehicleId');
+        }, 300);
       } else {
-        setSelectedVehicle(vehicle);
+        setSelectedVehicleId(vehicle.id);
         setShowPanel(true);
+        localStorage.setItem('selectedVehicleId', vehicle.id);
       }
     },
-    [selectedVehicle]
+    [selectedVehicleId]
   );
 
   return (

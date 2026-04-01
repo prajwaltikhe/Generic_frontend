@@ -62,7 +62,8 @@ const COLUMNS = [
         '-'
       ),
   },
-  { key: 'date', header: 'Date', render: (_, r) => (r?.date ? moment(r.date).format('YYYY-MM-DD HH:mm:ss') : '') },
+  { key: 'date', header: 'Date', render: (_, r) => (r?.date ? moment(r.date).format('YYYY-MM-DD') : '') },
+  { key: 'time', header: 'Time', render: (_, r) => (r?.date ? moment(r.date).format('hh:mm:ss A') : '') },
 ];
 
 const getCls = (status) => STATUS_COLORS[status?.trim?.()]?.cls || STATUS_COLORS.Unknown.cls;
@@ -116,7 +117,13 @@ const PointPopup = memo(({ point, header }) => (
       <div className='flex justify-between'>
         <span className='text-gray-500'>Date:</span>
         <span className='font-medium text-gray-700'>
-          {point.date ? moment(point.date).format('YYYY-MM-DD HH:mm:ss') : '-'}
+          {point.date ? moment(point.date).format('YYYY-MM-DD') : '-'}
+        </span>
+      </div>
+      <div className='flex justify-between'>
+        <span className='text-gray-500'>Time:</span>
+        <span className='font-medium text-gray-700'>
+          {point.date ? moment(point.date).format('hh:mm:ss A') : '-'}
         </span>
       </div>
       <div className='pt-2 mt-2 border-t border-gray-200'>
@@ -153,7 +160,7 @@ const MapBounds = memo(({ points }) => {
 MapBounds.displayName = 'MapBounds';
 
 const Legend = memo(({ count }) => (
-  <div className='absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-4 py-3 border border-gray-200'>
+  <div className='absolute top-3 left-3 z-1000 bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-4 py-3 border border-gray-200'>
     <div className='flex items-center gap-3'>
       <div className='flex items-center gap-2'>
         <div className='w-5 h-1.5 bg-blue-500 rounded-full' />
@@ -168,7 +175,7 @@ const Legend = memo(({ count }) => (
 Legend.displayName = 'Legend';
 
 const LoadingOverlay = memo(() => (
-  <div className='absolute inset-0 bg-white/70 z-[1000] flex items-center justify-center'>
+  <div className='absolute inset-0 bg-white/70 z-1000 flex items-center justify-center'>
     <div className='flex flex-col items-center gap-3'>
       <div className='w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin' />
       <span className='text-sm text-gray-600 font-medium'>Loading map data...</span>
@@ -178,7 +185,7 @@ const LoadingOverlay = memo(() => (
 LoadingOverlay.displayName = 'LoadingOverlay';
 
 const EmptyState = memo(() => (
-  <div className='absolute inset-0 bg-gray-50 z-[500] flex items-center justify-center'>
+  <div className='absolute inset-0 bg-gray-50 z-500 flex items-center justify-center'>
     <div className='text-center'>
       <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center'>
         <FaMapMarkerAlt className='text-gray-400' size={32} />

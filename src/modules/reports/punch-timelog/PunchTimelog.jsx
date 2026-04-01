@@ -12,7 +12,8 @@ import { fetchAllEmployeeDetails } from '../../../redux/employeeSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'punch_time', header: 'Date & Time', render: (v) => (v ? moment(v).format('YYYY-MM-DD hh:mm:ss A') : '-') },
+  { key: 'punch_date', header: 'Date', render: (_v, r) => r.punch_date || '-' },
+  { key: 'punch_time_only', header: 'Time', render: (_v, r) => r.punch_time_only || '-' },
   { key: 'punch_status', header: 'Punch Status', render: (v) => (v === true ? 'IN' : v === false ? 'OUT' : '-') },
   {
     key: 'employee_name',
@@ -109,19 +110,29 @@ function PunchTimelog() {
     [filterData, employees?.length, vehicles?.length],
   );
 
+  const formatRecords = useCallback((records) => {
+    return (records || []).map((item) => ({
+      ...item,
+      punch_date: item.punch_time ? moment(item.punch_time).format('YYYY-MM-DD') : '-',
+      punch_time_only: item.punch_time ? moment(item.punch_time).format('hh:mm:ss A') : '-',
+    }));
+  }, []);
+
   useEffect(() => {
-    dispatch(fetchPuchLogReport({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.data || []));
-      setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
+    Promise.resolve().then(() => {
+      dispatch(fetchPuchLogReport({ ...buildApiPayload(), page: page + 1, limit })).then((res) => {
+        setFilteredData(formatRecords(res?.payload?.data || []));
+        setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
+      });
     });
     // eslint-disable-next-line
-  }, [page, limit]);
+  }, [page, limit, formatRecords]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     setPage(0);
     dispatch(fetchPuchLogReport({ ...buildApiPayload(), page: 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.data || []));
+      setFilteredData(formatRecords(res?.payload?.data || []));
       setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
     });
   };
@@ -132,14 +143,14 @@ function PunchTimelog() {
     setPage(0);
     const company_id = localStorage.getItem('company_id');
     dispatch(fetchPuchLogReport({ company_id, page: 1, limit })).then((res) => {
-      setFilteredData([].concat(res?.payload?.data || []));
+      setFilteredData(formatRecords(res?.payload?.data || []));
       setTotalCount(res?.payload?.pagination?.total || res?.payload?.data?.length || 0);
     });
   };
 
   const handleExport = async () => {
     const res = await dispatch(fetchPuchLogReport({ ...buildApiPayload(totalCount), page: 1 }));
-    const allRecords = [].concat(res?.payload?.data || []);
+    const allRecords = formatRecords(res?.payload?.data || []);
     exportToExcel({
       columns,
       rows: buildExportRows({ columns, data: allRecords }),
@@ -149,7 +160,7 @@ function PunchTimelog() {
 
   const handleExportPDF = async () => {
     const res = await dispatch(fetchPuchLogReport({ ...buildApiPayload(totalCount), page: 1 }));
-    const allRecords = [].concat(res?.payload?.data || []);
+    const allRecords = formatRecords(res?.payload?.data || []);
     exportToPDF({
       columns,
       rows: buildExportRows({ columns, data: allRecords }),

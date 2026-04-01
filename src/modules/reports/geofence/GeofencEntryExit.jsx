@@ -1,3 +1,4 @@
+import moment from 'moment-timezone';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -8,7 +9,8 @@ import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/expo
 import { fetchVehicleGeoFence, vehicleGeofenceReport } from '../../../redux/geofenceSlice';
 
 const columns = [
-  { key: 'date', header: 'Date', render: (v) => v || '-' },
+  { key: 'date_only', header: 'Date', render: (v) => v || '-' },
+  { key: 'time_only', header: 'Time', render: (v) => v || '-' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (v) => v ?? '-' },
   { key: 'route_details', header: 'Route Details', render: (v) => v ?? '-' },
   { key: 'driver_name', header: 'Driver Name', render: (v) => v ?? '-' },
@@ -64,7 +66,8 @@ function GeofencEntryExit() {
     items.map((item, i) => ({
       id: item.id || item._id || item.vehicle_id || i + 1,
       vehicle_id: item.vehicle_id || item.id || item._id,
-      date: item.date ?? '-',
+      date_only: item.date ? moment(item.date).format('YYYY-MM-DD') : '-',
+      time_only: item.date ? moment(item.date).format('hh:mm:ss A') : '-',
       vehicle_number: item.vehicle_number ?? '-',
       route_details: item.route_name ?? '-',
       driver_name: [item.driver_first_name, item.driver_last_name].filter(Boolean).join(' ').trim() || '-',

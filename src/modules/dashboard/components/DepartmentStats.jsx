@@ -8,20 +8,21 @@ import VisualDisplayIcon from '../../../assets/visual_display.png';
 import washingMachineIcon from '../../../assets/washing_machine.png';
 import airConditionerIcon from '../../../assets/air_conditioner.png';
 
-const DEPTS = {
-  AC: { label: 'AC', icon: airConditionerIcon },
-  WM: { label: 'WM', icon: washingMachineIcon },
-  VD: { label: 'VD', icon: VisualDisplayIcon },
-  COMP: { label: 'COMP', icon: computerIcon },
-  REF: { label: 'REF', icon: refrigeratorIcon },
-  SUPPORT: { label: 'SUPPORT', icon: supportIcon },
-};
+const DEPTS = [
+  { key: 'REF', label: 'REF', icon: refrigeratorIcon },
+  { key: 'WM', label: 'WM', icon: washingMachineIcon },
+  { key: 'AC', label: 'AC', icon: airConditionerIcon },
+  { key: 'VD', label: 'VD', icon: VisualDisplayIcon },
+  { key: 'COMP', label: 'RE/COMP', icon: computerIcon },
+  { key: 'SUPPORT', label: 'Support', icon: supportIcon },
+];
 
 export default function DepartmentStats() {
   const dispatch = useDispatch();
+  const deptKeys = DEPTS.map((d) => d.key);
   const departments = useSelector((state) =>
     Array.isArray(state.dashboard?.departmentAnalytics)
-      ? state.dashboard.departmentAnalytics.filter((d) => DEPTS[d.department_name])
+      ? state.dashboard.departmentAnalytics.filter((d) => deptKeys.includes(d.department_name))
       : [],
   );
   const loading = useSelector((state) => state.dashboard?.loading);
@@ -39,13 +40,13 @@ export default function DepartmentStats() {
         </div>
       ) : (
         <div className='mt-4 grid grid-cols-3 gap-y-4'>
-          {departments.slice(0, 6).map((d, i) => {
-            const { label, icon } = DEPTS[d.department_name];
+          {DEPTS.map((dept, i) => {
+            const deptData = departments.find((d) => d.department_name === dept.key);
             return (
               <div key={i} className='flex flex-col items-center'>
-                <img src={icon} alt={label} className='w-12 mb-1' />
-                <span className='font-semibold text-lg'>{d.count}</span>
-                <p className='text-sm capitalize'>{label}</p>
+                <img src={dept.icon} alt={dept.label} className='w-12 mb-1' />
+                <span className='font-semibold text-lg'>{deptData?.count || 0}</span>
+                <p className='text-sm capitalize'>{dept.label}</p>
               </div>
             );
           })}

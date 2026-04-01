@@ -143,7 +143,11 @@ export default function RouteChange() {
     });
   };
 
-  const getAllColumns = () => columns.map(({ key, header }) => ({ key, header }));
+  const getAllColumns = () =>
+    columns.map(({ key, header }) => {
+      if (key === 'route_change_request_status_id') return { key: 'statusName', header };
+      return { key, header };
+    });
 
   const handleExportCommon = async (type) => {
     const exportPayload = buildApiPayload(1, 1000);

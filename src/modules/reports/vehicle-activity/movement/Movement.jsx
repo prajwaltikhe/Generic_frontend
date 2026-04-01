@@ -29,9 +29,14 @@ const formatCoords = (coords) => {
 
 const columns = [
   {
-    key: 'updated_at',
-    header: 'Date & Time',
-    render: (_, row) => (row?.updated_at ? moment(row.updated_at).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'date_only',
+    header: 'Date',
+    render: (_, row) => (row?.updated_at ? moment(row.updated_at).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'time_only',
+    header: 'Time',
+    render: (_, row) => (row?.updated_at ? moment(row.updated_at).format('hh:mm:ss A') : '-'),
   },
   { key: 'vehicle_type', header: 'Vehicle Type', render: (_, row) => row?.vehicle_type ?? 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, row) => row?.vehicle_number ?? '-' },
@@ -85,6 +90,8 @@ function formatMovementRows(data, offset = 0) {
       id: offset + idx + 1,
       vehicle_id: r.vehicle_id || row.vehicle_id,
       updated_at: r.updated_at ?? null,
+      date_only: r.updated_at ? moment(r.updated_at).format('YYYY-MM-DD') : '-',
+      time_only: r.updated_at ? moment(r.updated_at).format('hh:mm:ss A') : '-',
       vehicle_type: r.vehicle_type ?? 'Bus',
       vehicle_number: r.vehicle_number ?? null,
       route_details: r.route_details ?? null,

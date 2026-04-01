@@ -6,12 +6,14 @@ import ReportTable from '../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { fetchEmergencyReportAlert } from '../../../redux/emergencyReportAlertSlice';
+import { ApiService } from '../../../services';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const toStr = (v) => (v == null || (typeof v === 'string' && v.trim() === '') ? '-' : v);
 
 const columns = [
-  { key: 'created_at', header: 'Date', render: (v) => (v ? moment(v).format('YYYY-MM-DD HH:mm:ss') : '-') },
+  { key: 'created_date', header: 'Date', render: (_v, r) => r.created_date || '-' },
+  { key: 'created_time', header: 'Time', render: (_v, r) => r.created_time || '-' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, r) => toStr(r.vehicle_number) },
   { key: 'route_name', header: 'Route Details', render: (_v, r) => toStr(r.route_name) },
   { key: 'driver_name', header: 'Driver Name', render: (_v, r) => toStr(r.driver_name) },
@@ -35,7 +37,8 @@ const columns = [
   },
   { key: 'title', header: 'Issue Raised', render: (_v, r) => toStr(r.title) },
   { key: 'action_taken', header: 'Action Note', render: (_v, r) => toStr(r.action_taken) },
-  { key: 'updated_at', header: 'Update Date', render: (v) => (v ? moment(v).format('YYYY-MM-DD HH:mm:ss') : '-') },
+  { key: 'updated_date', header: 'Update Date', render: (_v, r) => r.updated_date || '-' },
+  { key: 'updated_time', header: 'Update Time', render: (_v, r) => r.updated_time || '-' },
 ];
 
 const getLatLng = (i) => {
@@ -61,6 +64,22 @@ function getEmployee(i) {
   return { employee_name: name, employee_id: id };
 }
 
+const transformRow = (i) => ({
+  created_date: i.created_at ? moment(i.created_at).format('YYYY-MM-DD') : '-',
+  created_time: i.created_at ? moment(i.created_at).format('hh:mm:ss A') : '-',
+  vehicle_number: toStr(i.vehicle_number),
+  route_name: toStr(i.route_name),
+  ...getDriver(i),
+  ...getEmployee(i),
+  plant_name: toStr(i.plant_name),
+  department_name: toStr(i.department_name),
+  ...getLatLng(i),
+  title: toStr(i.title),
+  action_taken: toStr(i.action_taken),
+  updated_date: i.updated_at ? moment(i.updated_at).format('YYYY-MM-DD') : '-',
+  updated_time: i.updated_at ? moment(i.updated_at).format('hh:mm:ss A') : '-',
+});
+
 function EmergencyAlert() {
   const dispatch = useDispatch();
   const [page, setPage] = useState(0),
@@ -73,21 +92,26 @@ function EmergencyAlert() {
   const { vehicles } = useSelector((s) => s?.vehicles || {});
 
   useEffect(() => {
-    if (company_id) {
-      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
-      dispatch(fetchVehicles({ limit: 150 }));
-    }
+    Promise.resolve().then(() => {
+      if (company_id) {
+        dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+        dispatch(fetchVehicles({ limit: 150 }));
+      }
+    });
   }, [dispatch, company_id]);
 
   useEffect(() => {
-    company_id &&
-      dispatch(fetchEmergencyReportAlert({ company_id, page: page + 1, limit })).then((res) =>
-        setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
-      );
+    Promise.resolve().then(() => {
+      if (company_id) {
+        dispatch(fetchEmergencyReportAlert({ company_id, page: page + 1, limit })).then((res) =>
+          setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
+        );
+      }
+    });
   }, [dispatch, company_id, page, limit]);
 
-  const buildApiPayload = () => {
-    const p = { company_id, page: page + 1, limit };
+  const buildApiPayload = (overrides = {}) => {
+    const p = { company_id, page: page + 1, limit, ...overrides };
     filterData.vehicles?.length && (p.vehicles = JSON.stringify(filterData.vehicles));
     filterData.routes?.length && (p.routes = JSON.stringify(filterData.routes));
     filterData.fromDate && (p.start = filterData.fromDate);
@@ -95,38 +119,39 @@ function EmergencyAlert() {
     return p;
   };
 
-  const tableData = Array.isArray(filteredData)
-    ? filteredData.map((i) => ({
-        created_at: i.created_at,
-        vehicle_number: toStr(i.vehicle_number),
-        route_name: toStr(i.route_name),
-        ...getDriver(i),
-        ...getEmployee(i),
-        plant_name: toStr(i.plant_name),
-        department_name: toStr(i.department_name),
-        ...getLatLng(i),
-        title: toStr(i.title),
-        action_taken: toStr(i.action_taken),
-        updated_at: toStr(i.updated_at),
-      }))
-    : [];
+  const tableData = Array.isArray(filteredData) ? filteredData.map(transformRow) : [];
 
   const totalCount = emergencyReportAlertData?.pagination?.total || tableData.length;
 
-  const handleExport = () =>
+  const fetchAllForExport = async () => {
+    try {
+      const params = buildApiPayload({ page: 1, limit: totalCount || 10000 });
+      const response = await ApiService.get('/reports/alerts', params);
+      const allData = Array.isArray(response?.data?.data) ? response.data.data : [];
+      return allData.map(transformRow);
+    } catch {
+      return tableData;
+    }
+  };
+
+  const handleExport = async () => {
+    const allRows = await fetchAllForExport();
     exportToExcel({
       columns,
-      rows: buildExportRows({ columns, data: tableData }),
+      rows: buildExportRows({ columns, data: allRows }),
       fileName: 'emergency_alert_report.xlsx',
     });
+  };
 
-  const handleExportPDF = () =>
+  const handleExportPDF = async () => {
+    const allRows = await fetchAllForExport();
     exportToPDF({
       columns,
-      rows: buildExportRows({ columns, data: tableData }),
+      rows: buildExportRows({ columns, data: allRows }),
       fileName: 'emergency_alert_report.pdf',
       orientation: 'landscape',
     });
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();

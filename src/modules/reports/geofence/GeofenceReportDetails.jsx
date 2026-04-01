@@ -23,9 +23,14 @@ const parsePosition = (position) => {
 
 const columns = [
   {
-    key: 'date',
+    key: 'date_only',
     header: 'Date',
-    render: (_, row) => (row?.date ? moment(row.date).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    render: (_, row) => (row?.date ? moment(row.date).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'time_only',
+    header: 'Time',
+    render: (_, row) => (row?.date ? moment(row.date).format('hh:mm:ss A') : '-'),
   },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, row) => row?.vehicle_number ?? '-' },
   { key: 'route_details', header: 'Route Details', render: (_, row) => row?.route_details ?? '-' },
@@ -34,9 +39,14 @@ const columns = [
   { key: 'geofence_name', header: 'Geofence Name', render: (_, row) => row?.geofence_name ?? '-' },
   { key: 'geofence_type', header: 'Geofence Type', render: (_, row) => row?.geofence_type ?? '-' },
   {
-    key: 'fence_entry_time',
-    header: 'Fence Entry Time',
-    render: (_, row) => (row?.fence_entry_time ? moment(row.fence_entry_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'fence_entry_date',
+    header: 'Entry Date',
+    render: (_, row) => (row?.fence_entry_time ? moment(row.fence_entry_time).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'fence_entry_time_only',
+    header: 'Entry Time',
+    render: (_, row) => (row?.fence_entry_time ? moment(row.fence_entry_time).format('hh:mm:ss A') : '-'),
   },
   {
     key: 'entry_position_gmap',
@@ -56,9 +66,14 @@ const columns = [
     },
   },
   {
-    key: 'fence_exit_time',
-    header: 'Fence Exit Time',
-    render: (_, row) => (row?.fence_exit_time ? moment(row.fence_exit_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'fence_exit_date',
+    header: 'Exit Date',
+    render: (_, row) => (row?.fence_exit_time ? moment(row.fence_exit_time).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'fence_exit_time_only',
+    header: 'Exit Time',
+    render: (_, row) => (row?.fence_exit_time ? moment(row.fence_exit_time).format('hh:mm:ss A') : '-'),
   },
   {
     key: 'exit_position_gmap',
@@ -94,6 +109,34 @@ function GeofenceReportDetails() {
     toDate: searchParams.get('to_date') || '',
   });
 
+  const formatData = (items) =>
+    items.map((item, i) => {
+      const entryTime = item.entry_time ?? item.fence_entry_time ?? null;
+      const exitTime = item.exit_time ?? item.fence_exit_time ?? null;
+
+      return {
+        id: item.id || item._id || i + 1,
+        date_only: item.date ? moment(item.date).format('YYYY-MM-DD') : '-',
+        time_only: item.date ? moment(item.date).format('hh:mm:ss A') : '-',
+        vehicle_number: item.vehicle_number ?? '-',
+        route_details: item.route_name ?? item.route_details ?? '-',
+        driver_name:
+          [item.driver_first_name, item.driver_last_name].filter(Boolean).join(' ').trim() || item.driver_name || '-',
+        driver_number: item.driver_phone ?? item.driver_number ?? '-',
+        geofence_name: item.geofence_name ?? '-',
+        geofence_type: item.geofence_type ?? '-',
+        fence_entry_date: entryTime ? moment(entryTime).format('YYYY-MM-DD') : '-',
+        fence_entry_time_only: entryTime ? moment(entryTime).format('hh:mm:ss A') : '-',
+        fence_entry_time: entryTime, // for render function fallback if needed
+        entry_position_parsed: parsePosition(item.entry_position),
+        fence_exit_date: exitTime ? moment(exitTime).format('YYYY-MM-DD') : '-',
+        fence_exit_time_only: exitTime ? moment(exitTime).format('hh:mm:ss A') : '-',
+        fence_exit_time: exitTime, // for render function fallback if needed
+        exit_position_parsed: parsePosition(item.exit_position),
+        duration_in_fence: formatDuration(item.duration_in_fence),
+      };
+    });
+
   const fetchData = () => {
     if (!id) return;
     setLoading(true);
@@ -123,27 +166,9 @@ function GeofenceReportDetails() {
   };
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(() => fetchData());
     // eslint-disable-next-line
   }, [id, page, limit]);
-
-  const formatData = (items) =>
-    items.map((item, i) => ({
-      id: item.id || item._id || i + 1,
-      date: item.date ?? null,
-      vehicle_number: item.vehicle_number ?? '-',
-      route_details: item.route_name ?? item.route_details ?? '-',
-      driver_name:
-        [item.driver_first_name, item.driver_last_name].filter(Boolean).join(' ').trim() || item.driver_name || '-',
-      driver_number: item.driver_phone ?? item.driver_number ?? '-',
-      geofence_name: item.geofence_name ?? '-',
-      geofence_type: item.geofence_type ?? '-',
-      fence_entry_time: item.entry_time ?? item.fence_entry_time ?? null,
-      entry_position_parsed: parsePosition(item.entry_position),
-      fence_exit_time: item.exit_time ?? item.fence_exit_time ?? null,
-      exit_position_parsed: parsePosition(item.exit_position),
-      duration_in_fence: formatDuration(item.duration_in_fence),
-    }));
 
   const handleFormSubmit = (e) => {
     e.preventDefault();

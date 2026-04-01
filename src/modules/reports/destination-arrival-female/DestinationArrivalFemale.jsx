@@ -43,7 +43,7 @@ const columns = [
         '-'
       ),
   },
-  { key: 'arrivalTime', header: 'Arrival Time @ Destination' },
+  { key: 'arrivalTime', header: 'Time' },
 ];
 
 function DestinationArrivalFemale() {
@@ -91,7 +91,7 @@ function DestinationArrivalFemale() {
       plant: toStr(i.plant_name),
       department: toStr(i.department_name),
       ...getLatLng(i),
-      arrivalTime: i.arrival_time ? moment(i.arrival_time).format('HH:mm:ss') : '-',
+      arrivalTime: i.arrival_time ? moment(i.arrival_time).format('hh:mm:ss A') : '-',
     }));
   };
 

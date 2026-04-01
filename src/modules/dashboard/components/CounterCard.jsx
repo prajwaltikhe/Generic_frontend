@@ -24,10 +24,10 @@ export default function CounterCard() {
   const cards = [
     {
       id: 'vehicles',
-      label: 'Total Vehicle Running',
+      label: 'Total Vehicles',
       value: total.vehicleTotal || 0,
       icon: runningBusIcon,
-      link: '/master/vehicle',
+      link: '/multitrack',
       iconWidth: 'w-14',
     },
     {

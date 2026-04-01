@@ -12,9 +12,14 @@ import { formatDuration } from '../../../utils/formatters';
 
 const columns = [
   {
-    key: 'date_time',
-    header: 'Date & Time',
-    render: (_, row) => (row?.date_time ? moment(row.date_time).format('YYYY-MM-DD HH:mm:ss') : '-'),
+    key: 'date_only',
+    header: 'Date',
+    render: (_, row) => (row?.date_time ? moment(row.date_time).format('YYYY-MM-DD') : '-'),
+  },
+  {
+    key: 'time_only',
+    header: 'Time',
+    render: (_, row) => (row?.date_time ? moment(row.date_time).format('hh:mm:ss A') : '-'),
   },
   { key: 'vehicle_type', header: 'Vehicle Type', render: () => 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, row) => row?.vehicle_number ?? '-' },
@@ -97,6 +102,8 @@ function OverspeedReportDetails() {
         const items = responseData?.data || res?.payload?.overspeedData || [];
         const formattedItems = (Array.isArray(items) ? items : [items]).map((item) => ({
           ...item,
+          date_only: item.date_time ? moment(item.date_time).format('YYYY-MM-DD') : '-',
+          time_only: item.date_time ? moment(item.date_time).format('hh:mm:ss A') : '-',
           start_lat_long:
             item.start_latitude && item.start_longitude
               ? `${parseFloat(item.start_latitude).toFixed(6)}, ${parseFloat(item.start_longitude).toFixed(6)}`
@@ -122,7 +129,7 @@ function OverspeedReportDetails() {
   };
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(() => fetchData());
     // eslint-disable-next-line
   }, [id, page, limit]);
 

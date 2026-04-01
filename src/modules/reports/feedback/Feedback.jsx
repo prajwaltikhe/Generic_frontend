@@ -9,7 +9,8 @@ import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'date', header: 'Date', render: (value) => (value ? moment(value).format('YYYY-MM-DD HH:mm:ss') : '-') },
+  { key: 'date', header: 'Date', render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-') },
+  { key: 'time', header: 'Time', render: (value) => (value ? moment(value).format('hh:mm:ss A') : '-') },
   { key: 'vehicleNumber', header: 'Vehicle Number', render: (_v, row) => row?.vehicleNumber || '-' },
   { key: 'routeDetails', header: 'Route Details', render: (_v, row) => row?.routeDetails || '-' },
   { key: 'driverName', header: 'Driver Name', render: (_v, row) => row?.driverName || '-' },
@@ -33,18 +34,22 @@ function Feedback() {
   const { vehicles } = useSelector((state) => state?.vehicles || {});
 
   useEffect(() => {
-    if (company_id) {
-      dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
-      dispatch(fetchVehicles({ limit: 150 }));
-    }
+    Promise.resolve().then(() => {
+      if (company_id) {
+        dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+        dispatch(fetchVehicles({ limit: 150 }));
+      }
+    });
   }, [dispatch, company_id]);
 
   useEffect(() => {
-    if (company_id) {
-      dispatch(fetchFeedbackReport({ company_id, page: page + 1, limit })).then((res) => {
-        setFilteredData(Array.isArray(res?.payload?.feedbacks) ? res.payload.feedbacks : []);
-      });
-    }
+    Promise.resolve().then(() => {
+      if (company_id) {
+        dispatch(fetchFeedbackReport({ company_id, page: page + 1, limit })).then((res) => {
+          setFilteredData(Array.isArray(res?.payload?.feedbacks) ? res.payload.feedbacks : []);
+        });
+      }
+    });
   }, [dispatch, company_id, page, limit]);
 
   const buildApiPayload = () => {
@@ -60,7 +65,8 @@ function Feedback() {
 
   const tableData = Array.isArray(filteredData)
     ? filteredData.map((item) => ({
-        date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD HH:mm:ss') : '-',
+        date: item.created_at ? moment(item.created_at).format('YYYY-MM-DD') : '-',
+        time: item.created_at ? moment(item.created_at).format('hh:mm:ss A') : '-',
         vehicleNumber: item.vehicle?.number || '-',
         routeDetails: item.route?.name || '-',
         driverName: item.driver ? [item.driver.first_name, item.driver.last_name].filter(Boolean).join(' ') : '-',

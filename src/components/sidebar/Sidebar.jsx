@@ -40,12 +40,12 @@ const reportsSubMenus = [
 
 const reportsLinks = [
   { to: '/report/overspeed', label: 'Over Speed' },
-  { to: '/report/employees-on-board', label: 'Employees on board' },
+  { to: '/report/employees-on-board', label: 'Employees On Board' },
   { to: '/report/destination-arrival-female', label: 'Destination Arrival-Female' },
   { to: '/report/punch-timelog', label: 'Punch Timelog' },
   { to: '/report/vehicle-arrival-time/2f7d76b8-87a9-4dc1-822a-a39e99b314e9', label: 'Vehicle Arrival Time' },
   { to: '/report/seat-occupancy', label: 'Seat Occupancy' },
-  { to: '/report/emergency-alert', label: 'Emergency alert' },
+  { to: '/report/emergency-alert', label: 'Emergency Alert' },
   { to: '/report/feedback', label: 'Feedback' },
 ];
 
@@ -71,7 +71,7 @@ const settingsSubMenus = [
       { to: '/management/geofence', label: 'Geofences' },
       { to: '/management/vehicle-route', label: 'Vehicle Routes' },
       { to: '/management/feedbacks', label: 'Feedbacks' },
-      { to: '/management/route-change-request', label: 'Route change request' },
+      { to: '/management/route-change-request', label: 'Route Change Request' },
       { to: '/management/emergency-alerts', label: 'Emergency alerts' },
       { to: '/management/announcements', label: 'Announcements' },
     ],

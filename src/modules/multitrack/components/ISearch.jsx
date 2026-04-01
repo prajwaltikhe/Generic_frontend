@@ -1,29 +1,38 @@
 import Search from '@mui/icons-material/Search';
-import { TextField as Input } from '@mui/material';
+import Refresh from '@mui/icons-material/Refresh';
+import { TextField as Input, IconButton, Tooltip } from '@mui/material';
 
-export default function ISearch({ onChange, value }) {
+export default function ISearch({ onChange, value, onRefresh }) {
   return (
-    <>
-      <div className='w-ful'>
-        <div className='flex items-center'>
-          <Search className='text-lg ml-2 font-bold' />
-          <Input
-            value={value}
-            variant='standard'
-            size='small'
-            placeholder='Search'
-            sx={{
-              '& .MuiInput-underline:before': { borderBottom: 'none' },
-              '& .MuiInput-underline:after': { borderBottom: 'none' },
-              '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-                borderBottom: 'none',
-              },
-            }}
-            onChange={onChange}
-          />
-        </div>
+    <div className='flex items-center gap-2 w-full'>
+      <div className='flex items-center flex-1 bg-gray-50 rounded px-2'>
+        <Search className='text-lg font-bold text-gray-400' />
+        <Input
+          value={value}
+          variant='standard'
+          size='small'
+          placeholder='Search Vehicle'
+          fullWidth
+          sx={{
+            '& .MuiInput-underline:before': { borderBottom: 'none' },
+            '& .MuiInput-underline:after': { borderBottom: 'none' },
+            '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+              borderBottom: 'none',
+            },
+            padding: '2px 8px',
+          }}
+          onChange={onChange}
+        />
       </div>
-    </>
+
+      <div className='flex items-center border-l pl-2 border-gray-200'>
+        <Tooltip title='Manual Refresh'>
+          <IconButton size='small' onClick={onRefresh} sx={{ color: '#1d31a6' }}>
+            <Refresh fontSize='small' />
+          </IconButton>
+        </Tooltip>
+      </div>
+    </div>
   );
 }
 
