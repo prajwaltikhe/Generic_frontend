@@ -79,7 +79,6 @@ const INITIAL_FORM = {
   selectedDepartment: null,
   selectedPlant: null,
   dateOfJoining: '',
-  dateOfBirth: '',
   selectedGender: '',
   vehicleRoute: null,
   boardingPoint: null,
@@ -113,9 +112,48 @@ function EmployeeForm() {
   const fileInputRef = useRef(null);
   const addressTimeoutRef = useRef(null);
 
-  const [formVal, setFormVal] = useState(INITIAL_FORM);
+  const [formVal, setFormVal] = useState(() => {
+    const d = (rowData?.mode === 'edit' || rowData?.mode === 'view') ? rowData.rowData : null;
+    if (d) {
+      return {
+        ...INITIAL_FORM,
+        firstName: d.first_name || '',
+        lastName: d.last_name || '',
+        employeeId: d.employee_id || '',
+        punchId: d.punch_id || '',
+        email: d.email || '',
+        phoneNumber: d.phone_number || '',
+        dateOfJoining: d.date_of_joining || '',
+        selectedGender: d.gender ?? '',
+        address: d.address || '',
+        latitude: d.latitude || d.boarding_latitude || '',
+        longitude: d.longitude || d.boarding_longitude || '',
+        // Placeholders for options-dependent fields
+        selectedDepartment: d.department ? { label: d.department, value: null } : null,
+        selectedPlant: d.plant ? { label: d.plant, value: null } : null,
+        vehicleRoute: d.vehicle_route_name ? { label: d.vehicle_route_name, value: null } : null,
+        boardingPoint: d.boarding_address ? { label: d.boarding_address, value: null } : null,
+      };
+    }
+    return INITIAL_FORM;
+  });
+
   const [addressOptions, setAddressOptions] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null);
+
+  const selectedAddress = useMemo(() => {
+    if (formVal.latitude && formVal.longitude && formVal.address) {
+      return {
+        label: formVal.address,
+        value: `${formVal.latitude}-${formVal.longitude}`,
+        otherData: {
+          display_name: formVal.address,
+          lat: String(formVal.latitude),
+          lon: String(formVal.longitude),
+        },
+      };
+    }
+    return null;
+  }, [formVal.latitude, formVal.longitude, formVal.address]);
 
   const dept = useDropdownOpt({
     apiUrl: APIURL.DEPARTMENTS,
@@ -149,65 +187,44 @@ function EmployeeForm() {
     valueSelector: (d) => d?.id ?? '',
   });
 
-  useEffect(() => {
-    if (formVal.latitude && formVal.longitude && formVal.address) {
-      setSelectedAddress({
-        label: formVal.address,
-        value: `${formVal.latitude}-${formVal.longitude}`,
-        otherData: {
-          display_name: formVal.address,
-          lat: String(formVal.latitude),
-          lon: String(formVal.longitude),
-        },
-      });
-    } else if (!formVal.latitude && !formVal.longitude) {
-      setSelectedAddress(null);
-    }
-  }, [formVal.latitude, formVal.longitude, formVal.address]);
 
   useEffect(() => {
     if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
 
     const d = rowData.rowData;
-    let departOpt = null;
-    let plantOpt = null;
-    let routeOpt = null;
+    const updates = {};
 
-    let boardingOpt = d.boarding_address ? { label: d.boarding_address, value: d.boarding_address } : null;
-
-    if (dept.options?.length > 0) departOpt = getOptionObj(dept.options, d.department, true);
-    if (plant.options?.length > 0) plantOpt = getOptionObj(plant.options, d.plant, true);
-    if (route.options?.length > 0)
-      routeOpt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
-
-    setFormVal((prev) => ({
-      ...prev,
-      firstName: d.first_name || '',
-      lastName: d.last_name || '',
-      employeeId: d.employee_id || '',
-      punchId: d.punch_id || '',
-      email: d.email || '',
-      phoneNumber: d.phone_number || '',
-      selectedDepartment: departOpt || null,
-      selectedPlant: plantOpt || null,
-      dateOfJoining: d.date_of_joining || '',
-      dateOfBirth: d.date_of_birth || '',
-      selectedGender: d.gender ?? '',
-      vehicleRoute: routeOpt || null,
-      boardingPoint: boardingOpt || null,
-      address: d.address || '',
-      latitude: d.latitude || d.boarding_latitude || '',
-      longitude: d.longitude || d.boarding_longitude || '',
-    }));
-  }, [rowData, dept.options, plant.options, route.options]);
-
-  useEffect(() => {
-    if (boarding.options?.length && formVal.boardingPoint) {
-      const match = getOptionObj(boarding.options, formVal.boardingPoint.label, true);
-      if (match && (match.value !== formVal.boardingPoint.value || !formVal.boardingPoint.data))
-        setFormVal((prev) => ({ ...prev, boardingPoint: match }));
+    if (dept.options?.length > 0) {
+      const opt = getOptionObj(dept.options, d.department, true);
+      if (opt && opt.value !== formVal.selectedDepartment?.value) updates.selectedDepartment = opt;
     }
-  }, [boarding.options, formVal.boardingPoint]);
+    if (plant.options?.length > 0) {
+      const opt = getOptionObj(plant.options, d.plant, true);
+      if (opt && opt.value !== formVal.selectedPlant?.value) updates.selectedPlant = opt;
+    }
+    if (route.options?.length > 0) {
+      const opt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
+      if (opt && opt.value !== formVal.vehicleRoute?.value) updates.vehicleRoute = opt;
+    }
+    if (boarding.options?.length > 0 && formVal.boardingPoint) {
+      const opt = getOptionObj(boarding.options, formVal.boardingPoint.label, true);
+      if (opt && (opt.value !== formVal.boardingPoint.value || !formVal.boardingPoint.data)) updates.boardingPoint = opt;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setFormVal((prev) => ({ ...prev, ...updates }));
+    }
+  }, [
+    rowData,
+    dept.options,
+    plant.options,
+    route.options,
+    boarding.options,
+    formVal.selectedDepartment?.value,
+    formVal.selectedPlant?.value,
+    formVal.vehicleRoute?.value,
+    formVal.boardingPoint,
+  ]);
 
   const handleAddressSearch = useCallback((_, value) => {
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
@@ -230,8 +247,6 @@ function EmployeeForm() {
   }, []);
 
   const handleAddressChange = useCallback((_, val) => {
-    setSelectedAddress(val);
-
     if (val?.otherData) {
       setFormVal((prev) => ({
         ...prev,
@@ -250,16 +265,6 @@ function EmployeeForm() {
       const res = await AddressServices.getLocationFromLatLng(lat, lng);
       const addr = Array.isArray(res) && res[0]?.display_name ? res[0].display_name : '';
       setFormVal((prev) => ({ ...prev, latitude: String(lat), longitude: String(lng), address: addr || prev.address }));
-
-      setSelectedAddress(
-        addr
-          ? {
-              label: addr,
-              value: `${lat}-${lng}`,
-              otherData: { display_name: addr, lat: String(lat), lon: String(lng) },
-            }
-          : null,
-      );
     },
     [isViewMode],
   );
@@ -279,15 +284,6 @@ function EmployeeForm() {
       const res = await AddressServices.getLocationFromLatLng(formVal.latitude, formVal.longitude);
       const addr = Array.isArray(res) && res[0]?.display_name ? res[0].display_name : '';
       setFormVal((prev) => ({ ...prev, address: addr || prev.address }));
-      setSelectedAddress(
-        addr
-          ? {
-              label: addr,
-              value: `${formVal.latitude}-${formVal.longitude}`,
-              otherData: { display_name: addr, lat: String(formVal.latitude), lon: String(formVal.longitude) },
-            }
-          : null,
-      );
     }
   };
 
@@ -314,7 +310,6 @@ function EmployeeForm() {
         department_id: formVal.selectedDepartment ? formVal.selectedDepartment.value : '',
         plant_id: formVal.selectedPlant ? formVal.selectedPlant.value : '',
         date_of_joining: formVal.dateOfJoining,
-        date_of_birth: formVal.dateOfBirth,
         gender: formVal.selectedGender,
         vehicle_route_id: formVal.vehicleRoute ? formVal.vehicleRoute.value : '',
         address: formVal.address,
@@ -454,15 +449,6 @@ function EmployeeForm() {
               <TextInput
                 name='dateOfJoining'
                 label='Joining Date'
-                type='date'
-                required
-                formVal={formVal}
-                setFormVal={setFormVal}
-                disabled={isViewMode}
-              />
-              <TextInput
-                name='dateOfBirth'
-                label='Date of Birth'
                 type='date'
                 required
                 formVal={formVal}

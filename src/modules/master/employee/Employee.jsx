@@ -29,11 +29,6 @@ const columns = [
     header: 'Date of Joining',
     render: (_, row) => (row.date_of_joining ? dayjs(row.date_of_joining).format('YYYY-MM-DD') : '-'),
   },
-  {
-    key: 'dob',
-    header: 'Date of Birth',
-    render: (_, row) => (row.date_of_birth ? dayjs(row.date_of_birth).format('YYYY-MM-DD') : '-'),
-  },
   { key: 'gender', header: 'Gender', render: (_, row) => row.gender || '-' },
   { key: 'vehicle_route_id', header: 'Vehicle Route ID', render: (_, row) => row.vehicle_route_id || '-' },
   { key: 'address', header: 'Address', render: (_, row) => row.address || '-' },
@@ -89,8 +84,6 @@ function formatEmp(data, offset = 0) {
     department: emp.department_name || emp.department?.department_name || emp.department || '',
     date_of_joining: emp.date_of_joining ? dayjs(emp.date_of_joining).format('YYYY-MM-DD') : '',
     doj: emp.date_of_joining ? dayjs(emp.date_of_joining).format('YYYY-MM-DD') : '',
-    date_of_birth: emp.date_of_birth ? dayjs(emp.date_of_birth).format('YYYY-MM-DD') : '',
-    dob: emp.date_of_birth ? dayjs(emp.date_of_birth).format('YYYY-MM-DD') : '',
     created_at: emp.created_at ? dayjs(emp.created_at).format('YYYY-MM-DD HH:mm') : '',
     gender: emp.gender || '',
     vehicle_route_id: emp?.vehicle_route_name || emp.route?.name || '',
@@ -138,16 +131,6 @@ function Employee() {
       );
   }, [dispatch, company_id, filterData.department]);
 
-  useEffect(() => {
-    if (company_id) {
-      dispatch(fetchEmployees(buildApiPayload())).then((res) => {
-        setFilteredData(res?.payload?.employes || []);
-        setTotalCount(res?.payload?.pagination?.total || res?.payload?.employes?.length || 0);
-      });
-    }
-    // eslint-disable-next-line
-  }, [dispatch, company_id, page, limit, searchQuery, filterData.department, filterData.employee_id]);
-
   const buildApiPayload = (customLimit) => {
     const payload = {
       company_id,
@@ -160,6 +143,17 @@ function Employee() {
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
     return payload;
   };
+
+  useEffect(() => {
+    if (company_id) {
+      dispatch(fetchEmployees(buildApiPayload())).then((res) => {
+        setFilteredData(res?.payload?.employes || []);
+        setTotalCount(res?.payload?.pagination?.total || res?.payload?.employes?.length || 0);
+      });
+    }
+    // eslint-disable-next-line
+  }, [dispatch, company_id, page, limit, searchQuery, filterData.department, filterData.employee_id]);
+
 
   const handleView = (row) => navigate('/master/employee/view', { state: { mode: 'view', rowData: row } });
   const handleEdit = (row) => navigate('/master/employee/edit', { state: { mode: 'edit', rowData: row } });
@@ -258,7 +252,6 @@ function Employee() {
         { key: 'plant', header: 'Plant' },
         { key: 'department', header: 'Department' },
         { key: 'date_of_joining', header: 'Date of Joining' },
-        { key: 'date_of_birth', header: 'Date of Birth' },
         { key: 'gender', header: 'Gender' },
         { key: 'vehicle_route_id', header: 'Vehicle Route ID' },
         { key: 'address', header: 'Address' },

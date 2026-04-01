@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { toast } from 'react-toastify';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { Autocomplete, TextField } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -16,35 +16,41 @@ const customIcon = new L.Icon({
 });
 
 const DriverForm = () => {
-  const dispatch = useDispatch();
-  const [formValues, setFormValues] = useState({
-    firstName: '',
-    lastName: '',
-    punchId: '',
-    email: '',
-    phoneNumber: '',
-    dateOfBirth: '',
-    drivingLicenceNo: '',
-    drivingLicenceIssueDate: '',
-    drivingLicenceExpiryDate: '',
-    profilePhoto: '',
-    address: '',
-    latitude: '',
-    longitude: '',
-  });
-  const fileInputRef = useRef(null);
-  const navigate = useNavigate();
-  const [addressOnSearch, setAddressOnSearch] = useState([]);
-  const [selectedAddressOption, setSelectedAddressOption] = useState(null);
-  const addressTimeoutRef = useRef(null);
-
   const location = useLocation();
   const { state: rowData } = location;
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const addressTimeoutRef = useRef(null);
+  const [addressOnSearch, setAddressOnSearch] = useState([]);
+
   const isViewMode = rowData?.mode === 'view';
-  // isEditMode can be used in future if needed
-  const _ = rowData?.mode === 'edit'; // eslint-disable-line
   const readOnly = isViewMode;
   const showSaveButton = !readOnly;
+
+  const [formValues, setFormValues] = useState(() => {
+    const d = (rowData?.mode === 'edit' || rowData?.mode === 'view') ? rowData.rowData : null;
+    const [firstName = '', ...rest] = d?.driverName?.split(' ') || [];
+    return {
+      firstName,
+      lastName: rest.join(' ') || '',
+      punchId: d?.punchId || '',
+      email: d?.driverEmail || '',
+      phoneNumber: d?.phoneNumber || '',
+      drivingLicenceNo: d?.drivingLicenceNo || '',
+      drivingLicenceIssueDate: d?.drivingLicenceIssueDate || '',
+      drivingLicenceExpiryDate: d?.drivingLicenceExpiryDate || '',
+      profilePhoto: d?.profilePhoto || '',
+      address: d?.address || '',
+      latitude: d?.latitude || '',
+      longitude: d?.longitude || '',
+    };
+  });
+
+  const [selectedAddressOption, setSelectedAddressOption] = useState(() => {
+    const d = (rowData?.mode === 'edit' || rowData?.mode === 'view') ? rowData.rowData : null;
+    return d?.address ? { label: d.address, value: d.place_id || null } : null;
+  });
 
   const handleChange = (e) => {
     if (readOnly) return;
@@ -62,38 +68,6 @@ const DriverForm = () => {
     }
   };
 
-  useEffect(() => {
-    if (!rowData?.rowData || !['edit', 'view'].includes(rowData?.mode)) return;
-    const d = rowData.rowData;
-    // Split name for editing/view
-    const [firstName = '', ...rest] = d.driverName?.split(' ') || [];
-    const lastName = rest.join(' ') || '';
-    setFormValues({
-      firstName,
-      lastName,
-      punchId: d.punchId || '',
-      email: d.driverEmail || '',
-      phoneNumber: d.phoneNumber || '',
-      dateOfBirth: d.dateOfBirth || '',
-      drivingLicenceNo: d.drivingLicenceNo || '',
-      drivingLicenceIssueDate: d.drivingLicenceIssueDate || '',
-      drivingLicenceExpiryDate: d.drivingLicenceExpiryDate || '',
-      profilePhoto: d.profilePhoto || '',
-      address: d.address || '',
-      latitude: d.latitude || '',
-      longitude: d.longitude || '',
-    });
-    // For autocomplete selection
-    if (d.address) {
-      setSelectedAddressOption({ label: d.address, value: d.place_id || null });
-    }
-  }, [rowData]);
-
-  useEffect(() => {
-    if (readOnly && formValues.address) {
-      setSelectedAddressOption({ label: formValues.address, value: null });
-    }
-  }, [formValues.address, readOnly]);
 
   const handleDragOver = (e) => {
     if (readOnly) return;
@@ -126,7 +100,6 @@ const DriverForm = () => {
         punch_id: formValues.punchId ? parseInt(formValues.punchId) : null,
         email: formValues.email,
         phone_number: formValues.phoneNumber,
-        date_of_birth: formValues.dateOfBirth ? new Date(formValues.dateOfBirth).toISOString() : null,
         driving_licence: formValues.drivingLicenceNo,
         driving_licence_issue_date: formValues.drivingLicenceIssueDate
           ? new Date(formValues.drivingLicenceIssueDate).toISOString()
@@ -270,23 +243,6 @@ const DriverForm = () => {
                   />
                 </div>
 
-                <div>
-                  <label className='block mb-2 text-sm font-medium text-gray-900'>
-                    Date Of Birth <span className='text-red-500'>*</span>
-                  </label>
-                  <TextField
-                    size='small'
-                    type='date'
-                    name='dateOfBirth'
-                    id='dateOfBirth'
-                    fullWidth
-                    required
-                    placeholder='Date Of Birth'
-                    value={formValues.dateOfBirth}
-                    onChange={handleChange}
-                    InputProps={{ readOnly: readOnly }}
-                  />
-                </div>
 
                 <div>
                   <label className='block mb-2 text-sm font-medium text-gray-900'>

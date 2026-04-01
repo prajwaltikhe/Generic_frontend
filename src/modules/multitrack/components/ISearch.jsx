@@ -26,6 +26,7 @@ export default function ISearch({ onChange, value, onRefresh }) {
       </div>
 
       <div className='flex items-center border-l pl-2 border-gray-200'>
+        <span className='text-[11px] text-gray-500 font-medium whitespace-nowrap mr-0.5'>30 sec Auto</span>
         <Tooltip title='Manual Refresh'>
           <IconButton size='small' onClick={onRefresh} sx={{ color: '#1d31a6' }}>
             <Refresh fontSize='small' />

@@ -6,7 +6,7 @@ import MapComponent from './components/MapComponent';
 import MheStatusPanel from './components/MheStatusPanel';
 
 export default function Multitrack() {
-  useFetchVehicles();
+  useFetchVehicles(30000);
   const [selectedVehicleId, setSelectedVehicleId] = useState(() => localStorage.getItem('selectedVehicleId'));
   const [showPanel, setShowPanel] = useState(() => !!selectedVehicleId);
   const devices = useSelector((s) => s.multiTrackStatus.devices);
@@ -35,7 +35,7 @@ export default function Multitrack() {
         localStorage.setItem('selectedVehicleId', vehicle.id);
       }
     },
-    [selectedVehicleId]
+    [selectedVehicleId],
   );
 
   return (

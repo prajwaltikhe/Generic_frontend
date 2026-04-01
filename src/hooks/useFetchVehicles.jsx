@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { fetchEnrichedVehicles } from '../redux/multiTrackSlice';
 
-export const useFetchVehicles = () => {
+export const useFetchVehicles = (intervalMs = 0) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -14,5 +14,10 @@ export const useFetchVehicles = () => {
     };
 
     fetchData();
-  }, [dispatch]);
+
+    if (intervalMs > 0) {
+      const interval = setInterval(fetchData, intervalMs);
+      return () => clearInterval(interval);
+    }
+  }, [dispatch, intervalMs]);
 };
