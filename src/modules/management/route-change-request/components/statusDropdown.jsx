@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import { updateRouteChangeRequest } from '../../../../redux/routeChangeRequestSlice';
 
-export default function StatusDropdown({ row, onStatusChange, statusOptions }) {
+export default function StatusDropdown({ row, onStatusChange, statusOptions, disabled }) {
   const dispatch = useDispatch();
   const handleChange = async (_, newValue) => {
     if (!newValue) return;
@@ -25,6 +25,7 @@ export default function StatusDropdown({ row, onStatusChange, statusOptions }) {
   return (
     <Autocomplete
       disablePortal
+      disabled={disabled}
       options={statusOptions}
       isOptionEqualToValue={(option, value) => option.id === value}
       getOptionLabel={(option) => option.name}
