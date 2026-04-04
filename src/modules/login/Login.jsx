@@ -3,20 +3,61 @@ import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import logo from '../../assets/logo.png';
 import { APIURL } from '../../constants';
-import { AuthService } from '../../services';
+import { AuthService, ApiService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Https';
 import EmailIcon from '@mui/icons-material/Email';
-import { useEffect } from 'react';
-import { Paper, TextField, Checkbox, FormControlLabel, Button, InputAdornment } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  Paper,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+  Button,
+  InputAdornment,
+  IconButton,
+  Box,
+  Typography,
+  CircularProgress,
+} from '@mui/material';
 
 const validationSchema = Yup.object({
   email: Yup.string().email('Invalid email').required('Required'),
   password: Yup.string().required('Required'),
+  captchaAnswer: Yup.string()
+    .required('Enter the captcha')
+    .min(6, 'Captcha is 6 characters')
+    .max(6, 'Captcha is 6 characters'),
 });
 
 function Login() {
   const navigate = useNavigate();
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
+  const [captchaLoading, setCaptchaLoading] = useState(true);
+
+  const loadCaptcha = useCallback(async () => {
+    setCaptchaLoading(true);
+    try {
+      const json = await ApiService.getPublic(APIURL.CAPTCHA);
+      const d = json?.data;
+      if (d?.token && d?.imageBase64) {
+        setCaptchaToken(d.token);
+        setCaptchaImage(`data:${d.mimeType || 'image/png'};base64,${d.imageBase64}`);
+      } else {
+        toast.error('Could not load captcha');
+        setCaptchaToken('');
+        setCaptchaImage('');
+      }
+    } catch (e) {
+      toast.error(e?.message || 'Could not load captcha');
+      setCaptchaToken('');
+      setCaptchaImage('');
+    } finally {
+      setCaptchaLoading(false);
+    }
+  }, []);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -25,16 +66,33 @@ function Login() {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate]);
+
+  useEffect(() => {
+    loadCaptcha();
+  }, [loadCaptcha]);
+
   const formik = useFormik({
     initialValues: {
       email: localStorage.getItem('rememberedEmail') || '',
       password: '',
+      captchaAnswer: '',
       rememberMe: !!localStorage.getItem('rememberedEmail'),
     },
     validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values, { setSubmitting, setFieldValue }) => {
+      if (!captchaToken) {
+        toast.error('Captcha not ready. Please wait or refresh the code.');
+        setSubmitting(false);
+        return;
+      }
       try {
-        const res = await AuthService.login(APIURL.LOGIN, values.email, values.password);
+        const res = await AuthService.login(
+          APIURL.LOGIN,
+          values.email,
+          values.password,
+          captchaToken,
+          values.captchaAnswer,
+        );
         if (res?.success) {
           values.rememberMe
             ? localStorage.setItem('rememberedEmail', values.email)
@@ -45,9 +103,13 @@ function Login() {
           navigate('/otp');
         } else {
           toast.error(res?.message || 'Login failed');
+          setFieldValue('captchaAnswer', '');
+          loadCaptcha();
         }
       } catch (err) {
         toast.error(err?.response?.data?.message || 'Invalid Login Credentials');
+        setFieldValue('captchaAnswer', '');
+        loadCaptcha();
       }
       setSubmitting(false);
     },
@@ -108,6 +170,64 @@ function Login() {
                 ),
               }}
             />
+            <Box className='w-full mt-2'>
+              <Typography variant='caption' className='text-gray-600 block mb-1'>
+                Security check (case-sensitive, 6 characters)
+              </Typography>
+              <div className='flex items-center gap-2 w-full'>
+                <Box
+                  className='flex-1 rounded border border-gray-300 bg-gray-50 overflow-hidden flex items-center justify-center'
+                  sx={{ minHeight: 56, maxHeight: 72 }}>
+                  {captchaLoading ? (
+                    <CircularProgress size={28} />
+                  ) : captchaImage ? (
+                    <img
+                      src={captchaImage}
+                      alt='Captcha'
+                      className='max-h-[68px] w-auto object-contain select-none'
+                      style={{ imageRendering: 'auto' }}
+                      draggable={false}
+                    />
+                  ) : (
+                    <Typography variant='caption' color='text.secondary'>
+                      Unavailable
+                    </Typography>
+                  )}
+                </Box>
+                <IconButton
+                  type='button'
+                  aria-label='New captcha'
+                  onClick={() => {
+                    formik.setFieldValue('captchaAnswer', '');
+                    loadCaptcha();
+                  }}
+                  disabled={captchaLoading || formik.isSubmitting}
+                  size='small'
+                  className='border border-gray-300 rounded'>
+                  <RefreshIcon fontSize='small' />
+                </IconButton>
+              </div>
+              <TextField
+                id='captchaAnswer'
+                name='captchaAnswer'
+                label='Enter characters shown'
+                placeholder='6 characters'
+                fullWidth
+                size='small'
+                margin='dense'
+                autoComplete='off'
+                disabled={formik.isSubmitting || captchaLoading || !captchaToken}
+                value={formik.values.captchaAnswer}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.captchaAnswer && Boolean(formik.errors.captchaAnswer)}
+                helperText={
+                  (formik.touched.captchaAnswer && formik.errors.captchaAnswer) ||
+                  'Match upper/lowercase exactly as shown'
+                }
+                inputProps={{ maxLength: 6, spellCheck: false, autoCapitalize: 'off' }}
+              />
+            </Box>
             <div className='flex justify-between items-center w-full mt-2'>
               <FormControlLabel
                 control={

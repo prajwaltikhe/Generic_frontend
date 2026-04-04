@@ -52,6 +52,7 @@ import VehicalArrivalTime from '../modules/reports/vehical-arrival-time/VehicalA
 import Profile from '../modules/profile/Profile';
 import EmployeePunchDetails from '../modules/multitrack/EmployeePunchDetails';
 import Playback from '../modules/multitrack/Playback';
+import EmailServiceConfig from '../modules/settings/email-service/EmailServiceConfig';
 
 function DynamicRoute() {
   return (
@@ -89,6 +90,7 @@ function DynamicRoute() {
         <Route path='punch-timelog' element={<PunchTimelog />} />
         <Route path='vehicle-arrival-time/:shiftId' element={<VehicalArrivalTime />} />
       </Route>
+      <Route path='/settings/super-admin/email-service' element={<EmailServiceConfig />} />
       <Route path='/master'>
         <Route path='plants' element={<Plant />} />
         <Route path='departments' element={<Department />} />

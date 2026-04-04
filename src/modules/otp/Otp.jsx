@@ -15,7 +15,11 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { fetchDepartments } from '../../redux/departmentSlice';
 import { IconButton, Paper, TextField, Button, InputAdornment } from '@mui/material';
 
-const validationSchema = Yup.object({ otp: Yup.string().required('OTP is required') });
+const validationSchema = Yup.object({
+  otp: Yup.string()
+    .required('OTP is required')
+    .matches(/^[A-Za-z0-9]{6,8}$/, 'Enter 6–8 characters as shown (letters or digits)'),
+});
 
 function Otp() {
   const { login } = useAuth();

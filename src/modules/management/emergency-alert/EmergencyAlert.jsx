@@ -25,6 +25,7 @@ const columns = [
   { key: 'title', header: 'Title' },
   { key: 'message', header: 'Message' },
   { key: 'actionTaken', header: 'Action Taken' },
+  { key: 'updatedBy', header: 'Updated by' },
   {
     key: 'actions',
     header: 'Actions',
@@ -52,6 +53,7 @@ function formatEmergencyAlert(data, offset = 0) {
     title: d.title || '-',
     message: d.message || '-',
     actionTaken: d.action_taken || '-',
+    updatedBy: d.updated_by_display?.trim() || '-',
     latitude: d.latitude,
     longitude: d.longitude,
     raw: d,

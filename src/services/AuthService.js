@@ -14,14 +14,19 @@ const isTokenValid = (token) => {
 };
 
 const AuthService = {
-  login: async (url, email, password) => {
-    const data = await ApiService.post(url, { email, password });
+  login: async (url, email, password, captchaToken, captchaAnswer) => {
+    const data = await ApiService.postPublic(url, {
+      email,
+      password,
+      captchaToken,
+      captchaAnswer,
+    });
     setToken(data?.data?.token);
     return data;
   },
 
   verifyOtp: async (url, userId, otp) => {
-    const data = await ApiService.post(url, { userId, otp });
+    const data = await ApiService.postPublic(url, { userId, otp });
     setToken(data?.data?.token);
     return data;
   },

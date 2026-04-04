@@ -22,6 +22,48 @@ const fetchJson = async (url, options) => {
 };
 
 export default {
+  getPublic: async (url, params = {}) => {
+    const res = await fetch(await buildUrl(url, params), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || `Failed to load (${res.status})`);
+    }
+    return json;
+  },
+
+  postPublic: async (url, data = {}, params = {}) => {
+    const res = await fetch(await buildUrl(url, params), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const contentType = res.headers.get('content-type') || '';
+    let json;
+    if (contentType.includes('application/json')) {
+      json = await res.json();
+    } else {
+      const text = await res.text();
+      throw { response: { data: { message: text.slice(0, 200) || `HTTP ${res.status}` } } };
+    }
+    if (!res.ok) {
+      const msg =
+        json.message ||
+        (Array.isArray(json.errors) && json.errors[0]?.msg) ||
+        json.error ||
+        `Request failed (${res.status})`;
+      throw { response: { data: { message: msg } } };
+    }
+    return json;
+  },
+
   post: async (url, data, params = {}) =>
     fetchJson(await buildUrl(url, params), {
       method: 'POST',

@@ -2,6 +2,7 @@ import './Sidebar.css';
 import logo from '../../assets/logo.png';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../redux/authSlice';
+import { isSuperAdminFromStorage } from '../../utils/superAdmin';
 import { ArrowRight } from '@mui/icons-material';
 import PersonIcon from '@mui/icons-material/Person';
 import { Link, useNavigate } from 'react-router-dom';
@@ -181,25 +182,42 @@ const ProfileSubMenu = () => {
   );
 };
 
-const SettingsSubMenu = () => (
-  <ul className='sub-menu settings-sub-menu'>
-    {settingsSubMenus.map(({ title, icon, style, items }) => (
-      <li className='sub-menu-item' key={title}>
-        <div className='nav-link vehicle-activity-link'>
-          {title} {icon}
-        </div>
-        <ul className='nested-sub-menu' style={style}>
-          {items.map(({ to, label }) => (
-            <li key={to}>
-              <Link to={to} className='nav-link'>
-                {label}
+const SettingsSubMenu = () => {
+  const showSuperAdmin = isSuperAdminFromStorage();
+  return (
+    <ul className='sub-menu settings-sub-menu'>
+      {showSuperAdmin && (
+        <li className='sub-menu-item'>
+          <div className='nav-link vehicle-activity-link'>
+            Super admin <ArrowRight style={{ fontSize: '20px' }} />
+          </div>
+          <ul className='nested-sub-menu' style={{ top: '-82px' }}>
+            <li>
+              <Link to='/settings/super-admin/email-service' className='nav-link'>
+                Email service
               </Link>
             </li>
-          ))}
-        </ul>
-      </li>
-    ))}
-  </ul>
-);
+          </ul>
+        </li>
+      )}
+      {settingsSubMenus.map(({ title, icon, style, items }) => (
+        <li className='sub-menu-item' key={title}>
+          <div className='nav-link vehicle-activity-link'>
+            {title} {icon}
+          </div>
+          <ul className='nested-sub-menu' style={style}>
+            {items.map(({ to, label }) => (
+              <li key={to}>
+                <Link to={to} className='nav-link'>
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 export default Sidebar;

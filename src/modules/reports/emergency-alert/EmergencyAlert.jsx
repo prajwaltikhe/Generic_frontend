@@ -37,6 +37,7 @@ const columns = [
   },
   { key: 'title', header: 'Issue Raised', render: (_v, r) => toStr(r.title) },
   { key: 'action_taken', header: 'Action Note', render: (_v, r) => toStr(r.action_taken) },
+  { key: 'updated_by', header: 'Updated by', render: (_v, r) => toStr(r.updated_by) },
   { key: 'updated_date', header: 'Update Date', render: (_v, r) => r.updated_date || '-' },
   { key: 'updated_time', header: 'Update Time', render: (_v, r) => r.updated_time || '-' },
 ];
@@ -76,6 +77,7 @@ const transformRow = (i) => ({
   ...getLatLng(i),
   title: toStr(i.title),
   action_taken: toStr(i.action_taken),
+  updated_by: toStr(i.updated_by_display),
   updated_date: i.updated_at ? moment(i.updated_at).format('YYYY-MM-DD') : '-',
   updated_time: i.updated_at ? moment(i.updated_at).format('hh:mm:ss A') : '-',
 });

@@ -18,7 +18,9 @@ export const verifyOtp = createAsyncThunk('auth/verifyOtp', async ({ userId, otp
     if (!response.data) return rejectWithValue('OTP verification failed');
     return response.data;
   } catch (error) {
-    return rejectWithValue(error.message || 'OTP verification failed');
+    return rejectWithValue(
+      error?.response?.data?.message || error?.message || 'OTP verification failed',
+    );
   }
 });
 
