@@ -134,6 +134,7 @@ function DynamicRoute() {
         <Route path='geofence/create' element={<GeofenceCreate />} />
         <Route path='geofence/view' element={<GeofenceCreate />} />
         <Route path='geofence/edit' element={<GeofenceCreate />} />
+        <Route path='email-sms-configuration' element={<EmailServiceConfig />} />
       </Route>
     </Routes>
   );

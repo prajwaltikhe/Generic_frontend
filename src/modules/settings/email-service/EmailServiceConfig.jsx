@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -14,10 +15,11 @@ import {
 import { toast } from 'react-toastify';
 import ApiService from '../../../services/ApiService';
 import { APIURL } from '../../../constants';
+import { isSuperAdminFromStorage } from '../../../utils/superAdmin';
 
 const base = APIURL.SUPER_ADMIN_EMAIL_SERVICE;
 
-export default function EmailServiceConfig() {
+function EmailServiceConfigPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -133,7 +135,7 @@ export default function EmailServiceConfig() {
   return (
     <div className='w-full h-full p-4 max-w-3xl mx-auto'>
       <Typography variant='h5' className='mb-2 font-bold text-[#07163d]'>
-        Email service configuration
+        EMAIL/SMS configuration
       </Typography>
       <Typography variant='body2' color='error' className='mb-3'>
         Note: To use SMTP, from email, host, port, and (if SMTP authentication is on) username and password
@@ -297,4 +299,11 @@ export default function EmailServiceConfig() {
       </Paper>
     </div>
   );
+}
+
+export default function EmailServiceConfig() {
+  if (!isSuperAdminFromStorage()) {
+    return <Navigate to='/dashboard' replace />;
+  }
+  return <EmailServiceConfigPage />;
 }

@@ -186,36 +186,34 @@ const SettingsSubMenu = () => {
   const showSuperAdmin = isSuperAdminFromStorage();
   return (
     <ul className='sub-menu settings-sub-menu'>
-      {showSuperAdmin && (
-        <li className='sub-menu-item'>
-          <div className='nav-link vehicle-activity-link'>
-            Super admin <ArrowRight style={{ fontSize: '20px' }} />
-          </div>
-          <ul className='nested-sub-menu' style={{ top: '-82px' }}>
-            <li>
-              <Link to='/settings/super-admin/email-service' className='nav-link'>
-                Email service
-              </Link>
-            </li>
-          </ul>
-        </li>
-      )}
-      {settingsSubMenus.map(({ title, icon, style, items }) => (
-        <li className='sub-menu-item' key={title}>
-          <div className='nav-link vehicle-activity-link'>
-            {title} {icon}
-          </div>
-          <ul className='nested-sub-menu' style={style}>
-            {items.map(({ to, label }) => (
-              <li key={to}>
-                <Link to={to} className='nav-link'>
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </li>
-      ))}
+      {settingsSubMenus.map(({ title, icon, style, items }) => {
+        const list =
+          title === 'Management' && showSuperAdmin
+            ? [
+                ...items,
+                {
+                  to: '/management/email-sms-configuration',
+                  label: 'EMAIL/SMS configuration',
+                },
+              ]
+            : items;
+        return (
+          <li className='sub-menu-item' key={title}>
+            <div className='nav-link vehicle-activity-link'>
+              {title} {icon}
+            </div>
+            <ul className='nested-sub-menu' style={style}>
+              {list.map(({ to, label }) => (
+                <li key={to}>
+                  <Link to={to} className='nav-link'>
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </li>
+        );
+      })}
     </ul>
   );
 };
