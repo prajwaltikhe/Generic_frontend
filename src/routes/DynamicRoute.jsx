@@ -53,6 +53,7 @@ import Profile from '../modules/profile/Profile';
 import EmployeePunchDetails from '../modules/multitrack/EmployeePunchDetails';
 import Playback from '../modules/multitrack/Playback';
 import EmailServiceConfig from '../modules/settings/email-service/EmailServiceConfig';
+import IpWhitelisting from '../modules/settings/ip-whitelisting/IpWhitelisting';
 
 function DynamicRoute() {
   return (
@@ -91,6 +92,7 @@ function DynamicRoute() {
         <Route path='vehicle-arrival-time/:shiftId' element={<VehicalArrivalTime />} />
       </Route>
       <Route path='/settings/super-admin/email-service' element={<EmailServiceConfig />} />
+      <Route path='/settings/super-admin/ip-whitelisting' element={<IpWhitelisting />} />
       <Route path='/master'>
         <Route path='plants' element={<Plant />} />
         <Route path='departments' element={<Department />} />
@@ -135,6 +137,7 @@ function DynamicRoute() {
         <Route path='geofence/view' element={<GeofenceCreate />} />
         <Route path='geofence/edit' element={<GeofenceCreate />} />
         <Route path='email-sms-configuration' element={<EmailServiceConfig />} />
+        <Route path='ip-whitelisting' element={<IpWhitelisting />} />
       </Route>
     </Routes>
   );

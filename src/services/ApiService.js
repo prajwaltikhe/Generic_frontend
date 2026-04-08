@@ -1,8 +1,16 @@
 import authMiddleware from '../redux/middleware/authMiddleware';
 
+const API_BASE = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_BASE_URL ||
+  'http://localhost:8080/api/v1'
+).replace(/\/+$/, '');
+
+const withLeadingSlash = (path) => (path.startsWith('/') ? path : `/${path}`);
+
 const buildUrl = (baseUrl, params) => {
   const query = params && Object.keys(params).length ? '?' + new URLSearchParams(params) : '';
-  return import.meta.env.VITE_BASE_URL + baseUrl + query;
+  return API_BASE + withLeadingSlash(baseUrl) + query;
 };
 
 const getToken = () => localStorage.getItem('authToken');
@@ -98,6 +106,13 @@ export default {
   put: async (url, data, params = {}) =>
     fetchJson(await buildUrl(url, params), {
       method: 'PUT',
+      headers: jsonHeaders(getToken()),
+      body: JSON.stringify(data),
+    }),
+
+  patch: async (url, data, params = {}) =>
+    fetchJson(await buildUrl(url, params), {
+      method: 'PATCH',
       headers: jsonHeaders(getToken()),
       body: JSON.stringify(data),
     }),

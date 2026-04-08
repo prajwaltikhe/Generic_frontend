@@ -57,6 +57,7 @@ const settingsSubMenus = [
     style: { top: '-82px' },
     items: [
       { to: '/master/employee', label: 'Employees' },
+      { to: '/master/user-permission', label: 'User Management' },
       { to: '/master/vehicle', label: 'Vehicles' },
       { to: '/master/driver', label: 'Drivers' },
       { to: '/master/departments', label: 'Departments' },
@@ -194,6 +195,10 @@ const SettingsSubMenu = () => {
                 {
                   to: '/management/email-sms-configuration',
                   label: 'EMAIL/SMS configuration',
+                },
+                {
+                  to: '/management/ip-whitelisting',
+                  label: 'IP Whitelisting',
                 },
               ]
             : items;

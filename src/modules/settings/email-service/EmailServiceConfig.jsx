@@ -4,26 +4,47 @@ import {
   Box,
   Button,
   Checkbox,
+  FormControl,
   FormControlLabel,
+  FormLabel,
+  InputLabel,
+  MenuItem,
   Paper,
   Radio,
   RadioGroup,
+  Select,
+  Tab,
+  Tabs,
   TextField,
   Typography,
-  FormLabel,
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import ApiService from '../../../services/ApiService';
 import { APIURL } from '../../../constants';
 import { isSuperAdminFromStorage } from '../../../utils/superAdmin';
 
-const base = APIURL.SUPER_ADMIN_EMAIL_SERVICE;
+const emailBase = APIURL.SUPER_ADMIN_EMAIL_SERVICE;
+const smsBase = APIURL.SUPER_ADMIN_SMS_SERVICE;
 
 function EmailServiceConfigPage() {
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState(0);
+  const [activeChannel, setActiveChannel] = useState('email');
+
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testEmail, setTestEmail] = useState('');
+
+  const [smsSaving, setSmsSaving] = useState(false);
+  const [smsTesting, setSmsTesting] = useState(false);
+  const [smsTestPhone, setSmsTestPhone] = useState('');
+  const [smsTestMsg, setSmsTestMsg] = useState('Test message');
+  const [smsTestTempid, setSmsTestTempid] = useState('');
+  const [smsTestTmid, setSmsTestTmid] = useState('');
+  const [smsTestEntityid, setSmsTestEntityid] = useState('');
+  const [smsTestSource, setSmsTestSource] = useState('');
+  const [smsTestType, setSmsTestType] = useState('0');
+  const [smsTestDlr, setSmsTestDlr] = useState('1');
 
   const [form, setForm] = useState({
     method: 'smtp',
@@ -40,30 +61,72 @@ function EmailServiceConfigPage() {
     post_api_key: '',
   });
 
+  const [smsForm, setSmsForm] = useState({
+    gateway_name: 'custom',
+    gateway_type: 'GET',
+    gateway_url: '',
+    monthly_sms_limit: '',
+    daily_sms_limit: '',
+  });
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const setSms = (k, v) => setSmsForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await ApiService.get(`${base}`);
-        const d = res?.data;
-        if (!cancelled && d) {
+        const [emailRes, smsRes] = await Promise.allSettled([
+          ApiService.get(`${emailBase}`),
+          ApiService.get(`${smsBase}`),
+        ]);
+
+        if (cancelled) return;
+
+        if (emailRes.status === 'rejected' && smsRes.status === 'rejected') {
+          throw emailRes.reason || smsRes.reason;
+        }
+
+        const ed = emailRes.status === 'fulfilled' ? emailRes.value?.data : null;
+        const sd = smsRes.status === 'fulfilled' ? smsRes.value?.data : null;
+
+        const ac = ed?.active_channel || sd?.active_channel || 'email';
+        setActiveChannel(ac);
+
+        if (ed) {
           setForm((f) => ({
             ...f,
-            method: d.method || 'smtp',
-            from_email: d.from_email || '',
-            username: d.username || '',
+            method: ed.method || 'smtp',
+            from_email: ed.from_email || '',
+            username: ed.username || '',
             password: '',
-            host: d.host || '',
-            port: d.port != null ? String(d.port) : '587',
-            smtp_auth: d.smtp_auth !== false,
-            tls_auth: d.tls_auth === true,
-            email_verification: d.email_verification !== false,
-            failed_reports_announcement: d.failed_reports_announcement !== false,
-            post_url: d.post_url || '',
+            host: ed.host || '',
+            port: ed.port != null ? String(ed.port) : '587',
+            smtp_auth: ed.smtp_auth !== false,
+            tls_auth: ed.tls_auth === true,
+            email_verification: ed.email_verification !== false,
+            failed_reports_announcement: ed.failed_reports_announcement !== false,
+            post_url: ed.post_url || '',
             post_api_key: '',
           }));
+        }
+
+        if (sd) {
+          setSmsForm((f) => ({
+            ...f,
+            gateway_name: sd.gateway_name || 'custom',
+            gateway_type: sd.gateway_type === 'POST' ? 'POST' : 'GET',
+            gateway_url: sd.gateway_url || '',
+            monthly_sms_limit: sd.monthly_sms_limit != null ? String(sd.monthly_sms_limit) : '',
+            daily_sms_limit: sd.daily_sms_limit != null ? String(sd.daily_sms_limit) : '',
+          }));
+        }
+
+        if (emailRes.status === 'rejected') {
+          toast.error(emailRes.reason?.message || 'Failed to load email configuration');
+        }
+        if (smsRes.status === 'rejected') {
+          toast.error(smsRes.reason?.message || 'Failed to load SMS configuration');
         }
       } catch (e) {
         if (!cancelled) toast.error(e?.message || 'Failed to load configuration');
@@ -93,8 +156,9 @@ function EmailServiceConfigPage() {
         failed_reports_announcement: form.failed_reports_announcement,
         post_url: form.post_url || undefined,
         post_api_key: form.post_api_key || undefined,
+        active_channel: activeChannel,
       };
-      const res = await ApiService.put(`${base}`, body);
+      const res = await ApiService.put(`${emailBase}`, body);
       if (res?.success) {
         toast.success(res.message || 'Saved');
         set('password', '');
@@ -108,6 +172,30 @@ function EmailServiceConfigPage() {
     setSaving(false);
   };
 
+  const handleSaveSms = async (e) => {
+    e.preventDefault();
+    setSmsSaving(true);
+    try {
+      const body = {
+        gateway_name: smsForm.gateway_name,
+        gateway_type: smsForm.gateway_type,
+        gateway_url: smsForm.gateway_url,
+        monthly_sms_limit: smsForm.monthly_sms_limit === '' ? null : smsForm.monthly_sms_limit,
+        daily_sms_limit: smsForm.daily_sms_limit === '' ? null : smsForm.daily_sms_limit,
+        active_channel: activeChannel,
+      };
+      const res = await ApiService.put(`${smsBase}`, body);
+      if (res?.success) {
+        toast.success(res.message || 'Saved');
+      } else {
+        toast.error(res?.message || 'Save failed');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Save failed');
+    }
+    setSmsSaving(false);
+  };
+
   const handleTest = async () => {
     if (!testEmail?.includes('@')) {
       toast.error('Enter a valid test email');
@@ -115,13 +203,42 @@ function EmailServiceConfigPage() {
     }
     setTesting(true);
     try {
-      const res = await ApiService.post(`${base}/test`, { to: testEmail });
+      const res = await ApiService.post(`${emailBase}/test`, { to: testEmail });
       if (res?.success) toast.success(res.message || 'Test sent');
       else toast.error(res?.message || 'Test failed');
     } catch (err) {
       toast.error(err?.response?.data?.message || err?.message || 'Test failed');
     }
     setTesting(false);
+  };
+
+  const handleSmsTest = async () => {
+    if (!smsTestPhone?.trim()) {
+      toast.error('Enter a mobile number for the SMS test');
+      return;
+    }
+    if (!smsTestMsg?.trim()) {
+      toast.error('Enter a test message');
+      return;
+    }
+    setSmsTesting(true);
+    try {
+      const res = await ApiService.post(`${smsBase}/test`, {
+        to: smsTestPhone.trim(),
+        msg: smsTestMsg,
+        tempid: smsTestTempid || '',
+        tmid: smsTestTmid || '',
+        entityid: smsTestEntityid || '',
+        source: smsTestSource || '',
+        type: smsTestType || '',
+        dlr: smsTestDlr || '',
+      });
+      if (res?.success) toast.success(res.message || 'Test request sent');
+      else toast.error(res?.message || 'Test failed');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Test failed');
+    }
+    setSmsTesting(false);
   };
 
   if (loading) {
@@ -133,169 +250,344 @@ function EmailServiceConfigPage() {
   }
 
   return (
-    <div className='w-full h-full p-4 max-w-3xl mx-auto'>
+    <div className='w-full h-screen mb-2 p-4 max-w-3xl mx-auto flex flex-col gap-4'>
       <Typography variant='h5' className='mb-2 font-bold text-[#07163d]'>
         EMAIL/SMS configuration
       </Typography>
-      <Typography variant='body2' color='error' className='mb-3'>
-        Note: To use SMTP, from email, host, port, and (if SMTP authentication is on) username and password
-        are required.
+      <Typography variant='body2' color='text.secondary' className='mb-3'>
+        Choose which channel is active for one-time passwords and other notifications. Only one of Email or SMS
+        can be active at a time.
       </Typography>
-      <Paper elevation={2} className='p-4'>
-        <form onSubmit={handleSave}>
-          <FormLabel className='block mb-2'>Method</FormLabel>
-          <RadioGroup
-            row
-            value={form.method}
-            onChange={(e) => set('method', e.target.value)}
-            className='mb-3'>
-            <FormControlLabel value='smtp' control={<Radio size='small' />} label='SMTP' />
-            <FormControlLabel value='post' control={<Radio size='small' />} label='POST (HTTP API)' />
-          </RadioGroup>
+      
+      <Paper elevation={2} className='p-4 !mb-2'>
+        <FormLabel className='block mb-2'>Active notification channel</FormLabel>
+        <RadioGroup
+          row
+          value={activeChannel}
+          onChange={(e) => setActiveChannel(e.target.value)}
+          className='mb-4'>
+          <FormControlLabel value='email' control={<Radio size='small' />} label='Email' />
+          <FormControlLabel value='sms' control={<Radio size='small' />} label='SMS' />
+        </RadioGroup>
 
-          {form.method === 'smtp' ? (
-            <Box className='flex flex-col gap-2'>
-              <TextField
-                label='From email address'
-                value={form.from_email}
-                onChange={(e) => set('from_email', e.target.value)}
-                size='small'
-                fullWidth
-                required
-              />
-              <TextField
-                label='Username'
-                value={form.username}
-                onChange={(e) => set('username', e.target.value)}
-                size='small'
-                fullWidth
-              />
-              <TextField
-                label='Password'
-                type='password'
-                value={form.password}
-                onChange={(e) => set('password', e.target.value)}
-                size='small'
-                fullWidth
-                helperText='Leave blank to keep existing password'
-              />
-              <TextField
-                label='Host'
-                value={form.host}
-                onChange={(e) => set('host', e.target.value)}
-                size='small'
-                fullWidth
-                required
-              />
-              <TextField
-                label='Outgoing port'
-                value={form.port}
-                onChange={(e) => set('port', e.target.value)}
-                size='small'
-                fullWidth
-                required
-              />
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Tab label='Email' sx={{ textTransform: 'none' }} />
+          <Tab label='SMS' sx={{ textTransform: 'none' }} />
+        </Tabs>
+
+        {tab === 0 && (
+          <>
+            <Typography variant='body2' color='error' className='mb-3'>
+              Note: To use SMTP, from email, host, port, and (if SMTP authentication is on) username and password
+              are required.
+            </Typography>
+            <form onSubmit={handleSave}>
+              <FormLabel className='block mb-2'>Method</FormLabel>
+              <RadioGroup
+                row
+                value={form.method}
+                onChange={(e) => set('method', e.target.value)}
+                className='mb-3'>
+                <FormControlLabel value='smtp' control={<Radio size='small' />} label='SMTP' />
+                <FormControlLabel value='post' control={<Radio size='small' />} label='POST (HTTP API)' />
+              </RadioGroup>
+
+              {form.method === 'smtp' ? (
+                <Box className='flex flex-col gap-2'>
+                  <TextField
+                    label='From email address'
+                    value={form.from_email}
+                    onChange={(e) => set('from_email', e.target.value)}
+                    size='small'
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label='Username'
+                    value={form.username}
+                    onChange={(e) => set('username', e.target.value)}
+                    size='small'
+                    fullWidth
+                  />
+                  <TextField
+                    label='Password'
+                    type='password'
+                    value={form.password}
+                    onChange={(e) => set('password', e.target.value)}
+                    size='small'
+                    fullWidth
+                    helperText='Leave blank to keep existing password'
+                  />
+                  <TextField
+                    label='Host'
+                    value={form.host}
+                    onChange={(e) => set('host', e.target.value)}
+                    size='small'
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label='Outgoing port'
+                    value={form.port}
+                    onChange={(e) => set('port', e.target.value)}
+                    size='small'
+                    fullWidth
+                    required
+                  />
+                </Box>
+              ) : (
+                <Box className='flex flex-col gap-2'>
+                  <TextField
+                    label='From email address'
+                    value={form.from_email}
+                    onChange={(e) => set('from_email', e.target.value)}
+                    size='small'
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label='POST URL'
+                    value={form.post_url}
+                    onChange={(e) => set('post_url', e.target.value)}
+                    size='small'
+                    fullWidth
+                    required
+                    helperText='Server must accept JSON: { from, to, subject, html, text }'
+                  />
+                  <TextField
+                    label='API key (optional, sent as Authorization: Bearer …)'
+                    type='password'
+                    value={form.post_api_key}
+                    onChange={(e) => set('post_api_key', e.target.value)}
+                    size='small'
+                    fullWidth
+                    helperText='Leave blank to keep existing key'
+                  />
+                </Box>
+              )}
+
+              <Box className='mt-3 flex flex-col gap-1'>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.smtp_auth}
+                      onChange={(e) => set('smtp_auth', e.target.checked)}
+                      size='small'
+                      disabled={form.method !== 'smtp'}
+                    />
+                  }
+                  label='SMTP authentication'
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.tls_auth}
+                      onChange={(e) => set('tls_auth', e.target.checked)}
+                      size='small'
+                      disabled={form.method !== 'smtp'}
+                    />
+                  }
+                  label='TLS authentication (requireTLS)'
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.email_verification}
+                      onChange={(e) => set('email_verification', e.target.checked)}
+                      size='small'
+                    />
+                  }
+                  label='Email verification'
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.failed_reports_announcement}
+                      onChange={(e) => set('failed_reports_announcement', e.target.checked)}
+                      size='small'
+                    />
+                  }
+                  label='Failed reports announcement'
+                />
+              </Box>
+
+              <Box className='mt-4 flex flex-wrap gap-2'>
+                <Button type='submit' variant='contained' disabled={saving} sx={{ textTransform: 'none' }}>
+                  {saving ? 'Saving…' : 'Save configuration'}
+                </Button>
+              </Box>
+            </form>
+
+            <Box className='mt-6 pt-4 border-t border-gray-200'>
+              <Typography variant='subtitle2' className='mb-2'>
+                Test configuration
+              </Typography>
+              <div className='flex flex-wrap gap-2 items-center'>
+                <TextField
+                  label='Send test to'
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  size='small'
+                  sx={{ minWidth: 260 }}
+                />
+                <Button variant='outlined' onClick={handleTest} disabled={testing} sx={{ textTransform: 'none' }}>
+                  {testing ? 'Sending…' : 'Test configuration'}
+                </Button>
+              </div>
             </Box>
-          ) : (
-            <Box className='flex flex-col gap-2'>
+          </>
+        )}
+
+        {tab === 1 && (
+          <>
+            <Typography variant='body2' color='error' className='mb-3'>
+              Note: For Custom gateway, the URL must include (#to) and (#msg). If provider requires DLT fields,
+              include placeholders like (#tempid), (#tmid), (#entityid), (#source), (#type), (#dlr).
+            </Typography>
+            <form onSubmit={handleSaveSms} className='mt-2'>
+              <FormControl fullWidth size='small' className='mb-3'>
+                <InputLabel id='sms-gateway-label'>SMS Gateway</InputLabel>
+                <Select
+                  labelId='sms-gateway-label'
+                  label='SMS Gateway'
+                  value={smsForm.gateway_name}
+                  onChange={(e) => setSms('gateway_name', e.target.value)}>
+                  <MenuItem value='custom'>Custom</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormLabel className='block mb-2'>Gateway Type</FormLabel>
+              <RadioGroup
+                row
+                value={smsForm.gateway_type}
+                onChange={(e) => setSms('gateway_type', e.target.value)}
+                className='mb-3'>
+                <FormControlLabel value='GET' control={<Radio size='small' />} label='GET' />
+                <FormControlLabel value='POST' control={<Radio size='small' />} label='POST' />
+              </RadioGroup>
+
               <TextField
-                label='From email address'
-                value={form.from_email}
-                onChange={(e) => set('from_email', e.target.value)}
+                label='SMS Gateway URL'
+                value={smsForm.gateway_url}
+                onChange={(e) => setSms('gateway_url', e.target.value)}
                 size='small'
                 fullWidth
                 required
+                multiline
+                minRows={3}
+                className='mb-2'
               />
-              <TextField
-                label='POST URL'
-                value={form.post_url}
-                onChange={(e) => set('post_url', e.target.value)}
-                size='small'
-                fullWidth
-                required
-                helperText='Server must accept JSON: { from, to, subject, html, text }'
-              />
-              <TextField
-                label='API key (optional, sent as Authorization: Bearer …)'
-                type='password'
-                value={form.post_api_key}
-                onChange={(e) => set('post_api_key', e.target.value)}
-                size='small'
-                fullWidth
-                helperText='Leave blank to keep existing key'
-              />
+              <Typography variant='body2' color='text.secondary' className='mb-1'>
+                Example:{' '}
+                <code className='text-xs break-all'>
+                  https://sms6.rmlconnect.net:8443/bulksms/bulksms?username=username&amp;password=password&amp;type=(#type)&amp;dlr=(#dlr)&amp;destination=(#to)&amp;source=(#source)&amp;message=(#msg)&amp;entityid=(#entityid)&amp;tempid=(#tempid)&amp;tmid=(#tmid)
+                </code>
+              </Typography>
+              <Typography variant='body2' color='text.secondary' className='mb-3'>
+                Variables: (#to) — Mobile Number · (#msg) — Message · (#tempid) — TemplateId · (#tmid) —
+                Telemarketer Id · (#entityid) — Entity Id · (#source) · (#type) · (#dlr)
+              </Typography>
+
+              <Box className='flex flex-col gap-2 mb-4 mt-3'>
+                <TextField
+                  label='Monthly SMS Limit'
+                  value={smsForm.monthly_sms_limit}
+                  onChange={(e) => setSms('monthly_sms_limit', e.target.value)}
+                  size='small'
+                  fullWidth
+                  type='number'
+                  inputProps={{ min: 0 }}
+                />
+                <TextField
+                  label='Daily SMS Limit'
+                  value={smsForm.daily_sms_limit}
+                  onChange={(e) => setSms('daily_sms_limit', e.target.value)}
+                  size='small'
+                  fullWidth
+                  type='number'
+                  inputProps={{ min: 0 }}
+                />
+              </Box>
+
+              <Box className='mt-4 flex flex-wrap gap-2'>
+                <Button type='submit' variant='contained' disabled={smsSaving} sx={{ textTransform: 'none' }}>
+                  {smsSaving ? 'Saving…' : 'Save configuration'}
+                </Button>
+              </Box>
+            </form>
+
+            <Box className='mt-6 pt-4 border-t border-gray-200'>
+              <Typography variant='subtitle2' className='mb-2'>
+                Test configuration
+              </Typography>
+              <div className='flex flex-col gap-2 max-w-lg mt-3'>
+                <TextField
+                  label='Send test to (mobile)'
+                  value={smsTestPhone}
+                  onChange={(e) => setSmsTestPhone(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Message'
+                  value={smsTestMsg}
+                  onChange={(e) => setSmsTestMsg(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Template ID (optional)'
+                  value={smsTestTempid}
+                  onChange={(e) => setSmsTestTempid(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='TMID (required only if URL has (#tmid))'
+                  value={smsTestTmid}
+                  onChange={(e) => setSmsTestTmid(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Entity ID (required only if URL has (#entityid))'
+                  value={smsTestEntityid}
+                  onChange={(e) => setSmsTestEntityid(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Source/Sender (required only if URL has (#source))'
+                  value={smsTestSource}
+                  onChange={(e) => setSmsTestSource(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Type (required only if URL has (#type); 0 for plain text)'
+                  value={smsTestType}
+                  onChange={(e) => setSmsTestType(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='DLR (required only if URL has (#dlr); 0 or 1)'
+                  value={smsTestDlr}
+                  onChange={(e) => setSmsTestDlr(e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <Button
+                  variant='outlined'
+                  onClick={handleSmsTest}
+                  disabled={smsTesting}
+                  sx={{ textTransform: 'none', alignSelf: 'flex-start' }}>
+                  {smsTesting ? 'Sending…' : 'Test configuration'}
+                </Button>
+              </div>
             </Box>
-          )}
-
-          <Box className='mt-3 flex flex-col gap-1'>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={form.smtp_auth}
-                  onChange={(e) => set('smtp_auth', e.target.checked)}
-                  size='small'
-                  disabled={form.method !== 'smtp'}
-                />
-              }
-              label='SMTP authentication'
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={form.tls_auth}
-                  onChange={(e) => set('tls_auth', e.target.checked)}
-                  size='small'
-                  disabled={form.method !== 'smtp'}
-                />
-              }
-              label='TLS authentication (requireTLS)'
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={form.email_verification}
-                  onChange={(e) => set('email_verification', e.target.checked)}
-                  size='small'
-                />
-              }
-              label='Email verification'
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={form.failed_reports_announcement}
-                  onChange={(e) => set('failed_reports_announcement', e.target.checked)}
-                  size='small'
-                />
-              }
-              label='Failed reports announcement'
-            />
-          </Box>
-
-          <Box className='mt-4 flex flex-wrap gap-2'>
-            <Button type='submit' variant='contained' disabled={saving} sx={{ textTransform: 'none' }}>
-              {saving ? 'Saving…' : 'Save configuration'}
-            </Button>
-          </Box>
-        </form>
-
-        <Box className='mt-6 pt-4 border-t border-gray-200'>
-          <Typography variant='subtitle2' className='mb-2'>
-            Test configuration
-          </Typography>
-          <div className='flex flex-wrap gap-2 items-center'>
-            <TextField
-              label='Send test to'
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              size='small'
-              sx={{ minWidth: 260 }}
-            />
-            <Button variant='outlined' onClick={handleTest} disabled={testing} sx={{ textTransform: 'none' }}>
-              {testing ? 'Sending…' : 'Test configuration'}
-            </Button>
-          </div>
-        </Box>
+          </>
+        )}
       </Paper>
     </div>
   );
