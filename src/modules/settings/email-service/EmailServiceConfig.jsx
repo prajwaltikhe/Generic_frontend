@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Collapse,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -39,12 +40,13 @@ function EmailServiceConfigPage() {
   const [smsTesting, setSmsTesting] = useState(false);
   const [smsTestPhone, setSmsTestPhone] = useState('');
   const [smsTestMsg, setSmsTestMsg] = useState('Test message');
+  const [smsTestAdvancedOpen, setSmsTestAdvancedOpen] = useState(false);
   const [smsTestTempid, setSmsTestTempid] = useState('');
   const [smsTestTmid, setSmsTestTmid] = useState('');
   const [smsTestEntityid, setSmsTestEntityid] = useState('');
   const [smsTestSource, setSmsTestSource] = useState('');
-  const [smsTestType, setSmsTestType] = useState('0');
-  const [smsTestDlr, setSmsTestDlr] = useState('1');
+  const [smsTestType, setSmsTestType] = useState('');
+  const [smsTestDlr, setSmsTestDlr] = useState('');
 
   const [form, setForm] = useState({
     method: 'smtp',
@@ -65,6 +67,14 @@ function EmailServiceConfigPage() {
     gateway_name: 'custom',
     gateway_type: 'GET',
     gateway_url: '',
+    sms_http_username: '',
+    sms_http_password: '',
+    default_tempid: '',
+    default_tmid: '',
+    default_entityid: '',
+    default_source: '',
+    default_type: '',
+    default_dlr: '',
     monthly_sms_limit: '',
     daily_sms_limit: '',
   });
@@ -117,6 +127,14 @@ function EmailServiceConfigPage() {
             gateway_name: sd.gateway_name || 'custom',
             gateway_type: sd.gateway_type === 'POST' ? 'POST' : 'GET',
             gateway_url: sd.gateway_url || '',
+            sms_http_username: sd.sms_http_username || '',
+            sms_http_password: '',
+            default_tempid: sd.default_tempid || '',
+            default_tmid: sd.default_tmid || '',
+            default_entityid: sd.default_entityid || '',
+            default_source: sd.default_source || '',
+            default_type: sd.default_type || '',
+            default_dlr: sd.default_dlr || '',
             monthly_sms_limit: sd.monthly_sms_limit != null ? String(sd.monthly_sms_limit) : '',
             daily_sms_limit: sd.daily_sms_limit != null ? String(sd.daily_sms_limit) : '',
           }));
@@ -180,6 +198,14 @@ function EmailServiceConfigPage() {
         gateway_name: smsForm.gateway_name,
         gateway_type: smsForm.gateway_type,
         gateway_url: smsForm.gateway_url,
+        sms_http_username: smsForm.sms_http_username,
+        sms_http_password: smsForm.sms_http_password || undefined,
+        default_tempid: smsForm.default_tempid,
+        default_tmid: smsForm.default_tmid,
+        default_entityid: smsForm.default_entityid,
+        default_source: smsForm.default_source,
+        default_type: smsForm.default_type,
+        default_dlr: smsForm.default_dlr,
         monthly_sms_limit: smsForm.monthly_sms_limit === '' ? null : smsForm.monthly_sms_limit,
         daily_sms_limit: smsForm.daily_sms_limit === '' ? null : smsForm.daily_sms_limit,
         active_channel: activeChannel,
@@ -187,6 +213,7 @@ function EmailServiceConfigPage() {
       const res = await ApiService.put(`${smsBase}`, body);
       if (res?.success) {
         toast.success(res.message || 'Saved');
+        setSms('sms_http_password', '');
       } else {
         toast.error(res?.message || 'Save failed');
       }
@@ -223,16 +250,17 @@ function EmailServiceConfigPage() {
     }
     setSmsTesting(true);
     try {
-      const res = await ApiService.post(`${smsBase}/test`, {
-        to: smsTestPhone.trim(),
-        msg: smsTestMsg,
-        tempid: smsTestTempid || '',
-        tmid: smsTestTmid || '',
-        entityid: smsTestEntityid || '',
-        source: smsTestSource || '',
-        type: smsTestType || '',
-        dlr: smsTestDlr || '',
-      });
+      const body = { to: smsTestPhone.trim(), msg: smsTestMsg };
+      const addIf = (k, v) => {
+        if (v != null && String(v).trim() !== '') body[k] = String(v).trim();
+      };
+      addIf('tempid', smsTestTempid);
+      addIf('tmid', smsTestTmid);
+      addIf('entityid', smsTestEntityid);
+      addIf('source', smsTestSource);
+      addIf('type', smsTestType);
+      addIf('dlr', smsTestDlr);
+      const res = await ApiService.post(`${smsBase}/test`, body);
       if (res?.success) toast.success(res.message || 'Test request sent');
       else toast.error(res?.message || 'Test failed');
     } catch (err) {
@@ -441,8 +469,9 @@ function EmailServiceConfigPage() {
         {tab === 1 && (
           <>
             <Typography variant='body2' color='error' className='mb-3'>
-              Note: For Custom gateway, the URL must include (#to) and (#msg). If provider requires DLT fields,
-              include placeholders like (#tempid), (#tmid), (#entityid), (#source), (#type), (#dlr).
+              Custom gateway URL must include (#to) and (#msg). For Route Mobile DLT, add (#tempid), (#tmid),
+              (#entityid), (#source), (#type), (#dlr) as in your provider template. You can omit
+              username/password from the URL if you save them below (or use (#smsuser) and (#smspass) in the URL).
             </Typography>
             <form onSubmit={handleSaveSms} className='mt-2'>
               <FormControl fullWidth size='small' className='mb-3'>
@@ -478,15 +507,91 @@ function EmailServiceConfigPage() {
                 className='mb-2'
               />
               <Typography variant='body2' color='text.secondary' className='mb-1'>
-                Example:{' '}
+                Example (credentials stored below):{' '}
                 <code className='text-xs break-all'>
-                  https://sms6.rmlconnect.net:8443/bulksms/bulksms?username=username&amp;password=password&amp;type=(#type)&amp;dlr=(#dlr)&amp;destination=(#to)&amp;source=(#source)&amp;message=(#msg)&amp;entityid=(#entityid)&amp;tempid=(#tempid)&amp;tmid=(#tmid)
+                  https://sms6.rmlconnect.net:8443/bulksms/bulksms?type=(#type)&amp;dlr=(#dlr)&amp;destination=(#to)&amp;source=(#source)&amp;message=(#msg)&amp;entityid=(#entityid)&amp;tempid=(#tempid)&amp;tmid=(#tmid)
                 </code>
               </Typography>
               <Typography variant='body2' color='text.secondary' className='mb-3'>
-                Variables: (#to) — Mobile Number · (#msg) — Message · (#tempid) — TemplateId · (#tmid) —
-                Telemarketer Id · (#entityid) — Entity Id · (#source) · (#type) · (#dlr)
+                Placeholders: (#to) mobile · (#msg) text · (#tempid) DLT template ID from your client · (#tmid) ·
+                (#entityid) · (#source) · (#type) · (#dlr) · optional (#smsuser) (#smspass)
               </Typography>
+
+              <Typography variant='subtitle2' className='mb-2 mt-2'>
+                Gateway HTTP credentials (optional)
+              </Typography>
+              <Box className='flex flex-col gap-2 mb-4'>
+                <TextField
+                  label='Gateway username'
+                  value={smsForm.sms_http_username}
+                  onChange={(e) => setSms('sms_http_username', e.target.value)}
+                  size='small'
+                  fullWidth
+                  autoComplete='off'
+                />
+                <TextField
+                  label='Gateway password'
+                  value={smsForm.sms_http_password}
+                  onChange={(e) => setSms('sms_http_password', e.target.value)}
+                  size='small'
+                  fullWidth
+                  type='password'
+                  autoComplete='new-password'
+                  placeholder='Leave blank to keep existing'
+                />
+              </Box>
+
+              <Typography variant='subtitle2' className='mb-2'>
+                DLT defaults (login OTP and sends use these when the URL includes matching placeholders)
+              </Typography>
+              <Typography variant='body2' color='text.secondary' className='mb-2'>
+                Set the template ID your operator gave you as Template ID (Route Mobile tempid). Leave fields empty
+                if not used in your gateway URL.
+              </Typography>
+              <Box className='flex flex-col gap-2 mb-4'>
+                <TextField
+                  label='Template ID (tempid)'
+                  value={smsForm.default_tempid}
+                  onChange={(e) => setSms('default_tempid', e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='TMID (default)'
+                  value={smsForm.default_tmid}
+                  onChange={(e) => setSms('default_tmid', e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Entity ID (default)'
+                  value={smsForm.default_entityid}
+                  onChange={(e) => setSms('default_entityid', e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Source / sender (default)'
+                  value={smsForm.default_source}
+                  onChange={(e) => setSms('default_source', e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='Type (default, e.g. 0)'
+                  value={smsForm.default_type}
+                  onChange={(e) => setSms('default_type', e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+                <TextField
+                  label='DLR (default, e.g. 1)'
+                  value={smsForm.default_dlr}
+                  onChange={(e) => setSms('default_dlr', e.target.value)}
+                  size='small'
+                  fullWidth
+                />
+              </Box>
 
               <Box className='flex flex-col gap-2 mb-4 mt-3'>
                 <TextField
@@ -520,6 +625,10 @@ function EmailServiceConfigPage() {
               <Typography variant='subtitle2' className='mb-2'>
                 Test configuration
               </Typography>
+              <Typography variant='body2' color='text.secondary' className='mb-2 max-w-lg'>
+                Uses saved gateway URL, credentials, and DLT defaults. Enter only the destination number and message;
+                open advanced overrides if you need to try different DLT values for one send.
+              </Typography>
               <div className='flex flex-col gap-2 max-w-lg mt-3'>
                 <TextField
                   label='Send test to (mobile)'
@@ -535,48 +644,59 @@ function EmailServiceConfigPage() {
                   size='small'
                   fullWidth
                 />
-                <TextField
-                  label='Template ID (optional)'
-                  value={smsTestTempid}
-                  onChange={(e) => setSmsTestTempid(e.target.value)}
+                <Button
+                  variant='text'
                   size='small'
-                  fullWidth
-                />
-                <TextField
-                  label='TMID (required only if URL has (#tmid))'
-                  value={smsTestTmid}
-                  onChange={(e) => setSmsTestTmid(e.target.value)}
-                  size='small'
-                  fullWidth
-                />
-                <TextField
-                  label='Entity ID (required only if URL has (#entityid))'
-                  value={smsTestEntityid}
-                  onChange={(e) => setSmsTestEntityid(e.target.value)}
-                  size='small'
-                  fullWidth
-                />
-                <TextField
-                  label='Source/Sender (required only if URL has (#source))'
-                  value={smsTestSource}
-                  onChange={(e) => setSmsTestSource(e.target.value)}
-                  size='small'
-                  fullWidth
-                />
-                <TextField
-                  label='Type (required only if URL has (#type); 0 for plain text)'
-                  value={smsTestType}
-                  onChange={(e) => setSmsTestType(e.target.value)}
-                  size='small'
-                  fullWidth
-                />
-                <TextField
-                  label='DLR (required only if URL has (#dlr); 0 or 1)'
-                  value={smsTestDlr}
-                  onChange={(e) => setSmsTestDlr(e.target.value)}
-                  size='small'
-                  fullWidth
-                />
+                  onClick={() => setSmsTestAdvancedOpen((o) => !o)}
+                  sx={{ textTransform: 'none', alignSelf: 'flex-start' }}>
+                  {smsTestAdvancedOpen ? 'Hide' : 'Show'} DLT overrides for this test only
+                </Button>
+                <Collapse in={smsTestAdvancedOpen}>
+                  <Box className='flex flex-col gap-2 border border-gray-200 rounded p-2 mb-2'>
+                    <TextField
+                      label='Template ID override'
+                      value={smsTestTempid}
+                      onChange={(e) => setSmsTestTempid(e.target.value)}
+                      size='small'
+                      fullWidth
+                    />
+                    <TextField
+                      label='TMID override'
+                      value={smsTestTmid}
+                      onChange={(e) => setSmsTestTmid(e.target.value)}
+                      size='small'
+                      fullWidth
+                    />
+                    <TextField
+                      label='Entity ID override'
+                      value={smsTestEntityid}
+                      onChange={(e) => setSmsTestEntityid(e.target.value)}
+                      size='small'
+                      fullWidth
+                    />
+                    <TextField
+                      label='Source override'
+                      value={smsTestSource}
+                      onChange={(e) => setSmsTestSource(e.target.value)}
+                      size='small'
+                      fullWidth
+                    />
+                    <TextField
+                      label='Type override'
+                      value={smsTestType}
+                      onChange={(e) => setSmsTestType(e.target.value)}
+                      size='small'
+                      fullWidth
+                    />
+                    <TextField
+                      label='DLR override'
+                      value={smsTestDlr}
+                      onChange={(e) => setSmsTestDlr(e.target.value)}
+                      size='small'
+                      fullWidth
+                    />
+                  </Box>
+                </Collapse>
                 <Button
                   variant='outlined'
                   onClick={handleSmsTest}
