@@ -30,6 +30,7 @@ function defaultForm() {
   return {
     id: null,
     ip_address: '',
+    description: '',
     status: 'active',
   };
 }
@@ -76,6 +77,7 @@ function IpWhitelistingPage() {
     setForm({
       id: row.id,
       ip_address: row.ip_address || '',
+      description: row.description || '',
       status: row.status === 'inactive' ? 'inactive' : 'active',
     });
     setOpen(true);
@@ -90,6 +92,7 @@ function IpWhitelistingPage() {
     try {
       const payload = {
         ip_address: form.ip_address.trim(),
+        description: form.description || '',
         status: form.status,
       };
       const res = form.id
@@ -150,7 +153,7 @@ function IpWhitelistingPage() {
         IP Whitelisting
       </Typography>
       <Typography variant='body2' color='text.secondary'>
-        Allow login only from approved IPv4 addresses. Both public and private IP addresses are supported.
+        Allow login only from approved IPv4 addresses.
       </Typography>
 
       <Paper elevation={2} className='p-4'>
@@ -158,7 +161,7 @@ function IpWhitelistingPage() {
           <Box className='flex gap-2'>
             <TextField
               size='small'
-              label='Search IP / type / status'
+              label='Search IP / description / status'
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
@@ -179,8 +182,8 @@ function IpWhitelistingPage() {
             <TableHead>
               <TableRow>
                 <TableCell width='70'>No</TableCell>
-                <TableCell>Private IP</TableCell>
-                <TableCell>Public IP</TableCell>
+                <TableCell>IP Address</TableCell>
+                <TableCell>Description</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -196,8 +199,8 @@ function IpWhitelistingPage() {
               {rows.map((row, index) => (
                 <TableRow key={row.id}>
                   <TableCell>{page * pageSize + index + 1}</TableCell>
-                  <TableCell>{row.ip_type === 'private' ? row.ip_address : '-'}</TableCell>
-                  <TableCell>{row.ip_type === 'public' ? row.ip_address : '-'}</TableCell>
+                  <TableCell>{row.ip_address}</TableCell>
+                  <TableCell>{row.description || '-'}</TableCell>
                   <TableCell>
                     <Chip
                       size='small'
@@ -256,6 +259,14 @@ function IpWhitelistingPage() {
               placeholder='103.81.106.248'
               value={form.ip_address}
               onChange={(e) => setForm((f) => ({ ...f, ip_address: e.target.value }))}
+              size='small'
+              fullWidth
+            />
+            <TextField
+              label='Description'
+              placeholder='Office public IP / VPN gateway'
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               size='small'
               fullWidth
             />
