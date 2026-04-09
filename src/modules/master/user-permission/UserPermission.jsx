@@ -84,6 +84,10 @@ function UserPermission() {
   };
 
   const toggleStatus = async (row) => {
+    if (row.is_self) {
+      toast.error('You cannot change your own status');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await ApiService.patch(`${APIURL.PORTAL_USERS}/${row.id}/status`, { is_active: !row.is_active });
@@ -235,11 +239,11 @@ function UserPermission() {
                   <td className='px-3 py-2'>
                     <button
                       type='button'
-                      disabled={submitting}
+                      disabled={submitting || row.is_self}
                       onClick={() => toggleStatus(row)}
-                      className={`px-2 py-1 text-xs rounded cursor-pointer ${
+                      className={`px-2 py-1 text-xs rounded ${
                         row.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
+                      } ${row.is_self ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                       {row.is_active ? 'Active' : 'Inactive'}
                     </button>
                   </td>
@@ -249,8 +253,11 @@ function UserPermission() {
                     <div className='flex items-center justify-center gap-2'>
                       <button
                         type='button'
+                        disabled={row.is_self}
                         onClick={() => navigate('/master/user-permission/create', { state: { row } })}
-                        className='px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'>
+                        className={`px-2 py-1 text-xs rounded text-white ${
+                          row.is_self ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
+                        }`}>
                         Edit
                       </button>
                     </div>

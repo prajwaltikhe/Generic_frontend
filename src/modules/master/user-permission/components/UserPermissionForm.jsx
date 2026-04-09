@@ -14,6 +14,48 @@ const fields = [
   { label: 'Email', name: 'email', type: 'email' },
 ];
 
+function TextInput({ name, label, type = 'text', required, placeholder, value, onChange }) {
+  return (
+    <div>
+      <label className='block mb-2 text-sm font-medium text-gray-900'>
+        {label} {required && <span className='text-red-500'>*</span>}
+      </label>
+      <TextField
+        size='small'
+        type={type}
+        name={name}
+        id={name}
+        fullWidth
+        placeholder={placeholder || `Enter ${label}`}
+        required={required}
+        value={value}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
+
+function AutoSelect({ label, required, options, value, onChange, getOptionLabel, loading, placeholder }) {
+  return (
+    <div>
+      <label className='block mb-2 text-sm font-medium text-gray-900'>
+        {label} {required && <span className='text-red-500'>*</span>}
+      </label>
+      <Autocomplete
+        disablePortal
+        options={options}
+        getOptionLabel={getOptionLabel}
+        size='small'
+        loading={loading}
+        onChange={onChange}
+        isOptionEqualToValue={(a, b) => a?.id === b?.id}
+        value={value}
+        renderInput={(params) => <TextField {...params} placeholder={placeholder} />}
+      />
+    </div>
+  );
+}
+
 export default function UserPermissionForm() {
   const rowData = useLocation().state?.row || null;
   const isEdit = Boolean(rowData?.id);
@@ -104,8 +146,8 @@ export default function UserPermissionForm() {
   };
 
   return (
-    <div className='bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]'>
-      <div className='flex items-center gap-4 p-3'>
+    <div className='w-full h-full p-2'>
+      <div className='flex items-center gap-3 mb-3'>
         <button
           type='button'
           onClick={() => navigate(-1)}
@@ -115,7 +157,8 @@ export default function UserPermissionForm() {
         </button>
         <h1 className='text-2xl font-bold text-[#07163d]'>{isEdit ? 'Edit Portal User' : 'Add Portal User'}</h1>
       </div>
-      <p className='mx-3 mb-2'>
+      <div className='bg-white rounded-sm border-t-3 border-b-3 border-[#07163d]'>
+      <p className='mx-3 pt-3 mb-2'>
         <span className='text-red-500'>*</span> indicates required field
       </p>
       <hr className='border border-gray-300' />
@@ -123,70 +166,47 @@ export default function UserPermissionForm() {
         <form onSubmit={handleFormSubmit}>
           <div className='grid lg:grid-cols-2 md:grid-cols-2 sm:grid-cols-1 gap-4'>
             {fields.map((f) => (
-              <div key={f.name}>
-                <label className='block mb-2 text-sm font-medium text-gray-900'>
-                  {f.label} <span className='text-red-500'>*</span>
-                </label>
-                <TextField
-                  size='small'
-                  type={f.type}
-                  name={f.name}
-                  id={f.name}
-                  fullWidth
-                  placeholder={`Enter ${f.label}`}
-                  required={f.name !== 'password' || !isEdit}
-                  value={formValues[f.name]}
-                  onChange={handleChange}
-                />
-              </div>
+              <TextInput
+                key={f.name}
+                name={f.name}
+                label={f.label}
+                type={f.type}
+                required={f.name !== 'password' || !isEdit}
+                value={formValues[f.name]}
+                onChange={handleChange}
+                placeholder={f.name === 'password' ? 'Enter Password' : `Enter ${f.label}`}
+              />
             ))}
-            <div>
-              <label className='block mb-2 text-sm font-medium text-gray-900'>
-                User Type <span className='text-red-500'>*</span>
-              </label>
-              <Autocomplete
-                disablePortal
-                options={roleOptions}
-                getOptionLabel={(o) => o.label}
-                size='small'
-                loading={loadingMeta}
-                onChange={(_, v) => setFormValues((f) => ({ ...f, role: v?.id || '' }))}
-                value={roleOptions.find((opt) => opt.id === formValues.role) || null}
-                renderInput={(params) => <TextField {...params} label='Select User Type' required />}
-              />
-            </div>
-            <div>
-              <label className='block mb-2 text-sm font-medium text-gray-900'>
-                Select Department <span className='text-red-500'>*</span>
-              </label>
-              <Autocomplete
-                disablePortal
-                options={meta.departments}
-                isOptionEqualToValue={(a, b) => a.id === b.id}
-                getOptionLabel={(o) => o.name}
-                size='small'
-                loading={loadingMeta}
-                onChange={(_, v) => handleSelect('department', v)}
-                value={meta.departments.find((opt) => opt.id === formValues.department) || null}
-                renderInput={(params) => <TextField {...params} label='Select Department' />}
-              />
-            </div>
-            <div>
-              <label className='block mb-2 text-sm font-medium text-gray-900'>
-                Select Plant <span className='text-red-500'>*</span>
-              </label>
-              <Autocomplete
-                disablePortal
-                options={meta.plants}
-                isOptionEqualToValue={(a, b) => a.id === b.id}
-                getOptionLabel={(o) => o.name}
-                size='small'
-                loading={loadingMeta}
-                onChange={(_, v) => handleSelect('plant', v)}
-                value={meta.plants.find((opt) => opt.id === formValues.plant) || null}
-                renderInput={(params) => <TextField {...params} label='Select Plant' />}
-              />
-            </div>
+            <AutoSelect
+              label='User Type'
+              required
+              options={roleOptions}
+              loading={loadingMeta}
+              value={roleOptions.find((opt) => opt.id === formValues.role) || null}
+              onChange={(_, v) => setFormValues((f) => ({ ...f, role: v?.id || '' }))}
+              getOptionLabel={(o) => o.label || ''}
+              placeholder='Select User Type'
+            />
+            <AutoSelect
+              label='Select Department'
+              required
+              options={meta.departments}
+              loading={loadingMeta}
+              value={meta.departments.find((opt) => opt.id === formValues.department) || null}
+              onChange={(_, v) => handleSelect('department', v)}
+              getOptionLabel={(o) => o.name || ''}
+              placeholder='Select Department'
+            />
+            <AutoSelect
+              label='Select Plant'
+              required
+              options={meta.plants}
+              loading={loadingMeta}
+              value={meta.plants.find((opt) => opt.id === formValues.plant) || null}
+              onChange={(_, v) => handleSelect('plant', v)}
+              getOptionLabel={(o) => o.name || ''}
+              placeholder='Select Plant'
+            />
           </div>
           <div className='flex justify-end gap-4 mt-4'>
             <button
@@ -197,6 +217,7 @@ export default function UserPermissionForm() {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );
