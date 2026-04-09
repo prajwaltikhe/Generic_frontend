@@ -5,6 +5,7 @@ export const APIURL = {
   SUPER_ADMIN_EMAIL_SERVICE: 'super-admin/email-service',
   SUPER_ADMIN_SMS_SERVICE: 'super-admin/sms-service',
   SUPER_ADMIN_IP_WHITELIST: 'super-admin/ip-whitelist',
+  PORTAL_USERS: 'portal-users',
 
   VEHICLE: 'vehicle',
   LASTVEHICLEDATA: 'lastvehicledata',

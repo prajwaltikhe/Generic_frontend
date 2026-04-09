@@ -2,7 +2,6 @@ import './Sidebar.css';
 import logo from '../../assets/logo.png';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../redux/authSlice';
-import { isSuperAdminFromStorage } from '../../utils/superAdmin';
 import { ArrowRight } from '@mui/icons-material';
 import PersonIcon from '@mui/icons-material/Person';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,6 +9,16 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import {
+  canAccessDashboard,
+  canAccessEmailSmsConfig,
+  canAccessIpWhitelisting,
+  canAccessManagement,
+  canAccessMaster,
+  canAccessMultitrack,
+  canAccessReports,
+  getRoleFromStorage,
+} from '../../utils/roles';
 
 const sidebarLinks = [
   { to: '/dashboard', icon: <DashboardIcon style={{ fontSize: '3rem' }} />, label: 'Dashboard' },
@@ -81,6 +90,12 @@ const settingsSubMenus = [
 ];
 
 function Sidebar() {
+  const role = getRoleFromStorage();
+  const canDashboard = canAccessDashboard(role);
+  const canMultitrack = canAccessMultitrack(role);
+  const canReports = canAccessReports(role);
+  const canMaster = canAccessMaster(role);
+  const canManagement = canAccessManagement(role);
   return (
     <div className='sidebar w-25 h-screen bg-[#07163d]'>
       <div className='w-full p-4 rounded-3xl overflow-hidden'>
@@ -88,7 +103,9 @@ function Sidebar() {
       </div>
       <div className='flex flex-col justify-between responsive-height'>
         <ul>
-          {sidebarLinks.map(({ to, icon, label }) => (
+          {sidebarLinks
+            .filter((x) => (x.to === '/dashboard' ? canDashboard : canMultitrack))
+            .map(({ to, icon, label }) => (
             <li className='sidebar-item hoverable' key={to}>
               <Link to={to} className='hover:no-underline'>
                 <div className='nav-link'>
@@ -100,7 +117,8 @@ function Sidebar() {
               </Link>
             </li>
           ))}
-          <li className='sidebar-item hoverable'>
+          {canReports && (
+            <li className='sidebar-item hoverable'>
             <div className='nav-link'>
               <div className='flex flex-col items-center'>
                 <InsertDriveFileIcon style={{ fontSize: '3rem' }} />
@@ -108,8 +126,10 @@ function Sidebar() {
               </div>
             </div>
             <ReportsSubMenu />
-          </li>
-          <li className='sidebar-item hoverable'>
+            </li>
+          )}
+          {(canMaster || canManagement) && (
+            <li className='sidebar-item hoverable'>
             <div className='nav-link'>
               <div className='flex flex-col items-center'>
                 <SettingsIcon style={{ fontSize: '3rem' }} />
@@ -117,7 +137,8 @@ function Sidebar() {
               </div>
             </div>
             <SettingsSubMenu />
-          </li>
+            </li>
+          )}
         </ul>
         <ul>
           <li className='sidebar-item hoverable'>
@@ -184,22 +205,36 @@ const ProfileSubMenu = () => {
 };
 
 const SettingsSubMenu = () => {
-  const showSuperAdmin = isSuperAdminFromStorage();
+  const role = getRoleFromStorage();
+  const allowMaster = canAccessMaster(role);
+  const allowManagement = canAccessManagement(role);
+  const showEmailSms = canAccessEmailSmsConfig(role);
+  const showIp = canAccessIpWhitelisting(role);
   return (
     <ul className='sub-menu settings-sub-menu'>
       {settingsSubMenus.map(({ title, icon, style, items }) => {
+        if (title === 'Master' && !allowMaster) return null;
+        if (title === 'Management' && !allowManagement) return null;
         const list =
-          title === 'Management' && showSuperAdmin
+          title === 'Management'
             ? [
                 ...items,
-                {
-                  to: '/management/email-sms-configuration',
-                  label: 'EMAIL/SMS configuration',
-                },
-                {
-                  to: '/management/ip-whitelisting',
-                  label: 'IP Whitelisting',
-                },
+                ...(showEmailSms
+                  ? [
+                      {
+                        to: '/management/email-sms-configuration',
+                        label: 'EMAIL/SMS configuration',
+                      },
+                    ]
+                  : []),
+                ...(showIp
+                  ? [
+                      {
+                        to: '/management/ip-whitelisting',
+                        label: 'IP Whitelisting',
+                      },
+                    ]
+                  : []),
               ]
             : items;
         return (

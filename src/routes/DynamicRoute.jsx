@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Dashboard from '../modules/dashboard/Dashboard';
 import Plant from '../modules/master/plant/Plant';
 import Department from '../modules/master/department/Department';
@@ -54,90 +54,112 @@ import EmployeePunchDetails from '../modules/multitrack/EmployeePunchDetails';
 import Playback from '../modules/multitrack/Playback';
 import EmailServiceConfig from '../modules/settings/email-service/EmailServiceConfig';
 import IpWhitelisting from '../modules/settings/ip-whitelisting/IpWhitelisting';
+import {
+  canAccessDashboard,
+  canAccessEmailSmsConfig,
+  canAccessIpWhitelisting,
+  canAccessManagement,
+  canAccessMaster,
+  canAccessMultitrack,
+  canAccessReports,
+  canManageUsers,
+  getRoleFromStorage,
+} from '../utils/roles';
+
+const Guard = ({ ok, element }) => (ok ? element : <Navigate to='/dashboard' replace />);
 
 function DynamicRoute() {
+  const role = getRoleFromStorage();
+  const allowDashboard = canAccessDashboard(role);
+  const allowReports = canAccessReports(role);
+  const allowMultitrack = canAccessMultitrack(role);
+  const allowMaster = canAccessMaster(role);
+  const allowManagement = canAccessManagement(role);
+  const allowUserManagement = canManageUsers(role);
+  const allowEmailSms = canAccessEmailSmsConfig(role);
+  const allowIp = canAccessIpWhitelisting(role);
   return (
     <Routes>
-      <Route path='/dashboard' element={<Dashboard />} />
+      <Route path='/dashboard' element={<Guard ok={allowDashboard} element={<Dashboard />} />} />
       <Route path='/profile' element={<Profile />} />
-      <Route path='/multitrack' element={<Multitrack />} />
-      <Route path='/bus-multi-track/punch' element={<EmployeePunchDetails />} />
-      <Route path='/playback' element={<Playback />} />
+      <Route path='/multitrack' element={<Guard ok={allowMultitrack} element={<Multitrack />} />} />
+      <Route path='/bus-multi-track/punch' element={<Guard ok={allowMultitrack} element={<EmployeePunchDetails />} />} />
+      <Route path='/playback' element={<Guard ok={allowMultitrack} element={<Playback />} />} />
       <Route path='/report'>
-        <Route path='movement' element={<Movement />} />
-        <Route path='movement/details/:id' element={<MovementDetails />} />
-        <Route path='parked' element={<Parked />} />
-        <Route path='parked/details/:id' element={<ParkedDetails />} />
-        <Route path='idle' element={<Idle />} />
-        <Route path='idle/details/:id' element={<IdleDetails />} />
-        <Route path='offline' element={<Offline />} />
-        <Route path='offline/details/:id' element={<OfflineDetails />} />
-        <Route path='new-device' element={<NewDevice />} />
-        <Route path='map-history' element={<MapHistory />} />
-        <Route path='geofence-entry-exit' element={<GeofencEntryExit />} />
-        <Route path='geofence-entry-exit/details/:id' element={<GeofenceReportDetails />} />
-        <Route path='route-violation' element={<RouteViolation />} />
-        <Route path='route-violation/details/:id' element={<RouteViolationDetails />} />
-        <Route path='overspeed' element={<Overspeed />} />
-        <Route path='overspeed/details/:id' element={<OverspeedReportDetails />} />
-        <Route path='overspeed/view' element={<ViewOverspeed />} />
-        <Route path='overspeed/view-violation-map' element={<ViewViolationMap />} />
-        <Route path='employees-on-board' element={<EmployeeOnboard />} />
-        <Route path='destination-arrival-female' element={<DestinationArrivalFemale />} />
-        <Route path='feedback' element={<FeedbackReport />} />
-        <Route path='seat-occupancy' element={<SeatOccupancyReport />} />
-        <Route path='emergency-alert' element={<EmergencyAlertReport />} />
+        <Route path='movement' element={<Guard ok={allowReports} element={<Movement />} />} />
+        <Route path='movement/details/:id' element={<Guard ok={allowReports} element={<MovementDetails />} />} />
+        <Route path='parked' element={<Guard ok={allowReports} element={<Parked />} />} />
+        <Route path='parked/details/:id' element={<Guard ok={allowReports} element={<ParkedDetails />} />} />
+        <Route path='idle' element={<Guard ok={allowReports} element={<Idle />} />} />
+        <Route path='idle/details/:id' element={<Guard ok={allowReports} element={<IdleDetails />} />} />
+        <Route path='offline' element={<Guard ok={allowReports} element={<Offline />} />} />
+        <Route path='offline/details/:id' element={<Guard ok={allowReports} element={<OfflineDetails />} />} />
+        <Route path='new-device' element={<Guard ok={allowReports} element={<NewDevice />} />} />
+        <Route path='map-history' element={<Guard ok={allowReports} element={<MapHistory />} />} />
+        <Route path='geofence-entry-exit' element={<Guard ok={allowReports} element={<GeofencEntryExit />} />} />
+        <Route path='geofence-entry-exit/details/:id' element={<Guard ok={allowReports} element={<GeofenceReportDetails />} />} />
+        <Route path='route-violation' element={<Guard ok={allowReports} element={<RouteViolation />} />} />
+        <Route path='route-violation/details/:id' element={<Guard ok={allowReports} element={<RouteViolationDetails />} />} />
+        <Route path='overspeed' element={<Guard ok={allowReports} element={<Overspeed />} />} />
+        <Route path='overspeed/details/:id' element={<Guard ok={allowReports} element={<OverspeedReportDetails />} />} />
+        <Route path='overspeed/view' element={<Guard ok={allowReports} element={<ViewOverspeed />} />} />
+        <Route path='overspeed/view-violation-map' element={<Guard ok={allowReports} element={<ViewViolationMap />} />} />
+        <Route path='employees-on-board' element={<Guard ok={allowReports} element={<EmployeeOnboard />} />} />
+        <Route path='destination-arrival-female' element={<Guard ok={allowReports} element={<DestinationArrivalFemale />} />} />
+        <Route path='feedback' element={<Guard ok={allowReports} element={<FeedbackReport />} />} />
+        <Route path='seat-occupancy' element={<Guard ok={allowReports} element={<SeatOccupancyReport />} />} />
+        <Route path='emergency-alert' element={<Guard ok={allowReports} element={<EmergencyAlertReport />} />} />
 
-        <Route path='punch-timelog' element={<PunchTimelog />} />
-        <Route path='vehicle-arrival-time/:shiftId' element={<VehicalArrivalTime />} />
+        <Route path='punch-timelog' element={<Guard ok={allowReports} element={<PunchTimelog />} />} />
+        <Route path='vehicle-arrival-time/:shiftId' element={<Guard ok={allowReports} element={<VehicalArrivalTime />} />} />
       </Route>
-      <Route path='/settings/super-admin/email-service' element={<EmailServiceConfig />} />
-      <Route path='/settings/super-admin/ip-whitelisting' element={<IpWhitelisting />} />
+      <Route path='/settings/super-admin/email-service' element={<Guard ok={allowEmailSms} element={<EmailServiceConfig />} />} />
+      <Route path='/settings/super-admin/ip-whitelisting' element={<Guard ok={allowIp} element={<IpWhitelisting />} />} />
       <Route path='/master'>
-        <Route path='plants' element={<Plant />} />
-        <Route path='departments' element={<Department />} />
-        <Route path='user-permission' element={<UserPermission />} />
-        <Route path='user-permission/create' element={<UserPermissionForm />} />
-        <Route path='plant-in-time' element={<PlantInTime />} />
-        <Route path='plant-in-time/create' element={<PlantInTimeForm />} />
-        <Route path='plant-in-time/view' element={<PlantInTimeForm />} />
-        <Route path='plant-in-time/edit' element={<PlantInTimeForm />} />
-        <Route path='employee' element={<Employee />} />
-        <Route path='employee/create' element={<EmployeeForm />} />
-        <Route path='employee/edit' element={<EmployeeForm />} />
-        <Route path='employee/view' element={<EmployeeForm />} />
-        <Route path='vehicle' element={<Vehicle />} />
-        <Route path='vehicle/create' element={<VehicleForm />} />
-        <Route path='vehicle/edit' element={<VehicleForm />} />
-        <Route path='vehicle/view' element={<VehicleForm />} />
-        <Route path='driver' element={<Driver />} />
-        <Route path='driver/create' element={<DriverForm />} />
-        <Route path='driver/edit' element={<DriverForm />} />
-        <Route path='driver/view' element={<DriverForm />} />
+        <Route path='plants' element={<Guard ok={allowMaster} element={<Plant />} />} />
+        <Route path='departments' element={<Guard ok={allowMaster} element={<Department />} />} />
+        <Route path='user-permission' element={<Guard ok={allowUserManagement} element={<UserPermission />} />} />
+        <Route path='user-permission/create' element={<Guard ok={allowUserManagement} element={<UserPermissionForm />} />} />
+        <Route path='plant-in-time' element={<Guard ok={allowMaster} element={<PlantInTime />} />} />
+        <Route path='plant-in-time/create' element={<Guard ok={allowMaster} element={<PlantInTimeForm />} />} />
+        <Route path='plant-in-time/view' element={<Guard ok={allowMaster} element={<PlantInTimeForm />} />} />
+        <Route path='plant-in-time/edit' element={<Guard ok={allowMaster} element={<PlantInTimeForm />} />} />
+        <Route path='employee' element={<Guard ok={allowMaster} element={<Employee />} />} />
+        <Route path='employee/create' element={<Guard ok={allowMaster} element={<EmployeeForm />} />} />
+        <Route path='employee/edit' element={<Guard ok={allowMaster} element={<EmployeeForm />} />} />
+        <Route path='employee/view' element={<Guard ok={allowMaster} element={<EmployeeForm />} />} />
+        <Route path='vehicle' element={<Guard ok={allowMaster} element={<Vehicle />} />} />
+        <Route path='vehicle/create' element={<Guard ok={allowMaster} element={<VehicleForm />} />} />
+        <Route path='vehicle/edit' element={<Guard ok={allowMaster} element={<VehicleForm />} />} />
+        <Route path='vehicle/view' element={<Guard ok={allowMaster} element={<VehicleForm />} />} />
+        <Route path='driver' element={<Guard ok={allowMaster} element={<Driver />} />} />
+        <Route path='driver/create' element={<Guard ok={allowMaster} element={<DriverForm />} />} />
+        <Route path='driver/edit' element={<Guard ok={allowMaster} element={<DriverForm />} />} />
+        <Route path='driver/view' element={<Guard ok={allowMaster} element={<DriverForm />} />} />
 
         <Route path='*' element={<div>404</div>} />
       </Route>
       <Route path='/management'>
-        <Route path='announcements' element={<Announcement />} />
-        <Route path='announcement/create' element={<AnnouncementForm />} />
-        <Route path='announcement/view' element={<AnnouncementForm />} />
-        <Route path='announcement/edit' element={<AnnouncementForm />} />
-        <Route path='emergency-alerts' element={<EmergencyAlert />} />
-        <Route path='emergency-alert/edit' element={<EmergencyAlertForm />} />
-        <Route path='route-change-request' element={<RouteChange />} />
-        <Route path='feedbacks' element={<Feedback />} />
-        <Route path='feedback/edit' element={<FeedbackFrom />} />
-        <Route path='feedback/view' element={<FeedbackFrom />} />
-        <Route path='vehicle-route' element={<VehicleRoute />} />
-        <Route path='vehicle-route/create' element={<VehicleRouteForm />} />
-        <Route path='vehicle-route/view' element={<VehicleRouteForm />} />
-        <Route path='vehicle-route/edit' element={<VehicleRouteForm />} />
-        <Route path='geofence' element={<Geofence />} />
-        <Route path='geofence/create' element={<GeofenceCreate />} />
-        <Route path='geofence/view' element={<GeofenceCreate />} />
-        <Route path='geofence/edit' element={<GeofenceCreate />} />
-        <Route path='email-sms-configuration' element={<EmailServiceConfig />} />
-        <Route path='ip-whitelisting' element={<IpWhitelisting />} />
+        <Route path='announcements' element={<Guard ok={allowManagement} element={<Announcement />} />} />
+        <Route path='announcement/create' element={<Guard ok={allowManagement} element={<AnnouncementForm />} />} />
+        <Route path='announcement/view' element={<Guard ok={allowManagement} element={<AnnouncementForm />} />} />
+        <Route path='announcement/edit' element={<Guard ok={allowManagement} element={<AnnouncementForm />} />} />
+        <Route path='emergency-alerts' element={<Guard ok={allowManagement} element={<EmergencyAlert />} />} />
+        <Route path='emergency-alert/edit' element={<Guard ok={allowManagement} element={<EmergencyAlertForm />} />} />
+        <Route path='route-change-request' element={<Guard ok={allowManagement} element={<RouteChange />} />} />
+        <Route path='feedbacks' element={<Guard ok={allowManagement} element={<Feedback />} />} />
+        <Route path='feedback/edit' element={<Guard ok={allowManagement} element={<FeedbackFrom />} />} />
+        <Route path='feedback/view' element={<Guard ok={allowManagement} element={<FeedbackFrom />} />} />
+        <Route path='vehicle-route' element={<Guard ok={allowManagement} element={<VehicleRoute />} />} />
+        <Route path='vehicle-route/create' element={<Guard ok={allowManagement} element={<VehicleRouteForm />} />} />
+        <Route path='vehicle-route/view' element={<Guard ok={allowManagement} element={<VehicleRouteForm />} />} />
+        <Route path='vehicle-route/edit' element={<Guard ok={allowManagement} element={<VehicleRouteForm />} />} />
+        <Route path='geofence' element={<Guard ok={allowManagement} element={<Geofence />} />} />
+        <Route path='geofence/create' element={<Guard ok={allowManagement} element={<GeofenceCreate />} />} />
+        <Route path='geofence/view' element={<Guard ok={allowManagement} element={<GeofenceCreate />} />} />
+        <Route path='geofence/edit' element={<Guard ok={allowManagement} element={<GeofenceCreate />} />} />
+        <Route path='email-sms-configuration' element={<Guard ok={allowEmailSms} element={<EmailServiceConfig />} />} />
+        <Route path='ip-whitelisting' element={<Guard ok={allowIp} element={<IpWhitelisting />} />} />
       </Route>
     </Routes>
   );

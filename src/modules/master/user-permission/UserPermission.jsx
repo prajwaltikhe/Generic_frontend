@@ -1,66 +1,99 @@
-import { useMemo, useState } from 'react';
-
-const initialForm = {
-  empId: '',
-  employeeName: '',
-  department: '',
-  password: '',
-  active: 'Yes',
-  userType: 'Operator',
-};
-
-const userTypeOptions = ['Admin', 'Operator', 'Display'];
-
-const staticRows = [
-  {
-    id: 1,
-    name: 'Alex Martin',
-    genId: '1234567',
-    plant: 'Plant A',
-    department: 'Production',
-    userType: 'Operator',
-    approvedBy: 'System Admin',
-    approvedOn: '2026-04-07',
-  },
-  {
-    id: 2,
-    name: 'Sara Lee',
-    genId: '8877441',
-    plant: 'Plant B',
-    department: 'Logistics',
-    userType: 'Display',
-    approvedBy: 'Plant Manager',
-    approvedOn: '2026-04-05',
-  },
-];
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import ApiService from '../../../services/ApiService';
+import { APIURL } from '../../../constants';
 
 function UserPermission() {
-  const [formData, setFormData] = useState(initialForm);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [meta, setMeta] = useState({ plants: [], departments: [], create_roles: [] });
+  const [formData, setFormData] = useState({
+    empId: '',
+    employeeName: '',
+    department: '',
+    plant: '',
+    userType: '',
+  });
+  const userTypeOptions = useMemo(
+    () => (meta.create_roles || []).map((r) => ({ id: r, label: r[0].toUpperCase() + r.slice(1) })),
+    [meta.create_roles]
+  );
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [metaRes, listRes] = await Promise.all([
+        ApiService.get(`${APIURL.PORTAL_USERS}/meta`),
+        ApiService.get(`${APIURL.PORTAL_USERS}`),
+      ]);
+      setMeta({
+        plants: metaRes?.data?.plants || [],
+        departments: metaRes?.data?.departments || [],
+        create_roles: metaRes?.data?.create_roles || [],
+      });
+      setUsers(listRes?.data?.users || []);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to load user management');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const filteredRows = useMemo(() => {
-    return staticRows.filter((row) => {
+    return users.filter((row) => {
       const empMatch =
-        !formData.empId.trim() || row.genId.toLowerCase().includes(formData.empId.trim().toLowerCase());
+        !formData.empId.trim() ||
+        String(row.employee_id || '')
+          .toLowerCase()
+          .includes(formData.empId.trim().toLowerCase());
       const nameMatch =
         !formData.employeeName.trim() ||
-        row.name.toLowerCase().includes(formData.employeeName.trim().toLowerCase());
-      const deptMatch =
-        !formData.department.trim() ||
-        row.department.toLowerCase().includes(formData.department.trim().toLowerCase());
-      const typeMatch = !formData.userType || row.userType === formData.userType;
-      return empMatch && nameMatch && deptMatch && typeMatch;
+        String(row.name || '')
+          .toLowerCase()
+          .includes(formData.employeeName.trim().toLowerCase());
+      const deptMatch = !formData.department || String(row.department_id || '') === String(formData.department);
+      const plantMatch = !formData.plant || String(row.plant_id || '') === String(formData.plant);
+      const typeMatch = !formData.userType || row.role === formData.userType;
+      return empMatch && nameMatch && deptMatch && plantMatch && typeMatch;
     });
-  }, [formData.department, formData.empId, formData.employeeName, formData.userType]);
+  }, [users, formData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleReset = () => setFormData(initialForm);
+  const handleReset = () =>
+    setFormData({
+      empId: '',
+      employeeName: '',
+      department: '',
+      plant: '',
+      userType: '',
+    });
 
   const handleSubmit = (event) => {
     event.preventDefault();
+  };
+
+  const toggleStatus = async (row) => {
+    setSubmitting(true);
+    try {
+      const res = await ApiService.patch(`${APIURL.PORTAL_USERS}/${row.id}/status`, { is_active: !row.is_active });
+      toast.success(res?.message || 'Status updated');
+      await load();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to update status');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -97,37 +130,33 @@ function UserPermission() {
 
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-1'>Department</label>
-              <input
-                className='w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#07163d]'
-                type='text'
-                name='department'
-                value={formData.department}
-                onChange={handleChange}
-                placeholder='Enter department'
-              />
-            </div>
-
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-1'>Password</label>
-              <input
-                className='w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#07163d]'
-                type='password'
-                name='password'
-                value={formData.password}
-                onChange={handleChange}
-                placeholder='Enter password'
-              />
-            </div>
-
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-1'>Active</label>
               <select
                 className='w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#07163d]'
-                name='active'
-                value={formData.active}
+                name='department'
+                value={formData.department}
                 onChange={handleChange}>
-                <option value='Yes'>Yes</option>
-                <option value='No'>No</option>
+                <option value=''>All departments</option>
+                {meta.departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>Plant</label>
+              <select
+                className='w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#07163d]'
+                name='plant'
+                value={formData.plant}
+                onChange={handleChange}>
+                <option value=''>All plants</option>
+                {meta.plants.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -138,9 +167,10 @@ function UserPermission() {
                 name='userType'
                 value={formData.userType}
                 onChange={handleChange}>
+                <option value=''>All user types</option>
                 {userTypeOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                  <option key={option.id} value={option.id}>
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -161,6 +191,7 @@ function UserPermission() {
             </button>
             <button
               type='button'
+              onClick={() => navigate('/master/user-permission/create')}
               className='px-4 py-2 text-sm rounded bg-green-600 text-white hover:bg-green-700 cursor-pointer'>
               Add New
             </button>
@@ -173,37 +204,51 @@ function UserPermission() {
           <thead className='bg-[#d9e7f8] text-[#07163d]'>
             <tr>
               <th className='px-3 py-2 font-semibold'>Name</th>
-              <th className='px-3 py-2 font-semibold'>Gen.ID</th>
+              <th className='px-3 py-2 font-semibold'>Employee ID</th>
               <th className='px-3 py-2 font-semibold'>Plant</th>
               <th className='px-3 py-2 font-semibold'>Department</th>
               <th className='px-3 py-2 font-semibold'>User Type</th>
-              <th className='px-3 py-2 font-semibold'>Approved by</th>
-              <th className='px-3 py-2 font-semibold'>Approved on</th>
+              <th className='px-3 py-2 font-semibold'>Status</th>
+              <th className='px-3 py-2 font-semibold'>Created by</th>
+              <th className='px-3 py-2 font-semibold'>Created at (IST)</th>
               <th className='px-3 py-2 font-semibold text-center'>Action</th>
             </tr>
           </thead>
           <tbody>
-            {filteredRows.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className='text-center py-8 text-gray-500'>
+                  Loading users...
+                </td>
+              </tr>
+            ) : filteredRows.length > 0 ? (
               filteredRows.map((row) => (
                 <tr key={row.id} className='border-t border-gray-200 hover:bg-gray-50'>
                   <td className='px-3 py-2'>{row.name}</td>
-                  <td className='px-3 py-2'>{row.genId}</td>
-                  <td className='px-3 py-2'>{row.plant}</td>
-                  <td className='px-3 py-2'>{row.department}</td>
-                  <td className='px-3 py-2'>{row.userType}</td>
-                  <td className='px-3 py-2'>{row.approvedBy}</td>
-                  <td className='px-3 py-2'>{row.approvedOn}</td>
+                  <td className='px-3 py-2'>{row.employee_id}</td>
+                  <td className='px-3 py-2'>{row.plant_name}</td>
+                  <td className='px-3 py-2'>{row.department_name}</td>
+                  <td className='px-3 py-2'>{row.role_label}</td>
+                  <td className='px-3 py-2'>
+                    <button
+                      type='button'
+                      disabled={submitting}
+                      onClick={() => toggleStatus(row)}
+                      className={`px-2 py-1 text-xs rounded cursor-pointer ${
+                        row.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                      {row.is_active ? 'Active' : 'Inactive'}
+                    </button>
+                  </td>
+                  <td className='px-3 py-2'>{row.created_by || '-'}</td>
+                  <td className='px-3 py-2'>{row.created_at_ist || '-'}</td>
                   <td className='px-3 py-2'>
                     <div className='flex items-center justify-center gap-2'>
                       <button
                         type='button'
+                        onClick={() => navigate('/master/user-permission/create', { state: { row } })}
                         className='px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'>
                         Edit
-                      </button>
-                      <button
-                        type='button'
-                        className='px-2 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600 cursor-pointer'>
-                        Delete
                       </button>
                     </div>
                   </td>
@@ -211,7 +256,7 @@ function UserPermission() {
               ))
             ) : (
               <tr>
-                <td colSpan={8} className='text-center py-8 text-gray-500'>
+                <td colSpan={9} className='text-center py-8 text-gray-500'>
                   No user records found.
                 </td>
               </tr>
