@@ -98,10 +98,19 @@ function UserPermission() {
 
   return (
     <div className='w-full h-full p-2'>
-      <h1 className='text-2xl font-bold text-[#07163d] mb-4'>User Management</h1>
+      <div className='flex items-center justify-between mb-4'>
+        <h1 className='text-2xl font-bold text-[#07163d]'>User Management</h1>
+        <button
+          type='button'
+          onClick={() => navigate('/master/user-permission/create')}
+          className='px-4 py-2 text-sm rounded bg-green-600 text-white hover:bg-green-700 cursor-pointer'>
+          Add New User
+        </button>
+      </div>
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] p-4 mb-4'>
-        <h2 className='text-lg font-semibold text-[#07163d] mb-4'>User Permission</h2>
+        <h2 className='text-lg font-semibold text-[#07163d] mb-1'>Search Users</h2>
+        <p className='text-xs text-gray-500 mb-4'>Use filters to search existing portal users.</p>
         <form onSubmit={handleSubmit}>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
             <div>
@@ -188,12 +197,6 @@ function UserPermission() {
               onClick={handleReset}
               className='px-4 py-2 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-100 cursor-pointer'>
               Reset
-            </button>
-            <button
-              type='button'
-              onClick={() => navigate('/master/user-permission/create')}
-              className='px-4 py-2 text-sm rounded bg-green-600 text-white hover:bg-green-700 cursor-pointer'>
-              Add New
             </button>
           </div>
         </form>
