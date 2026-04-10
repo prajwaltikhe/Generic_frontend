@@ -18,7 +18,7 @@ import { IconButton, Paper, TextField, Button, InputAdornment } from '@mui/mater
 const validationSchema = Yup.object({
   otp: Yup.string()
     .required('OTP is required')
-    .matches(/^[A-Za-z0-9]{6,8}$/, 'Enter 6–8 characters as shown (letters or digits)'),
+    .matches(/^\d{6}$/, 'Enter 6-digit OTP'),
 });
 
 function Otp() {
