@@ -15,6 +15,35 @@ const fields = [
   { label: 'Email', name: 'email', type: 'email' },
 ];
 
+function validatePasswordPolicy(password) {
+  const p = String(password || '');
+  if (!p) return 'Password is required';
+  if (/\s/.test(p)) return 'Password cannot contain spaces';
+  if (p.length < 10) return 'Password must be at least 10 characters';
+  if (!/[A-Z]/.test(p)) return 'Password must include at least one uppercase letter';
+  if (!/[a-z]/.test(p)) return 'Password must include at least one lowercase letter';
+  if (!/\d/.test(p)) return 'Password must include at least one digit';
+  if (!/[!@#$*]/.test(p)) return 'Password must include at least one special character (!,@,#,$,*)';
+  if (/[^A-Za-z0-9!@#$*]/.test(p)) return 'Only !,@,#,$,* are allowed as special characters';
+  const blocked = ['samsung@123', 'admin', 'administrator', 'root', 'password', '123456'];
+  if (blocked.includes(p.toLowerCase())) return 'This password is not allowed';
+  for (let i = 0; i <= p.length - 3; i++) {
+    const a = p.charCodeAt(i);
+    const b = p.charCodeAt(i + 1);
+    const c = p.charCodeAt(i + 2);
+    const c1 = p[i];
+    const c2 = p[i + 1];
+    const c3 = p[i + 2];
+    const allDigits = /\d/.test(c1) && /\d/.test(c2) && /\d/.test(c3);
+    const allLetters = /[A-Za-z]/.test(c1) && /[A-Za-z]/.test(c2) && /[A-Za-z]/.test(c3);
+    if (c1 === c2 && c2 === c3) return 'Password cannot contain repeated sequence like 111 or aaa';
+    if ((allDigits || allLetters) && ((b - a === 1 && c - b === 1) || (a - b === 1 && b - c === 1))) {
+      return 'Password cannot contain sequences like 123, 321, abc';
+    }
+  }
+  return null;
+}
+
 function TextInput({ name, label, type = 'text', required, placeholder, value, onChange, disabled = false }) {
   return (
     <div>
@@ -126,6 +155,13 @@ export default function UserPermissionForm() {
     if (!isEdit && !formValues.password.trim()) {
       toast.error('Password is required for new user');
       return;
+    }
+    if (formValues.password.trim()) {
+      const passwordErr = validatePasswordPolicy(formValues.password.trim());
+      if (passwordErr) {
+        toast.error(passwordErr);
+        return;
+      }
     }
     if (!/^\d{10,15}$/.test(formValues.phoneNumber.trim())) {
       toast.error('Phone number must be 10 to 15 digits');
