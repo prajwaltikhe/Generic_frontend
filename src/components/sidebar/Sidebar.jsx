@@ -65,8 +65,8 @@ const settingsSubMenus = [
     icon: <ArrowRight style={{ fontSize: '20px' }} />,
     style: { top: '-82px' },
     items: [
-      { to: '/master/employee', label: 'Employees' },
       { to: '/master/user-permission', label: 'User Management' },
+      { to: '/master/employee', label: 'Employees' },
       { to: '/master/vehicle', label: 'Vehicles' },
       { to: '/master/driver', label: 'Drivers' },
       { to: '/master/departments', label: 'Departments' },

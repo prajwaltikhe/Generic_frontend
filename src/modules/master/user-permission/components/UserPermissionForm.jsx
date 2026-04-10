@@ -10,11 +10,12 @@ import { getRoleFromStorage } from '../../../../utils/roles';
 const fields = [
   { label: 'Employee ID', name: 'employeeId', type: 'text' },
   { label: 'Name', name: 'name', type: 'text' },
+  { label: 'Phone Number', name: 'phoneNumber', type: 'text' },
   { label: 'Password', name: 'password', type: 'password' },
   { label: 'Email', name: 'email', type: 'email' },
 ];
 
-function TextInput({ name, label, type = 'text', required, placeholder, value, onChange }) {
+function TextInput({ name, label, type = 'text', required, placeholder, value, onChange, disabled = false }) {
   return (
     <div>
       <label className='block mb-2 text-sm font-medium text-gray-900'>
@@ -30,12 +31,13 @@ function TextInput({ name, label, type = 'text', required, placeholder, value, o
         required={required}
         value={value}
         onChange={onChange}
+        disabled={disabled}
       />
     </div>
   );
 }
 
-function AutoSelect({ label, required, options, value, onChange, getOptionLabel, loading, placeholder }) {
+function AutoSelect({ label, required, options, value, onChange, getOptionLabel, loading, placeholder, disabled = false }) {
   return (
     <div>
       <label className='block mb-2 text-sm font-medium text-gray-900'>
@@ -50,6 +52,7 @@ function AutoSelect({ label, required, options, value, onChange, getOptionLabel,
         onChange={onChange}
         isOptionEqualToValue={(a, b) => a?.id === b?.id}
         value={value}
+        disabled={disabled}
         renderInput={(params) => <TextField {...params} placeholder={placeholder} />}
       />
     </div>
@@ -59,6 +62,7 @@ function AutoSelect({ label, required, options, value, onChange, getOptionLabel,
 export default function UserPermissionForm() {
   const rowData = useLocation().state?.row || null;
   const isEdit = Boolean(rowData?.id);
+  const isSelfEdit = Boolean(rowData?.is_self);
   const navigate = useNavigate();
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,6 +70,7 @@ export default function UserPermissionForm() {
   const [formValues, setFormValues] = useState({
     employeeId: rowData?.employee_id || '',
     name: rowData?.name || '',
+    phoneNumber: rowData?.phone_number || '',
     department: rowData?.department_id || '',
     plant: rowData?.plant_id || '',
     password: '',
@@ -121,11 +126,16 @@ export default function UserPermissionForm() {
       toast.error('Password is required for new user');
       return;
     }
+    if (!/^\d{10,15}$/.test(formValues.phoneNumber.trim())) {
+      toast.error('Phone number must be 10 to 15 digits');
+      return;
+    }
     setSaving(true);
     const body = {
       employee_id: formValues.employeeId.trim(),
       name: formValues.name.trim(),
       email: formValues.email.trim(),
+      phone_number: formValues.phoneNumber.trim(),
       role: formValues.role,
       department_id: formValues.department,
       plant_id: formValues.plant,
@@ -161,6 +171,11 @@ export default function UserPermissionForm() {
       <p className='mx-3 pt-3 mb-2'>
         <span className='text-red-500'>*</span> indicates required field
       </p>
+      {isSelfEdit && (
+        <p className='mx-3 mb-2 text-xs text-gray-600'>
+          For your own account, only phone number and password can be updated here.
+        </p>
+      )}
       <hr className='border border-gray-300' />
       <div className='p-5'>
         <form onSubmit={handleFormSubmit}>
@@ -175,6 +190,7 @@ export default function UserPermissionForm() {
                 value={formValues[f.name]}
                 onChange={handleChange}
                 placeholder={f.name === 'password' ? 'Enter Password' : `Enter ${f.label}`}
+                disabled={isSelfEdit && !['phoneNumber', 'password'].includes(f.name)}
               />
             ))}
             <AutoSelect
@@ -186,6 +202,7 @@ export default function UserPermissionForm() {
               onChange={(_, v) => setFormValues((f) => ({ ...f, role: v?.id || '' }))}
               getOptionLabel={(o) => o.label || ''}
               placeholder='Select User Type'
+              disabled={isSelfEdit}
             />
             <AutoSelect
               label='Select Department'
@@ -196,6 +213,7 @@ export default function UserPermissionForm() {
               onChange={(_, v) => handleSelect('department', v)}
               getOptionLabel={(o) => o.name || ''}
               placeholder='Select Department'
+              disabled={isSelfEdit}
             />
             <AutoSelect
               label='Select Plant'
@@ -206,6 +224,7 @@ export default function UserPermissionForm() {
               onChange={(_, v) => handleSelect('plant', v)}
               getOptionLabel={(o) => o.name || ''}
               placeholder='Select Plant'
+              disabled={isSelfEdit}
             />
           </div>
           <div className='flex justify-end gap-4 mt-4'>

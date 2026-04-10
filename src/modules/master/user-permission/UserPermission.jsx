@@ -100,6 +100,25 @@ function UserPermission() {
     }
   };
 
+  const deleteUser = async (row) => {
+    if (row.is_self) {
+      toast.error('You cannot delete your own user');
+      return;
+    }
+    const ok = window.confirm(`Delete user "${row.name}" permanently? This cannot be undone.`);
+    if (!ok) return;
+    setSubmitting(true);
+    try {
+      const res = await ApiService.delete(`${APIURL.PORTAL_USERS}/${row.id}`);
+      toast.success(res?.message || 'User deleted');
+      await load();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to delete user');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className='w-full h-full p-2'>
       <div className='flex items-center justify-between mb-4'>
@@ -211,6 +230,7 @@ function UserPermission() {
           <thead className='bg-[#d9e7f8] text-[#07163d]'>
             <tr>
               <th className='px-3 py-2 font-semibold'>Name</th>
+              <th className='px-3 py-2 font-semibold'>Phone</th>
               <th className='px-3 py-2 font-semibold'>Employee ID</th>
               <th className='px-3 py-2 font-semibold'>Plant</th>
               <th className='px-3 py-2 font-semibold'>Department</th>
@@ -224,7 +244,7 @@ function UserPermission() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className='text-center py-8 text-gray-500'>
+                <td colSpan={10} className='text-center py-8 text-gray-500'>
                   Loading users...
                 </td>
               </tr>
@@ -232,6 +252,7 @@ function UserPermission() {
               filteredRows.map((row) => (
                 <tr key={row.id} className='border-t border-gray-200 hover:bg-gray-50'>
                   <td className='px-3 py-2'>{row.name}</td>
+                  <td className='px-3 py-2'>{row.phone_number || '-'}</td>
                   <td className='px-3 py-2'>{row.employee_id}</td>
                   <td className='px-3 py-2'>{row.plant_name}</td>
                   <td className='px-3 py-2'>{row.department_name}</td>
@@ -253,12 +274,18 @@ function UserPermission() {
                     <div className='flex items-center justify-center gap-2'>
                       <button
                         type='button'
-                        disabled={row.is_self}
                         onClick={() => navigate('/master/user-permission/create', { state: { row } })}
-                        className={`px-2 py-1 text-xs rounded text-white ${
-                          row.is_self ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
-                        }`}>
+                        className='px-2 py-1 text-xs rounded text-white bg-blue-500 hover:bg-blue-600 cursor-pointer'>
                         Edit
+                      </button>
+                      <button
+                        type='button'
+                        disabled={submitting || row.is_self}
+                        onClick={() => deleteUser(row)}
+                        className={`px-2 py-1 text-xs rounded text-white ${
+                          row.is_self ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'
+                        }`}>
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -266,7 +293,7 @@ function UserPermission() {
               ))
             ) : (
               <tr>
-                <td colSpan={9} className='text-center py-8 text-gray-500'>
+                <td colSpan={10} className='text-center py-8 text-gray-500'>
                   No user records found.
                 </td>
               </tr>
