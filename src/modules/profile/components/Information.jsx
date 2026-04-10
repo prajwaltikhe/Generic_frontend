@@ -1,74 +1,111 @@
+import { useEffect, useMemo, useState } from 'react';
 import { TextField } from '@mui/material';
-import { useFormik } from 'formik';
 
-export default function Information() {
-  const formik = useFormik({
-    initialValues: {
-      firstName: 'One',
-      lastName: 'Touch',
-      email: 'company@mailinator.com',
-      phoneNumber: '1234567890',
-      file: null,
-    },
-    onSubmit: (values) => {
-      console.log(values);
-    },
+export default function Information({ role, profile, loading, saving, onSave }) {
+  const [form, setForm] = useState({
+    employee_id: '',
+    name: '',
+    email: '',
+    phone_number: '',
+    department_name: '',
+    plant_name: '',
+    role_label: '',
   });
 
+  useEffect(() => {
+    setForm({
+      employee_id: profile?.employee_id || '',
+      name: profile?.name || '',
+      email: profile?.email || '',
+      phone_number: profile?.phone_number || '',
+      department_name: profile?.department_name || '',
+      plant_name: profile?.plant_name || '',
+      role_label: profile?.role_label || '',
+    });
+  }, [profile]);
+
+  const isSuperAdmin = role === 'superadmin';
+  const isAdmin = role === 'admin';
+  const isReadOnly = !isSuperAdmin && !isAdmin;
+  const canEditNameEmailPhone = isSuperAdmin || isAdmin;
+  const canEditEmployeeId = isAdmin;
+  const showAdminFixedFields = isAdmin;
+  const showOperatorDisplayFields = !isSuperAdmin && !isAdmin;
+
+  const disableSave = useMemo(() => {
+    if (loading || saving || isReadOnly) return true;
+    if (canEditEmployeeId && !form.employee_id.trim()) return true;
+    if (!form.name.trim() || !form.email.trim()) return true;
+    return !/^\d{10,15}$/.test(String(form.phone_number || '').replace(/\D/g, ''));
+  }, [loading, saving, isReadOnly, canEditEmployeeId, form]);
+
+  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (disableSave) return;
+    const payload = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone_number: String(form.phone_number || '').replace(/\D/g, ''),
+    };
+    if (canEditEmployeeId) payload.employee_id = form.employee_id.trim();
+    onSave?.(payload);
+  };
+
   return (
-    <form className='mt-3' onSubmit={formik.handleSubmit}>
-      <div className='grid grid-cols-2 gap-4'>
+    <form className='mt-3' onSubmit={submit}>
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+        {(isAdmin || showOperatorDisplayFields) && (
+          <TextField
+            label='Employee ID'
+            size='small'
+            value={form.employee_id}
+            onChange={(e) => setField('employee_id', e.target.value)}
+            fullWidth
+            disabled={!canEditEmployeeId}
+          />
+        )}
         <TextField
-          label='First Name'
+          label='Name'
           size='small'
-          name='firstName'
-          value={formik.values.firstName}
-          onChange={formik.handleChange}
+          value={form.name}
+          onChange={(e) => setField('name', e.target.value)}
           fullWidth
-          sx={{ mb: 3 }}
+          disabled={!canEditNameEmailPhone}
         />
         <TextField
-          label='Last Name'
+          label='Email'
           size='small'
-          name='lastName'
-          value={formik.values.lastName}
-          onChange={formik.handleChange}
+          value={form.email}
+          onChange={(e) => setField('email', e.target.value)}
           fullWidth
-          sx={{ mb: 3 }}
+          disabled={!canEditNameEmailPhone}
         />
+        <TextField
+          label='Phone Number'
+          size='small'
+          value={form.phone_number}
+          onChange={(e) => setField('phone_number', e.target.value)}
+          fullWidth
+          disabled={!canEditNameEmailPhone}
+        />
+        {(showAdminFixedFields || showOperatorDisplayFields) && (
+          <>
+            <TextField label='Department' size='small' value={form.department_name} fullWidth disabled />
+            <TextField label='Plant' size='small' value={form.plant_name} fullWidth disabled />
+            <TextField label='User Type' size='small' value={form.role_label} fullWidth disabled />
+          </>
+        )}
       </div>
-      <TextField
-        label='Email'
-        name='email'
-        value={formik.values.email}
-        onChange={formik.handleChange}
-        fullWidth
-        size='small'
-        disabled
-        sx={{ mb: 3 }}
-      />
-      <TextField
-        label='Phone Number'
-        name='phoneNumber'
-        value={formik.values.phoneNumber}
-        onChange={formik.handleChange}
-        fullWidth
-        size='small'
-        sx={{ mb: 3 }}
-      />
-      <input
-        type='file'
-        name='file'
-        className='block w-full text-sm text-gray-500'
-        onChange={(e) => {
-          formik.setFieldValue('file', e.currentTarget.files[0]);
-        }}
-      />
-      <button
-        type='submit'
-        className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer mt-4'>
-        Update
-      </button>
+      {!isReadOnly && (
+        <button
+          type='submit'
+          disabled={disableSave}
+          className='text-white bg-[#07163d] hover:bg-[#07163d] font-medium rounded-sm text-sm px-5 py-2.5 cursor-pointer mt-4 disabled:opacity-60 disabled:cursor-not-allowed'>
+          {saving ? 'Updating...' : 'Update'}
+        </button>
+      )}
     </form>
   );
 }

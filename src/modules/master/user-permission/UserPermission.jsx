@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Accordion, AccordionDetails, AccordionSummary, Typography } from '@mui/material';
 import ApiService from '../../../services/ApiService';
 import { APIURL } from '../../../constants';
 
@@ -131,10 +133,13 @@ function UserPermission() {
         </button>
       </div>
 
-      <div className='bg-white rounded-sm border-t-3 border-[#07163d] p-4 mb-4'>
-        <h2 className='text-lg font-semibold text-[#07163d] mb-1'>Search Users</h2>
-        <p className='text-xs text-gray-500 mb-4'>Use filters to search existing portal users.</p>
-        <form onSubmit={handleSubmit}>
+      <div className='bg-white rounded-sm border-t-3 border-[#07163d] mb-4'>
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls='user-filter-content'>
+            <Typography component='span'>Filter option</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <form onSubmit={handleSubmit}>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-1'>Emp. ID</label>
@@ -222,7 +227,9 @@ function UserPermission() {
               Reset
             </button>
           </div>
-        </form>
+            </form>
+          </AccordionDetails>
+        </Accordion>
       </div>
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] overflow-x-auto'>

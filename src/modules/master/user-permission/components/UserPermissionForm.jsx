@@ -63,6 +63,7 @@ export default function UserPermissionForm() {
   const rowData = useLocation().state?.row || null;
   const isEdit = Boolean(rowData?.id);
   const isSelfEdit = Boolean(rowData?.is_self);
+  const selfRole = String(rowData?.role || '').toLowerCase();
   const navigate = useNavigate();
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -173,7 +174,9 @@ export default function UserPermissionForm() {
       </p>
       {isSelfEdit && (
         <p className='mx-3 mb-2 text-xs text-gray-600'>
-          For your own account, only phone number and password can be updated here.
+          {selfRole === 'admin'
+            ? 'For your own account, only Employee ID, Name, Email and Phone Number can be updated here.'
+            : 'For your own account, only Name, Email, Phone Number and Password can be updated here.'}
         </p>
       )}
       <hr className='border border-gray-300' />
@@ -190,7 +193,12 @@ export default function UserPermissionForm() {
                 value={formValues[f.name]}
                 onChange={handleChange}
                 placeholder={f.name === 'password' ? 'Enter Password' : `Enter ${f.label}`}
-                disabled={isSelfEdit && !['phoneNumber', 'password'].includes(f.name)}
+                disabled={
+                  isSelfEdit &&
+                  (selfRole === 'admin'
+                    ? !['employeeId', 'name', 'email', 'phoneNumber'].includes(f.name)
+                    : !['name', 'email', 'phoneNumber', 'password'].includes(f.name))
+                }
               />
             ))}
             <AutoSelect
