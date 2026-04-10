@@ -39,7 +39,6 @@ function EmailServiceConfigPage() {
   const [smsSaving, setSmsSaving] = useState(false);
   const [smsTesting, setSmsTesting] = useState(false);
   const [smsTestPhone, setSmsTestPhone] = useState('');
-  const [smsTestMsg, setSmsTestMsg] = useState('Test message');
   const [smsTestAdvancedOpen, setSmsTestAdvancedOpen] = useState(false);
   const [smsTestTempid, setSmsTestTempid] = useState('');
   const [smsTestTmid, setSmsTestTmid] = useState('');
@@ -244,13 +243,9 @@ function EmailServiceConfigPage() {
       toast.error('Enter a mobile number for the SMS test');
       return;
     }
-    if (!smsTestMsg?.trim()) {
-      toast.error('Enter a test message');
-      return;
-    }
     setSmsTesting(true);
     try {
-      const body = { to: smsTestPhone.trim(), msg: smsTestMsg };
+      const body = { to: smsTestPhone.trim() };
       const addIf = (k, v) => {
         if (v != null && String(v).trim() !== '') body[k] = String(v).trim();
       };
@@ -576,6 +571,7 @@ function EmailServiceConfigPage() {
                   onChange={(e) => setSms('default_source', e.target.value)}
                   size='small'
                   fullWidth
+                  helperText='Route Mobile: use the DLT header from the portal (e.g. SAMPHR), not the handset display label.'
                 />
                 <TextField
                   label='Type (default, e.g. 0)'
@@ -626,21 +622,15 @@ function EmailServiceConfigPage() {
                 Test configuration
               </Typography>
               <Typography variant='body2' color='text.secondary' className='mb-2 max-w-lg'>
-                Uses saved gateway URL, credentials, and DLT defaults. Enter only the destination number and message;
-                open advanced overrides if you need to try different DLT values for one send.
+                Uses saved gateway URL, credentials, and DLT defaults. The test send uses the registered login OTP
+                template with dummy OTP <strong>1234</strong> and <strong>5</strong> minutes so wording matches DLT.
+                Open advanced overrides only if you need different tempid/tmid/entity/source for one send.
               </Typography>
               <div className='flex flex-col gap-2 max-w-lg mt-3'>
                 <TextField
                   label='Send test to (mobile)'
                   value={smsTestPhone}
                   onChange={(e) => setSmsTestPhone(e.target.value)}
-                  size='small'
-                  fullWidth
-                />
-                <TextField
-                  label='Message'
-                  value={smsTestMsg}
-                  onChange={(e) => setSmsTestMsg(e.target.value)}
                   size='small'
                   fullWidth
                 />
