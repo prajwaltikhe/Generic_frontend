@@ -197,6 +197,11 @@ const ProfileSubMenu = () => {
           Profile Update
         </Link>
       </li>
+      <li className='sub-menu-item'>
+        <Link to='/terms-of-service' className='nav-link'>
+          Terms of Service
+        </Link>
+      </li>
       <li className='sub-menu-item' onClick={handleLogout}>
         <Link className='nav-link'>Logout</Link>
       </li>

@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 const Login = lazy(() => import('./modules/login/Login'));
 const Otp = lazy(() => import('./modules/otp/Otp'));
+const TermsOfService = lazy(() => import('./modules/legal/TermsOfService'));
 const Layout = lazy(() => import('./components/layout/Layout'));
 const DynamicRoute = lazy(() => import('./routes/DynamicRoute'));
 
@@ -34,6 +35,7 @@ export default function App() {
           <Routes>
             <Route path='/' element={<Login />} />
             <Route path='/otp' element={<Otp />} />
+            <Route path='/terms-of-service' element={<TermsOfService />} />
             <Route path='/' element={<Layout />}>
               <Route path='*' element={<DynamicRoute />} />
             </Route>

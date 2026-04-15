@@ -86,6 +86,7 @@ const initialState = {
   playbackData: [],
   loadingPlayback: false,
   errorPlayback: null,
+  isRefreshing: false,
 };
 
 const multiTrackSlice = createSlice({
@@ -136,7 +137,9 @@ const multiTrackSlice = createSlice({
         state.playbackData = [];
       })
       .addCase(fetchEnrichedVehicles.pending, (state) => {
-        state.isProcessed = false;
+        state.isRefreshing = true;
+        // Show skeleton only on first load; keep existing list during background refreshes.
+        if (!state.devices.length) state.isProcessed = false;
       })
       .addCase(fetchEnrichedVehicles.fulfilled, (state, action) => {
         const result = processVehicles(action.payload);
@@ -147,6 +150,12 @@ const multiTrackSlice = createSlice({
         state.offlineVehicleData = result.offlineVehicleData;
         state.newDevices = result.newDevices;
         state.isProcessed = true;
+        state.isRefreshing = false;
+      })
+      .addCase(fetchEnrichedVehicles.rejected, (state) => {
+        state.isRefreshing = false;
+        // Keep already rendered data visible if refresh fails.
+        state.isProcessed = state.devices.length > 0;
       });
   },
 });

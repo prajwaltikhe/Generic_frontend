@@ -35,6 +35,7 @@ const selectState = (s) => ({
   isTrackShow: s.multiTrackStatus.isTrackShow,
   weekChart: s.multiTrackStatus.weekChart,
   isProcessed: s.multiTrackStatus.isProcessed,
+  isRefreshing: s.multiTrackStatus.isRefreshing,
 });
 
 const StatCard = ({ icon, label, value, bg, color, onClick }) => (
@@ -60,7 +61,7 @@ const TrackingPanel = ({ handleRightPanel }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow, isProcessed } = useSelector(
+  const { devices, newDevices, running, parked, idle, activeTab, offline, isTrackShow, isProcessed, isRefreshing } = useSelector(
     selectState,
     shallowEqual,
   );
@@ -151,6 +152,9 @@ const TrackingPanel = ({ handleRightPanel }) => {
         </div>
         <div className='p-2 border-b border-gray-300'>
           <ISearch onChange={(e) => setSearch(e.target.value)} value={search} onRefresh={handleRefresh} />
+          {isRefreshing && isProcessed && (
+            <div className='text-[11px] text-gray-500 mt-1'>Refreshing vehicle data...</div>
+          )}
         </div>
         <div className='mhe-list p-2 flex-1 min-h-0 overflow-y-auto'>
           {!isProcessed ? (

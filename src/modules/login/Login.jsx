@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import logo from '../../assets/logo.png';
 import { APIURL } from '../../constants';
 import { AuthService, ApiService } from '../../services';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LockIcon from '@mui/icons-material/Https';
 import EmailIcon from '@mui/icons-material/Email';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -264,6 +264,11 @@ function Login() {
               <a href='#' className='text-sm text-blue-500 hover:text-gray-800'>
                 Forgot your password?
               </a>
+            </div>
+            <div className='mt-4 w-full text-center text-sm text-gray-600'>
+              <Link to='/terms-of-service' className='text-blue-600 hover:text-blue-800 hover:underline'>
+                Terms of Service
+              </Link>
             </div>
           </form>
         </Paper>
