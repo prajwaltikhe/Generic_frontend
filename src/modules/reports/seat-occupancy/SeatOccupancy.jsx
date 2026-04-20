@@ -60,10 +60,14 @@ function SeatOccupancy() {
       const occupancy_rate_formatted =
         r.occupancy_rate ? `${r.occupancy_rate}${typeof r.occupancy_rate === 'number' ? '%' : ''}` : '-';
 
+      const dateStr = r.created_at || r.date_time || r.date;
+      const m = dateStr ? moment(dateStr) : null;
+      const isValidDate = m && m.isValid();
+
       return {
         ...r,
-        date_only: r.date ? moment(r.date).format('YYYY-MM-DD') : '-',
-        time_only: r.date ? moment(r.date).format('hh:mm:ss A') : '-',
+        date_only: isValidDate ? m.format('YYYY-MM-DD') : '-',
+        time_only: isValidDate ? m.format('hh:mm:ss A') : '-',
         occupancy_rate_formatted,
       };
     });

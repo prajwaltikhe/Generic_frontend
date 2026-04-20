@@ -72,7 +72,7 @@ function Overspeed() {
   const [filteredData, setFilteredData] = useState([]);
 
   const company_id = localStorage.getItem('company_id');
-  const { allRoutes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute || []);
+  const { allRoutes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute || {});
   const { allVehicles: vehicles } = useSelector((state) => state?.vehicles || []);
   const { speedOverReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 

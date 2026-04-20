@@ -191,9 +191,10 @@ function Parked() {
   };
 
   const availableRoutes = useMemo(() => {
+    const rList = Array.isArray(routes) ? routes : [];
     if (filterData.vehicles && filterData.vehicles.length > 0)
-      return routes.filter((r) => filterData.vehicles.includes(r.vehicle_id));
-    return routes;
+      return rList.filter((r) => filterData.vehicles.includes(r.vehicle_id));
+    return rList;
   }, [filterData.vehicles, routes]);
 
   return (

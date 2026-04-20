@@ -74,7 +74,7 @@ function Driver() {
   const navigate = useNavigate();
   const fileInputRef = useRef();
 
-  const { allRoutes: vehicleRoutes } = useSelector((s) => s.vehicleRoute || []);
+  const { allRoutes: vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
   const { allVehicles } = useSelector((s) => s.vehicles || []);
 
   const [page, setPage] = useState(0);

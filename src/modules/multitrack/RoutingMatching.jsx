@@ -1,7 +1,93 @@
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+
+const OSRM_MATCH_URL = 'https://router.project-osrm.org/match/v1/driving';
+const BATCH_SIZE = 80; // OSRM limit is 100, keep some margin
+const MATCH_RADIUS = 25; // meters – how far a GPS point can be from a road
+
+/**
+ * Snap an array of [lat, lng, speed] GPS points to actual roads via OSRM Match API.
+ * Returns an array of [lat, lng] for the road-snapped polyline.
+ * Falls back to raw coordinates on error.
+ */
+async function snapToRoads(coordinates) {
+  if (!coordinates?.length || coordinates.length < 2) return coordinates.map((c) => [c[0], c[1]]);
+
+  // Split coordinates into overlapping batches so seams connect properly
+  const batches = [];
+  for (let i = 0; i < coordinates.length; i += BATCH_SIZE - 1) {
+    batches.push(coordinates.slice(i, Math.min(i + BATCH_SIZE, coordinates.length)));
+  }
+
+  const snappedPath = [];
+
+  for (let bIdx = 0; bIdx < batches.length; bIdx++) {
+    const batch = batches[bIdx];
+    if (batch.length < 2) {
+      // Need at least 2 points for OSRM
+      snappedPath.push([batch[0][0], batch[0][1]]);
+      continue;
+    }
+
+    try {
+      // OSRM expects lng,lat order
+      const coordStr = batch.map((c) => `${c[1]},${c[0]}`).join(';');
+      const radiuses = batch.map(() => MATCH_RADIUS).join(';');
+      const url = `${OSRM_MATCH_URL}/${coordStr}?overview=full&geometries=geojson&radiuses=${radiuses}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.code === 'Ok' && data.matchings?.length > 0) {
+        for (const matching of data.matchings) {
+          const geojsonCoords = matching.geometry.coordinates;
+          // GeoJSON is [lng, lat] → convert to [lat, lng]
+          const latLngs = geojsonCoords.map((c) => [c[1], c[0]]);
+
+          // Skip first point of subsequent batches to avoid duplicate at seam
+          const startIdx = snappedPath.length > 0 ? 1 : 0;
+          for (let i = startIdx; i < latLngs.length; i++) {
+            snappedPath.push(latLngs[i]);
+          }
+        }
+      } else {
+        // Fallback: use raw GPS points for this batch
+        const startIdx = snappedPath.length > 0 ? 1 : 0;
+        for (let i = startIdx; i < batch.length; i++) {
+          snappedPath.push([batch[i][0], batch[i][1]]);
+        }
+      }
+    } catch {
+      // Fallback: use raw GPS points for this batch
+      const startIdx = snappedPath.length > 0 ? 1 : 0;
+      for (let i = startIdx; i < batch.length; i++) {
+        snappedPath.push([batch[i][0], batch[i][1]]);
+      }
+    }
+  }
+
+  return snappedPath;
+}
+
+/**
+ * For a snapped path point, find the nearest original GPS point to get its speed value.
+ */
+function findNearestSpeed(lat, lng, originalCoords) {
+  let minDist = Infinity;
+  let speed = 0;
+  for (const c of originalCoords) {
+    const dLat = c[0] - lat;
+    const dLng = c[1] - lng;
+    const dist = dLat * dLat + dLng * dLng;
+    if (dist < minDist) {
+      minDist = dist;
+      speed = c[2] ?? 0;
+    }
+  }
+  return speed;
+}
 
 const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
   const map = useMap();
@@ -11,6 +97,7 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
   const destMarkerRef = useRef();
   const intervalRef = useRef();
   const posRef = useRef(0);
+  const [snappedCoords, setSnappedCoords] = useState([]);
 
   const getSourceIcon = () =>
     L.divIcon({
@@ -82,14 +169,37 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     }
   }, [map]);
 
-  // Draw route polyline + markers when coordinates change
+  // Snap GPS coordinates to roads when raw coordinates change
   useEffect(() => {
-    if (!map || !coordinates?.length || coordinates.length < 2) return;
+    if (!coordinates?.length || coordinates.length < 2) {
+      Promise.resolve().then(() => setSnappedCoords([]));
+      return;
+    }
+
+    let cancelled = false;
+
+    snapToRoads(coordinates).then((snapped) => {
+      if (!cancelled && snapped.length >= 2) {
+        setSnappedCoords(snapped);
+      } else if (!cancelled) {
+        // Fallback if snapping returned too few points
+        setSnappedCoords(coordinates.map((c) => [c[0], c[1]]));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [coordinates]);
+
+  // Draw route polyline + markers when snapped coordinates are ready
+  useEffect(() => {
+    if (!map || !snappedCoords?.length || snappedCoords.length < 2) return;
 
     cleanup();
 
-    // Draw polyline directly from GPS coordinates
-    polylineRef.current = L.polyline(coordinates, {
+    // Draw polyline along road-snapped path
+    polylineRef.current = L.polyline(snappedCoords, {
       color: '#4285f4',
       weight: 5,
       opacity: 1,
@@ -101,29 +211,30 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     // Fit map bounds to polyline
     map.fitBounds(polylineRef.current.getBounds(), { padding: [50, 50], maxZoom: 16 });
 
-    const first = coordinates[0];
-    const last = coordinates[coordinates.length - 1];
+    const first = snappedCoords[0];
+    const last = snappedCoords[snappedCoords.length - 1];
 
-    // Source marker (black circle)
+    // Source marker (green circle)
     sourceMarkerRef.current = L.marker([first[0], first[1]], { icon: getSourceIcon(), zIndexOffset: 1000 }).addTo(map);
 
-    // Destination marker (black square)
+    // Destination marker (red square)
     destMarkerRef.current = L.marker([last[0], last[1]], { icon: getDestIcon(), zIndexOffset: 1000 }).addTo(map);
 
     // Vehicle marker at start position
+    const startSpeed = coordinates?.length ? findNearestSpeed(first[0], first[1], coordinates) : 0;
     markerRef.current = L.marker([first[0], first[1]], { icon: getCarIcon(), zIndexOffset: 2000 })
       .addTo(map)
-      .bindPopup(popHtml(first[0], first[1], first[2]), { closeButton: false, autoClose: false })
+      .bindPopup(popHtml(first[0], first[1], startSpeed), { closeButton: false, autoClose: false })
       .openPopup();
 
     posRef.current = 0;
 
     return cleanup;
-  }, [map, coordinates, vehicle_number, popHtml, cleanup]);
+  }, [map, snappedCoords, vehicle_number, popHtml, cleanup, coordinates]);
 
-  // Handle play/pause animation
+  // Handle play/pause animation along snapped path
   useEffect(() => {
-    if (!coordinates?.length || coordinates.length < 2) return;
+    if (!snappedCoords?.length || snappedCoords.length < 2) return;
 
     clearInterval(intervalRef.current);
 
@@ -131,15 +242,16 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     markerRef.current.setIcon(getCarIcon());
 
     if (isPlaying) {
-      if (posRef.current >= coordinates.length) posRef.current = 0;
+      if (posRef.current >= snappedCoords.length) posRef.current = 0;
       const delay = Math.max(10, 1000 / Math.max(speed, 1));
 
       intervalRef.current = setInterval(() => {
-        if (posRef.current >= coordinates.length) {
+        if (posRef.current >= snappedCoords.length) {
           clearInterval(intervalRef.current);
           return;
         }
-        const [lat, lng, currentSpeed] = coordinates[posRef.current];
+        const [lat, lng] = snappedCoords[posRef.current];
+        const currentSpeed = coordinates?.length ? findNearestSpeed(lat, lng, coordinates) : 0;
         markerRef.current.setLatLng([lat, lng]);
         markerRef.current.setPopupContent(popHtml(lat, lng, currentSpeed));
         posRef.current++;
@@ -147,7 +259,7 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     }
 
     return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed, coordinates, popHtml]);
+  }, [isPlaying, speed, snappedCoords, coordinates, popHtml]);
 
   return null;
 };

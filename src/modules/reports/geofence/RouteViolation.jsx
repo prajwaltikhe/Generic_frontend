@@ -70,17 +70,23 @@ function RouteViolation() {
   }, [dispatch, company_id, page, limit]);
 
   const formatData = (items) =>
-    items.map((item, i) => ({
-      id: item.id || item._id || item.vehicle_id || i + 1,
-      vehicle_id: item.vehicle_id || item.id || item._id,
-      date_only: item.date ? moment(item.date).format('YYYY-MM-DD') : '-',
-      time_only: item.date ? moment(item.date).format('hh:mm:ss A') : '-',
-      vehicle_number: item.vehicle_number ?? '-',
-      route_details: item.route_details ?? item.route_name ?? '-',
-      driver_name: item.driver_name ?? '-',
-      driver_number: item.driver_number ?? item.driver_phone ?? '-',
-      violation_distance: item.violation_distance ?? '-',
-    }));
+    items.map((item, i) => {
+      const dateStr = item.created_at || item.date_time || item.date;
+      const m = dateStr ? moment(dateStr) : null;
+      const isValidDate = m && m.isValid();
+
+      return {
+        id: item.id || item._id || item.vehicle_id || i + 1,
+        vehicle_id: item.vehicle_id || item.id || item._id,
+        date_only: isValidDate ? m.format('YYYY-MM-DD') : '-',
+        time_only: isValidDate ? m.format('hh:mm:ss A') : '-',
+        vehicle_number: item.vehicle_number ?? '-',
+        route_details: item.route_details ?? item.route_name ?? '-',
+        driver_name: item.driver_name ?? '-',
+        driver_number: item.driver_number ?? item.driver_phone ?? '-',
+        violation_distance: item.violation_distance ?? '-',
+      };
+    });
 
   const data = formatData(filteredData);
 

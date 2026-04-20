@@ -36,7 +36,7 @@ function VehicalArrivalTime() {
 
   const company_id = localStorage.getItem('company_id');
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
-  const { allRoutes } = useSelector((state) => state?.vehicleRoute || []);
+  const { allRoutes } = useSelector((state) => state?.vehicleRoute || {});
   const { allVehicles } = useSelector((state) => state?.vehicles || []);
 
   // Read status from URL query parameter on component mount
@@ -57,6 +57,7 @@ function VehicalArrivalTime() {
   const currentPathId = location.pathname.split('/').pop();
 
   const columns = useMemo(() => {
+    const isNightShift = currentPathId === '2f7d76b8-87a9-4dc1-822a-a39e99b314e9';
     return [
       { key: 'date_only', header: 'Date', render: (_v, r) => r.date_only || '-' },
       { key: 'time_only', header: 'Time', render: (_v, r) => r.time_only || '-' },
@@ -64,16 +65,18 @@ function VehicalArrivalTime() {
       { key: 'route_name', header: 'Route Details', render: (_v, row) => row?.route_name || '-' },
       { key: 'driver_name', header: 'Driver Name', render: (_v, row) => row?.driver_name || '-' },
       { key: 'driver_number', header: 'Driver Number', render: (_v, row) => row?.driver_number || '-' },
-      {
-        key: 'target_arrival_time',
-        header: 'Target Arrival Time',
-        render: (_v, row) => row?.target_arrival_time || '-',
-      },
-      {
-        key: 'actual_arrival_time',
-        header: 'Actual Arrival Time',
-        render: (_v, row) => row?.actual_arrival_time || '-',
-      },
+      ...(isNightShift ? [] : [
+        {
+          key: 'target_arrival_time',
+          header: 'Target Arrival Time',
+          render: (_v, row) => row?.target_arrival_time || '-',
+        },
+        {
+          key: 'actual_arrival_time',
+          header: 'Actual Arrival Time',
+          render: (_v, row) => row?.actual_arrival_time || '-',
+        },
+      ]),
       {
         key: 'lat_long_formatted',
         header: 'Lat-Long',
@@ -105,7 +108,7 @@ function VehicalArrivalTime() {
         },
       },
     ];
-  }, []);
+  }, [currentPathId]);
 
   useEffect(() => {
     if (company_id) {

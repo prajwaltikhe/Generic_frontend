@@ -78,7 +78,7 @@ function EmployeeOnboard() {
   const { employes: employees } = useSelector((s) => s.employee.getAllEmployeeDetails);
   const { error, loading } = useSelector((s) => s.employee);
   const { plants } = useSelector((s) => s.plant);
-  const { routes } = useSelector((s) => s.vehicleRoute.vehicleRoutes);
+  const { routes } = useSelector((s) => s.vehicleRoute?.vehicleRoutes || {});
   const { vehicles } = useSelector((s) => s.vehicles || {});
 
   useEffect(() => {

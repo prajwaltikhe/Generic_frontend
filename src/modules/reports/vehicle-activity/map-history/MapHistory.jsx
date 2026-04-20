@@ -5,6 +5,7 @@ import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
 import { fetchVehicles } from '../../../../redux/vehiclesSlice';
+import { fetchAllVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { useEffect, useState, useRef, useCallback, useMemo, memo } from 'react';
 import { fetchMapHistoryData } from '../../../../redux/vehicleActivitySlice';
 import { MapContainer, TileLayer, Popup, useMap } from 'react-leaflet';
@@ -199,17 +200,19 @@ EmptyState.displayName = 'EmptyState';
 
 function MapHistory() {
   const dispatch = useDispatch();
-  const [filterData, setFilterData] = useState({ vehicle_id: '', fromDate: '', toDate: '' });
+  const [filterData, setFilterData] = useState({ vehicle_id: '', routes: [], fromDate: '', toDate: '' });
   const [filteredData, setFilteredData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const company_id = localStorage.getItem('company_id');
   const vehicles = useSelector((s) => s?.vehicles?.vehicles || []);
+  const { allRoutes: vehicleRoutes } = useSelector((s) => s?.vehicleRoute || {});
   const dataFilter = useRef(filterData);
 
   useEffect(() => {
     dispatch(fetchVehicles({ limit: 150 }));
-  }, [dispatch]);
+    if (company_id) dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
+  }, [dispatch, company_id]);
 
   const validMapPoints = useMemo(() => filteredData.filter(isValidPoint), [filteredData]);
 
@@ -243,6 +246,7 @@ function MapHistory() {
       const payload = {
         company_id,
         vehicle_id: dataFilter.current.vehicle_id,
+        ...(dataFilter.current.routes?.length && { routes: JSON.stringify(dataFilter.current.routes) }),
         ...(dataFilter.current.fromDate && { from_date: dataFilter.current.fromDate }),
         ...(dataFilter.current.toDate && { to_date: dataFilter.current.toDate }),
         page: 1,
@@ -271,8 +275,8 @@ function MapHistory() {
   );
 
   const handleFormReset = useCallback(() => {
-    setFilterData({ vehicle_id: '', fromDate: '', toDate: '' });
-    dataFilter.current = { vehicle_id: '', fromDate: '', toDate: '' };
+    setFilterData({ vehicle_id: '', routes: [], fromDate: '', toDate: '' });
+    dataFilter.current = { vehicle_id: '', routes: [], fromDate: '', toDate: '' };
     setFilteredData([]);
   }, []);
 
@@ -310,6 +314,7 @@ function MapHistory() {
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
           vehicles={vehicles}
+          routes={vehicleRoutes}
           singleVehicle
         />
       </form>

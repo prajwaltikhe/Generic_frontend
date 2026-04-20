@@ -9,8 +9,8 @@ import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
-  { key: 'date', header: 'Date', render: (value) => (value ? moment(value).format('YYYY-MM-DD') : '-') },
-  { key: 'time', header: 'Time', render: (value) => (value ? moment(value).format('hh:mm:ss A') : '-') },
+  { key: 'date', header: 'Date', render: (value) => value || '-' },
+  { key: 'time', header: 'Time', render: (value) => value || '-' },
   { key: 'vehicleNumber', header: 'Vehicle Number', render: (_v, row) => row?.vehicleNumber || '-' },
   { key: 'routeDetails', header: 'Route Details', render: (_v, row) => row?.routeDetails || '-' },
   { key: 'driverName', header: 'Driver Name', render: (_v, row) => row?.driverName || '-' },

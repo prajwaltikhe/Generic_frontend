@@ -49,16 +49,18 @@ export default function NewDevice() {
 
   useEffect(() => {
     if (!company_id) return;
-    setIsLoading(true);
-    dispatch(fetchVehicleMissingInflux({ company_id, page: page + 1, limit })).then((res) => {
-      setIsLoading(false);
-      if (res?.payload?.success) {
-        setFilteredData(res.payload.data);
-        setTotalCount(res.payload?.pagination?.total || 0);
-      } else {
-        setFilteredData([]);
-        setTotalCount(0);
-      }
+    Promise.resolve().then(() => {
+      setIsLoading(true);
+      dispatch(fetchVehicleMissingInflux({ company_id, page: page + 1, limit })).then((res) => {
+        setIsLoading(false);
+        if (res?.payload?.success) {
+          setFilteredData(res.payload.data);
+          setTotalCount(res.payload?.pagination?.total || 0);
+        } else {
+          setFilteredData([]);
+          setTotalCount(0);
+        }
+      });
     });
   }, [company_id, page, limit, dispatch]);
 

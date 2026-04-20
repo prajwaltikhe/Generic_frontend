@@ -9,8 +9,9 @@ const OverSpeedChart = ({ data }) => {
     const v = item?.vehicle_number;
     const time = item?.date_time;
     if (time) {
-      const istTime = moment.tz(time, 'Asia/Kolkata').valueOf();
-      (vehicleMap[v] = vehicleMap[v] || []).push({ x: istTime, y: item?.max_speed || 0 });
+      const istString = moment.tz(time, 'Asia/Kolkata').format('YYYY-MM-DDTHH:mm:ss');
+      const shiftedTime = moment.utc(istString).valueOf();
+      (vehicleMap[v] = vehicleMap[v] || []).push({ x: shiftedTime, y: item?.max_speed || 0 });
     }
   });
   const keys = Object.keys(vehicleMap);
@@ -23,7 +24,10 @@ const OverSpeedChart = ({ data }) => {
   const allDates = rawData
     .map((i) => i?.date_time)
     .filter(Boolean)
-    .map((d) => moment.tz(d, 'Asia/Kolkata').valueOf());
+    .map((d) => {
+      const istString = moment.tz(d, 'Asia/Kolkata').format('YYYY-MM-DDTHH:mm:ss');
+      return moment.utc(istString).valueOf();
+    });
   const minDate = allDates.length ? Math.min(...allDates) : undefined;
   const maxDate = allDates.length ? Math.max(...allDates) : undefined;
   const options = {
@@ -43,7 +47,7 @@ const OverSpeedChart = ({ data }) => {
     tooltip: {
       x: {
         format: 'dd MMM yyyy hh:mm:ss A',
-        formatter: (val) => moment.tz(val, 'Asia/Kolkata').format('DD MMM YYYY hh:mm:ss A'),
+        formatter: (val) => moment.utc(val).format('DD MMM YYYY hh:mm:ss A'),
       },
       y: { formatter: (val) => `${val} km/h` },
     },

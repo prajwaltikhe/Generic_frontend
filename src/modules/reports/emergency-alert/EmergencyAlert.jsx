@@ -1,5 +1,5 @@
 import moment from 'moment-timezone';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
@@ -87,6 +87,7 @@ function EmergencyAlert() {
   const [page, setPage] = useState(0),
     [limit, setLimit] = useState(10);
   const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '' });
+  const appliedFilters = useRef({ vehicles: [], routes: [], fromDate: '', toDate: '' });
   const [filteredData, setFilteredData] = useState([]);
   const company_id = localStorage.getItem('company_id');
   const { emergencyReportAlertData, loading, error } = useSelector((s) => s?.emergencyReportAlert || {});
@@ -102,24 +103,26 @@ function EmergencyAlert() {
     });
   }, [dispatch, company_id]);
 
+  const buildApiPayload = (overrides = {}) => {
+    const p = { company_id, page: page + 1, limit, ...overrides };
+    const currentFilters = appliedFilters.current;
+    currentFilters.vehicles?.length && (p.vehicles = JSON.stringify(currentFilters.vehicles));
+    currentFilters.routes?.length && (p.routes = JSON.stringify(currentFilters.routes));
+    currentFilters.fromDate && (p.start = currentFilters.fromDate);
+    currentFilters.toDate && (p.end = currentFilters.toDate);
+    return p;
+  };
+
   useEffect(() => {
     Promise.resolve().then(() => {
       if (company_id) {
-        dispatch(fetchEmergencyReportAlert({ company_id, page: page + 1, limit })).then((res) =>
+        dispatch(fetchEmergencyReportAlert(buildApiPayload())).then((res) =>
           setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
         );
       }
     });
+    // eslint-disable-next-line
   }, [dispatch, company_id, page, limit]);
-
-  const buildApiPayload = (overrides = {}) => {
-    const p = { company_id, page: page + 1, limit, ...overrides };
-    filterData.vehicles?.length && (p.vehicles = JSON.stringify(filterData.vehicles));
-    filterData.routes?.length && (p.routes = JSON.stringify(filterData.routes));
-    filterData.fromDate && (p.start = filterData.fromDate);
-    filterData.toDate && (p.end = filterData.toDate);
-    return p;
-  };
 
   const tableData = Array.isArray(filteredData) ? filteredData.map(transformRow) : [];
 
@@ -157,12 +160,22 @@ function EmergencyAlert() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    dispatch(fetchEmergencyReportAlert(buildApiPayload())).then((res) =>
+    appliedFilters.current = filterData;
+    setPage(0);
+    dispatch(fetchEmergencyReportAlert(buildApiPayload({ page: 1 }))).then((res) =>
       setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
     );
   };
 
-  const handleFormReset = () => setFilterData({ vehicles: [], routes: [], fromDate: '', toDate: '' });
+  const handleFormReset = () => {
+    const defaultFilters = { vehicles: [], routes: [], fromDate: '', toDate: '' };
+    setFilterData(defaultFilters);
+    appliedFilters.current = defaultFilters;
+    setPage(0);
+    dispatch(fetchEmergencyReportAlert({ company_id, page: 1, limit })).then((res) =>
+      setFilteredData(Array.isArray(res?.payload?.data) ? res.payload.data : []),
+    );
+  };
 
   return (
     <div className='w-full h-full p-2'>

@@ -39,7 +39,7 @@ function Announcement() {
   const fileInputRef = useRef();
   const company_id = localStorage.getItem('company_id');
 
-  const { allRoutes: routes } = useSelector((state) => state?.vehicleRoute || []);
+  const { allRoutes: routes } = useSelector((state) => state?.vehicleRoute || {});
   const { allVehicles: vehicles } = useSelector((state) => state.vehicles || []);
 
   const [page, setPage] = useState(0);

@@ -97,7 +97,7 @@ function MovementDetails() {
   };
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(() => fetchData());
     // eslint-disable-next-line
   }, [id]);
 

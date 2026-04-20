@@ -34,7 +34,7 @@ const columns = [
           row={{ ...row.raw, statusValue: row.statusValue, status: row.statusName }}
           onStatusChange={onStatusChange}
           statusOptions={statusOptions}
-          disabled={row.statusValue === statusOptions[0].id}
+          disabled={row.statusValue === statusOptions[1].id}
         />
       </div>
     ),

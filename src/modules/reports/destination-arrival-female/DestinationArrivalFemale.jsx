@@ -65,7 +65,7 @@ function DestinationArrivalFemale() {
 
   const { departments } = useSelector((s) => s.department);
   const { employes: employees } = useSelector((s) => s.employee.getAllEmployeeDetails);
-  const { routes } = useSelector((s) => s.vehicleRoute.vehicleRoutes);
+  const { routes } = useSelector((s) => s.vehicleRoute?.vehicleRoutes || {});
   const { vehicles } = useSelector((s) => s.vehicles || {});
   const { plants } = useSelector((s) => s.plant);
 

@@ -160,14 +160,16 @@ function Movement() {
 
   useEffect(() => {
     if (!company_id) return;
-    setIsLoading(true);
-    dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit })))
-      .then((res) => {
-        const raw = res?.payload?.data;
-        setFilteredData(formatMovementRows(raw, page * limit));
-        setTotalCount(res?.payload?.pagination?.total ?? 0);
-      })
-      .finally(() => setIsLoading(false));
+    Promise.resolve().then(() => {
+      setIsLoading(true);
+      dispatch(fetchVehicleActivityData(buildApiPayload({ page: page + 1, limit })))
+        .then((res) => {
+          const raw = res?.payload?.data;
+          setFilteredData(formatMovementRows(raw, page * limit));
+          setTotalCount(res?.payload?.pagination?.total ?? 0);
+        })
+        .finally(() => setIsLoading(false));
+    });
   }, [company_id, page, limit, buildApiPayload, dispatch]);
 
   const tableData = filteredData;
@@ -195,9 +197,10 @@ function Movement() {
   const tableColumns = [...columns, actionColumn];
 
   const availableRoutes = useMemo(() => {
+    const rList = Array.isArray(routes) ? routes : [];
     if (filterData.vehicles && filterData.vehicles.length > 0)
-      return routes.filter((r) => filterData.vehicles.includes(r.vehicle_id));
-    return routes;
+      return rList.filter((r) => filterData.vehicles.includes(r.vehicle_id));
+    return rList;
   }, [filterData.vehicles, routes]);
 
   const handleExport = async () => {
