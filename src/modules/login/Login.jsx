@@ -9,6 +9,7 @@ import LockIcon from '@mui/icons-material/Https';
 import EmailIcon from '@mui/icons-material/Email';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useCallback, useEffect, useState } from 'react';
+import { isPortalTokenValid } from '../../auth/sessionUtils';
 import {
   Paper,
   TextField,
@@ -59,10 +60,8 @@ function Login() {
     }
   }, []);
 
-  // Redirect to dashboard if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
+    if (isPortalTokenValid()) {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate]);

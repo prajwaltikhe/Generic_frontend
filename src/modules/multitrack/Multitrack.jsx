@@ -38,11 +38,24 @@ export default function Multitrack() {
     [selectedVehicleId],
   );
 
+  const collapseDetailPanelOnly = useCallback(() => {
+    setShowPanel(false);
+  }, []);
+
+  const expandDetailPanel = useCallback(() => {
+    if (selectedVehicleId) setShowPanel(true);
+  }, [selectedVehicleId]);
+
   return (
     <div className='relative flex-1 h-screen rounded-md'>
       <TrackingPanel handleRightPanel={handleRightPanel} />
       <MapComponent selectedVehicle={selectedVehicle} />
-      <MheStatusPanel handleRightPanel={() => handleRightPanel()} isShowPanel={showPanel} vehicle={selectedVehicle} />
+      <MheStatusPanel
+        onCollapsePanel={collapseDetailPanelOnly}
+        onExpandPanel={expandDetailPanel}
+        isShowPanel={showPanel}
+        vehicle={selectedVehicle}
+      />
     </div>
   );
 }

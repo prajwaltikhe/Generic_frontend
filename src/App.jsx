@@ -33,10 +33,12 @@ export default function App() {
       <Router>
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
+            <Route path='/login' element={<Login />} />
             <Route path='/' element={<Login />} />
             <Route path='/otp' element={<Otp />} />
+            {/* Public: not behind Layout / role guards; IP whitelist applies only to login API, not this page */}
             <Route path='/terms-of-service' element={<TermsOfService />} />
-            <Route path='/' element={<Layout />}>
+            <Route path='/*' element={<Layout />}>
               <Route path='*' element={<DynamicRoute />} />
             </Route>
             <Route path='*' element={<div>404</div>} />

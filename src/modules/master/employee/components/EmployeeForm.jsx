@@ -111,6 +111,15 @@ function EmployeeForm() {
 
   const fileInputRef = useRef(null);
   const addressTimeoutRef = useRef(null);
+  /** After user changes/clears Route, do not re-apply rowData route from the hydrate effect (fixes snap-back). */
+  const routeTouchedByUserRef = useRef(false);
+
+  const employeeFormKey =
+    rowData?.rowData?.actual_id ?? rowData?.rowData?.id ?? rowData?.rowData?.employee_id ?? null;
+
+  useEffect(() => {
+    routeTouchedByUserRef.current = false;
+  }, [employeeFormKey, rowData?.mode]);
 
   const [formVal, setFormVal] = useState(() => {
     const d = (rowData?.mode === 'edit' || rowData?.mode === 'view') ? rowData.rowData : null;
@@ -202,7 +211,7 @@ function EmployeeForm() {
       const opt = getOptionObj(plant.options, d.plant, true);
       if (opt && opt.value !== formVal.selectedPlant?.value) updates.selectedPlant = opt;
     }
-    if (route.options?.length > 0) {
+    if (route.options?.length > 0 && !routeTouchedByUserRef.current) {
       const opt = getOptionObj(route.options, d.vehicle_route_name || d.vehicle_route_id, true);
       if (opt && opt.value !== formVal.vehicleRoute?.value) updates.vehicleRoute = opt;
     }
@@ -222,7 +231,6 @@ function EmployeeForm() {
     boarding.options,
     formVal.selectedDepartment?.value,
     formVal.selectedPlant?.value,
-    formVal.vehicleRoute?.value,
     formVal.boardingPoint,
   ]);
 
@@ -461,7 +469,10 @@ function EmployeeForm() {
                 options={route.options}
                 value={formVal.vehicleRoute}
                 loading={route.loading}
-                onChange={(_, v) => setFormVal((p) => ({ ...p, vehicleRoute: v, boardingPoint: null }))}
+                onChange={(_, v) => {
+                  routeTouchedByUserRef.current = true;
+                  setFormVal((p) => ({ ...p, vehicleRoute: v, boardingPoint: null }));
+                }}
                 disabled={isViewMode}
               />
 

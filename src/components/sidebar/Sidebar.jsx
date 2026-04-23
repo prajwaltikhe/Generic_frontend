@@ -188,7 +188,7 @@ const ProfileSubMenu = () => {
   const navigate = useNavigate();
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/');
+    navigate('/login');
   };
   return (
     <ul className='sub-menu settings-sub-menu'>

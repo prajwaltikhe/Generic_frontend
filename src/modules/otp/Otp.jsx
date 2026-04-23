@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import logo from '../../assets/logo.png';
@@ -13,7 +13,10 @@ import { fetchPlants } from '../../redux/plantSlice';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { fetchDepartments } from '../../redux/departmentSlice';
-import { IconButton, Paper, TextField, Button, InputAdornment } from '@mui/material';
+import { IconButton, Paper, TextField, Button, InputAdornment, Typography } from '@mui/material';
+import { APIURL } from '../../constants';
+import { AuthService } from '../../services';
+import { isPortalTokenValid } from '../../auth/sessionUtils';
 
 const validationSchema = Yup.object({
   otp: Yup.string()
@@ -21,11 +24,50 @@ const validationSchema = Yup.object({
     .matches(/^\d{6}$/, 'Enter 6-digit OTP'),
 });
 
+const RESEND_COOLDOWN_SEC = 60;
+
 function Otp() {
   const { login } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showOtp, setShowOtp] = useState(false);
+  const [resendSec, setResendSec] = useState(0);
+  const [resendBusy, setResendBusy] = useState(false);
+
+  useEffect(() => {
+    if (isPortalTokenValid()) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (resendSec <= 0) return undefined;
+    const t = setInterval(() => setResendSec((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendSec]);
+
+  const handleResend = useCallback(async () => {
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+      toast.error('Session expired');
+      navigate('/login', { replace: true });
+      return;
+    }
+    if (resendSec > 0 || resendBusy) return;
+    setResendBusy(true);
+    try {
+      const json = await AuthService.resendLoginOtp(APIURL.RESEND_LOGIN_OTP, userId);
+      if (json?.success) {
+        toast.success(json?.message || 'OTP sent again');
+        setResendSec(RESEND_COOLDOWN_SEC);
+      } else {
+        toast.error(json?.message || 'Could not resend OTP');
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || e?.message || 'Could not resend OTP');
+    }
+    setResendBusy(false);
+  }, [navigate, resendBusy, resendSec]);
 
   const formik = useFormik({
     initialValues: { otp: '' },
@@ -34,7 +76,7 @@ function Otp() {
       const userId = localStorage.getItem('user_id');
       if (!userId) {
         toast.error('Session expired');
-        navigate('/');
+        navigate('/login', { replace: true });
         setSubmitting(false);
         return;
       }
@@ -119,6 +161,22 @@ function Otp() {
               }}>
               {formik.isSubmitting ? 'Verifying...' : 'Verify OTP'}
             </Button>
+            <div className='mt-3 flex flex-col items-center gap-1'>
+              <Button
+                type='button'
+                variant='text'
+                size='small'
+                disabled={resendBusy || resendSec > 0 || formik.isSubmitting}
+                onClick={handleResend}
+                sx={{ textTransform: 'none' }}>
+                {resendBusy ? 'Sending…' : 'Resend OTP'}
+              </Button>
+              {resendSec > 0 ? (
+                <Typography variant='caption' color='text.secondary'>
+                  Resend available in {resendSec}s
+                </Typography>
+              ) : null}
+            </div>
           </form>
         </Paper>
       </div>

@@ -31,6 +31,8 @@ const AuthService = {
     return data;
   },
 
+  resendLoginOtp: async (url, userId) => ApiService.postPublic(url, { userId }),
+
   logout: removeToken,
   getToken,
   isAuthenticated: () => {

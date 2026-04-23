@@ -71,15 +71,32 @@ function RouteViolation() {
 
   const formatData = (items) =>
     items.map((item, i) => {
+      const violationRaw = item.violation_start_time || item.violation_end_time;
+      let mViolation = null;
+      if (violationRaw) {
+        const m = moment(violationRaw);
+        if (m.isValid()) {
+          mViolation = m.clone().tz('Asia/Kolkata');
+        }
+      }
+
       const dateStr = item.created_at || item.date_time || item.date;
-      const m = dateStr ? moment(dateStr) : null;
-      const isValidDate = m && m.isValid();
+      const mFallback = !mViolation && dateStr ? moment(dateStr) : null;
+      const m = mViolation || (mFallback?.isValid() ? mFallback : null);
+
+      const dateOnlyRaw = item.date && String(item.date).trim();
+      const dateFromRange =
+        dateOnlyRaw && !dateOnlyRaw.includes(' to ')
+          ? dateOnlyRaw.slice(0, 10)
+          : dateOnlyRaw && dateOnlyRaw.includes(' to ')
+            ? dateOnlyRaw.split(' to ')[0]?.trim()?.slice(0, 10)
+            : null;
 
       return {
         id: item.id || item._id || item.vehicle_id || i + 1,
         vehicle_id: item.vehicle_id || item.id || item._id,
-        date_only: isValidDate ? m.format('YYYY-MM-DD') : '-',
-        time_only: isValidDate ? m.format('hh:mm:ss A') : '-',
+        date_only: mViolation ? mViolation.format('YYYY-MM-DD') : m ? m.format('YYYY-MM-DD') : dateFromRange || '-',
+        time_only: mViolation ? mViolation.format('hh:mm:ss A') : '-',
         vehicle_number: item.vehicle_number ?? '-',
         route_details: item.route_details ?? item.route_name ?? '-',
         driver_name: item.driver_name ?? '-',

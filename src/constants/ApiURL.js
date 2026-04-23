@@ -1,5 +1,6 @@
 export const APIURL = {
   LOGIN: 'users/login',
+  RESEND_LOGIN_OTP: 'users/resend-login-otp',
   CAPTCHA: 'captcha',
   VERIFY_OTP: 'users/verifyotp',
   SUPER_ADMIN_EMAIL_SERVICE: 'super-admin/email-service',

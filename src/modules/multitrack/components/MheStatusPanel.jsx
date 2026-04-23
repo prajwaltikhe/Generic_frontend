@@ -2,6 +2,7 @@ import moment from 'moment-timezone';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
+import ArrowLeftIcon from '@mui/icons-material/ArrowBackIosNew';
 
 const statusColorMap = {
   Running: '#008000',
@@ -35,7 +36,7 @@ const Btn = ({ children }) => (
   </button>
 );
 
-const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
+const MheStatusPanel = ({ onCollapsePanel, onExpandPanel, isShowPanel, vehicle }) => {
   const [dt] = useState(() => moment().tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm'));
 
   const status = vehicle?.status ?? 'Unknown';
@@ -57,10 +58,21 @@ const MheStatusPanel = ({ handleRightPanel, isShowPanel, vehicle }) => {
         <div className='fixed top-2/5 z-100000 -translate-y-1/2 transition-all duration-300 left-[calc(100vw-360px)]'>
           <button
             className='h-10 w-10 bg-linear-to-br from-[#1d31a6] to-[#3b5998] cursor-pointer text-white flex items-center justify-center rounded-full shadow-lg border border-white'
-            onClick={handleRightPanel}
-            title='Hide Panel'
+            onClick={onCollapsePanel}
+            title='Hide panel (map selection unchanged)'
             type='button'>
             <ArrowRightIcon fontSize='small' />
+          </button>
+        </div>
+      )}
+      {!isShowPanel && vehicle && (
+        <div className='fixed top-2/5 z-100000 -translate-y-1/2 transition-all duration-300 right-0'>
+          <button
+            className='h-10 w-10 bg-linear-to-br from-[#1d31a6] to-[#3b5998] cursor-pointer text-white flex items-center justify-center rounded-l-full shadow-lg border border-white pr-1'
+            onClick={onExpandPanel}
+            title='Show vehicle details'
+            type='button'>
+            <ArrowLeftIcon fontSize='small' />
           </button>
         </div>
       )}
