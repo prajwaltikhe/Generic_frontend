@@ -191,7 +191,7 @@ const ProfileSubMenu = () => {
     navigate('/login');
   };
   return (
-    <ul className='sub-menu settings-sub-menu'>
+    <ul className='sub-menu profile-sub-menu'>
       <li className='sub-menu-item'>
         <Link to='/profile' className='nav-link'>
           Profile Update
