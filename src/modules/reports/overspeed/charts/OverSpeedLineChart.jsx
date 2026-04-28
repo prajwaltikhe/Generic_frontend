@@ -3,53 +3,47 @@ import Chart from 'react-apexcharts';
 
 const OverSpeedChart = ({ data }) => {
   const rawData = Array.isArray(data) ? data : data?.data || [];
-  const vehicleMap = {};
+  const dailyCountMap = {};
 
   rawData.forEach((item) => {
-    const v = item?.vehicle_number;
-    const time = item?.date_time;
-    if (time) {
-      const istString = moment.tz(time, 'Asia/Kolkata').format('YYYY-MM-DDTHH:mm:ss');
-      const shiftedTime = moment.utc(istString).valueOf();
-      (vehicleMap[v] = vehicleMap[v] || []).push({ x: shiftedTime, y: item?.max_speed || 0 });
-    }
+    if (!item?.date_time) return;
+    const dateKey = moment.tz(item.date_time, 'Asia/Kolkata').format('YYYY-MM-DD');
+    dailyCountMap[dateKey] = (dailyCountMap[dateKey] || 0) + 1;
   });
-  const keys = Object.keys(vehicleMap);
-  const series = keys.map((v, i) => ({
-    name: v,
-    data: vehicleMap[v].sort((a, b) => a.x - b.x),
-    color: `hsl(210,70%,${60 + ((i * 20) % 30)}%)`,
-  }));
 
-  const allDates = rawData
-    .map((i) => i?.date_time)
-    .filter(Boolean)
-    .map((d) => {
-      const istString = moment.tz(d, 'Asia/Kolkata').format('YYYY-MM-DDTHH:mm:ss');
-      return moment.utc(istString).valueOf();
-    });
-  const minDate = allDates.length ? Math.min(...allDates) : undefined;
-  const maxDate = allDates.length ? Math.max(...allDates) : undefined;
-  const options = {
-    chart: { type: 'line', zoom: { enabled: true }, toolbar: { show: true } },
-    title: { text: 'Overspeed Events by Vehicle', align: 'center', style: { fontSize: 20, fontWeight: 'bold' } },
-    xaxis: {
-      type: 'datetime',
-      title: { text: 'Time' },
-      min: minDate,
-      max: maxDate,
-      labels: { datetimeFormatter: { year: 'yyyy', month: "MMM 'yy", day: 'dd MMM', hour: 'hh:mm A' } },
-      tooltip: { enabled: true },
+  const sortedDates = Object.keys(dailyCountMap).sort((a, b) => moment(a).valueOf() - moment(b).valueOf());
+  const series = [
+    {
+      name: 'Overspeed Events',
+      data: sortedDates.map((date) => ({ x: date, y: dailyCountMap[date] })),
+      color: '#1d4ed8',
     },
-    yaxis: { title: { text: 'Speed (km/h)' }, min: 0, labels: { formatter: (val) => Math.round(val) } },
+  ];
+
+  const options = {
+    chart: { type: 'line', zoom: { enabled: false }, toolbar: { show: true } },
+    title: { text: 'Overspeed Events by Date', align: 'center', style: { fontSize: 20, fontWeight: 'bold' } },
+    xaxis: {
+      type: 'category',
+      title: { text: 'Date' },
+      categories: sortedDates,
+      labels: {
+        formatter: (val) => moment(val).format('DD MMM YYYY'),
+      },
+    },
+    yaxis: {
+      title: { text: 'Count' },
+      min: 0,
+      forceNiceScale: true,
+      labels: { formatter: (val) => Math.round(val) },
+    },
     markers: { size: 6, hover: { size: 8 } },
     stroke: { curve: 'smooth', width: 3 },
     tooltip: {
       x: {
-        format: 'dd MMM yyyy hh:mm:ss A',
-        formatter: (val) => moment.utc(val).format('DD MMM YYYY hh:mm:ss A'),
+        formatter: (val) => moment(val).format('DD MMM YYYY'),
       },
-      y: { formatter: (val) => `${val} km/h` },
+      y: { formatter: (val) => `${Math.round(val)} events` },
     },
     grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
   };

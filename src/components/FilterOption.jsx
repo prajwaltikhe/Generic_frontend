@@ -1,6 +1,8 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TextField, Typography, Checkbox, Chip } from '@mui/material';
 import { Accordion, AccordionDetails, AccordionSummary, Autocomplete } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { useRef } from 'react';
 
 function FilterOption({
   filterData,
@@ -25,16 +27,37 @@ function FilterOption({
   isDate = true,
   report = false,
   singleVehicle = false,
+  compactVehicleTags = false,
+  routeVehicleLoader = null,
+  routeVehiclePageSize = 50,
 }) {
   const toArray = (v) => (Array.isArray(v) ? v : []);
+  const uniqueOptionsByValue = (options) => {
+    const seen = new Set();
+    return options.filter((opt) => {
+      if (!opt?.value) return false;
+      if (seen.has(opt.value)) return false;
+      seen.add(opt.value);
+      return true;
+    });
+  };
   const selectAllOpt = { label: 'Select All', value: 'SELECT_ALL' };
   const getOptions = (arr) => [selectAllOpt, ...arr];
-  const getDisplay = (selected, all) =>
-    !Array.isArray(selected) || !selected.length
-      ? []
-      : selected.length === all.length
-        ? [selectAllOpt]
-        : all.filter((o) => selected.includes(o.value));
+  const [routeVehicleRows, setRouteVehicleRows] = useState([]);
+  const [routeVehiclePage, setRouteVehiclePage] = useState(1);
+  const [routeVehicleSearch, setRouteVehicleSearch] = useState('');
+  const [routeVehicleHasMore, setRouteVehicleHasMore] = useState(false);
+  const [routeVehicleLoading, setRouteVehicleLoading] = useState(false);
+  const [vehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
+  const [routeDropdownOpen, setRouteDropdownOpen] = useState(false);
+  const isLoadingMoreRef = useRef(false);
+
+  const getDisplay = (selected, all, selectedLabelMap = {}) => {
+    if (!Array.isArray(selected) || !selected.length) return [];
+    if (selected.length === all.length && all.length > 0) return [selectAllOpt];
+    const allByValue = new Map(all.map((o) => [o.value, o]));
+    return selected.map((value) => allByValue.get(value) || { value, label: selectedLabelMap[value] || String(value) });
+  };
   const handleMultiChange = (key, all) => (_, nv) => {
     const isAll = nv.some((o) => o.value === 'SELECT_ALL');
     setFilterData({
@@ -55,18 +78,77 @@ function FilterOption({
     label: `${e.employee_id || ''}`.trim(),
     value: e.employee_id,
   }));
-  const vehicleOptions = toArray(vehicles).map((v) => ({
-    label: v?.vehicle?.vehicle_number || v?.vehicle_number,
-    value: v?.vehicle_id || v?.id,
-  }));
-  const routeOptions = toArray(routes).map((r) => ({ label: r.name, value: r.id }));
+  const effectiveVehicles = routeVehicleLoader ? routeVehicleRows : vehicles;
+  const effectiveRoutes = routeVehicleLoader ? routeVehicleRows : routes;
+
+  const vehicleOptions = uniqueOptionsByValue(
+    toArray(effectiveVehicles).map((v) => ({
+      label: v?.vehicle?.vehicle_number || v?.vehicle_number,
+      value: v?.vehicle_id || v?.id,
+    })),
+  );
+  const routeOptions = uniqueOptionsByValue(toArray(effectiveRoutes).map((r) => ({ label: r.name, value: r.id })));
   const plantOptions = toArray(plants).map((p) => ({ label: p.plant_name, value: p.id }));
   const departmentOptions = toArray(departments).map((d) => ({ label: d.department_name, value: d.id }));
   const geofenceOptions = toArray(geofences).map((g) => ({ label: g.geofence_name, value: g.id }));
   const intervalOptions = toArray(intervals);
   const statusOptions = toArray(statuses);
 
-  const MultiSelect = ({ label, options, value, onChange }) => (
+  const selectedVehicleLabels = useMemo(
+    () => Object.fromEntries(vehicleOptions.map((opt) => [opt.value, opt.label])),
+    [vehicleOptions],
+  );
+  const selectedRouteLabels = useMemo(
+    () => Object.fromEntries(routeOptions.map((opt) => [opt.value, opt.label])),
+    [routeOptions],
+  );
+
+  const loadRouteVehiclePage = async ({ page, search, reset = false, fromScroll = false }) => {
+    if (typeof routeVehicleLoader !== 'function') return;
+    if (fromScroll) isLoadingMoreRef.current = true;
+    setRouteVehicleLoading(true);
+    try {
+      const result = await routeVehicleLoader({ page, limit: routeVehiclePageSize, search });
+      const incoming = toArray(result?.items);
+      setRouteVehicleRows((prev) => {
+        if (reset) return incoming;
+        const merged = [...prev, ...incoming];
+        const seen = new Set();
+        return merged.filter((item) => {
+          const key = item?.id || `${item?.name}-${item?.vehicle_id || item?.vehicle?.id}`;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      });
+      setRouteVehicleHasMore(Boolean(result?.hasMore));
+      setRouteVehiclePage(page);
+    } finally {
+      isLoadingMoreRef.current = false;
+      setRouteVehicleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!routeVehicleLoader) return;
+    loadRouteVehiclePage({ page: 1, search: '', reset: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeVehicleLoader, routeVehiclePageSize]);
+
+  const MultiSelect = ({
+    label,
+    options,
+    value,
+    onChange,
+    compactTags = false,
+    selectedLabelMap = {},
+    onSearchInput,
+    onListboxScroll,
+    loading = false,
+    open,
+    onOpen,
+    onClose,
+  }) => (
     <Autocomplete
       multiple
       disablePortal
@@ -77,8 +159,22 @@ function FilterOption({
       renderInput={(params) => <TextField {...params} label={label} />}
       isOptionEqualToValue={(o, v) => o.value === v.value}
       getOptionLabel={(o) => o.label}
-      value={getDisplay(value, options)}
+      value={getDisplay(value, options, selectedLabelMap)}
       onChange={onChange}
+      loading={loading}
+      open={open}
+      onOpen={onOpen}
+      onClose={onClose}
+      onInputChange={(_, newInput, reason) => {
+        if (reason === 'input' && typeof onSearchInput === 'function') onSearchInput(newInput);
+      }}
+      ListboxProps={
+        onListboxScroll
+          ? {
+              onScroll: onListboxScroll,
+            }
+          : undefined
+      }
       renderOption={(props, option) => (
         <li {...props} key={option.value}>
           <Checkbox
@@ -93,12 +189,19 @@ function FilterOption({
         </li>
       )}
       renderTags={(value, getTagProps) =>
-        value.length > 3
+        compactTags && value.length > 1
           ? [
-              ...value.slice(0, 2).map((o, i) => <Chip key={o.value} label={o.label} {...getTagProps({ index: i })} />),
-              <Chip key='more' label={`+${value.length - 2} more`} {...getTagProps({ index: 2 })} />,
+              <Chip key={value[0].value} label={value[0].label} {...getTagProps({ index: 0 })} />,
+              <Chip key='more' label={`+${value.length - 1}`} {...getTagProps({ index: 1 })} />,
             ]
-          : value.map((o, i) => <Chip key={o.value} label={o.label} {...getTagProps({ index: i })} />)
+          : value.length > 3
+            ? [
+                ...value
+                  .slice(0, 2)
+                  .map((o, i) => <Chip key={o.value} label={o.label} {...getTagProps({ index: i })} />),
+                <Chip key='more' label={`+${value.length - 2} more`} {...getTagProps({ index: 2 })} />,
+              ]
+            : value.map((o, i) => <Chip key={o.value} label={o.label} {...getTagProps({ index: i })} />)
       }
     />
   );
@@ -172,7 +275,7 @@ function FilterOption({
                   onChange={(v) => setFilterData({ ...filterData, plant: v })}
                 />
               ))}
-            {vehicleOptions.length > 0 &&
+            {(vehicleOptions.length > 0 || !!routeVehicleLoader) &&
               (singleVehicle ? (
                 <SingleSelect
                   label='Select Vehicle'
@@ -186,14 +289,89 @@ function FilterOption({
                   options={vehicleOptions}
                   value={filterData.vehicles || []}
                   onChange={handleMultiChange('vehicles', vehicleOptions)}
+                  compactTags={compactVehicleTags}
+                  selectedLabelMap={selectedVehicleLabels}
+                  loading={routeVehicleLoading}
+                  open={routeVehicleLoader ? vehicleDropdownOpen : undefined}
+                  onOpen={routeVehicleLoader ? () => setVehicleDropdownOpen(true) : undefined}
+                  onClose={
+                    routeVehicleLoader
+                      ? (_, reason) => {
+                          if (isLoadingMoreRef.current && reason === 'blur') return;
+                          setVehicleDropdownOpen(false);
+                        }
+                      : undefined
+                  }
+                  onSearchInput={
+                    routeVehicleLoader
+                      ? (newSearch) => {
+                          setVehicleDropdownOpen(true);
+                          setRouteVehicleSearch(newSearch);
+                          loadRouteVehiclePage({ page: 1, search: newSearch, reset: true });
+                        }
+                      : undefined
+                  }
+                  onListboxScroll={
+                    routeVehicleLoader
+                      ? (event) => {
+                          const node = event.currentTarget;
+                          const isNearBottom = node.scrollTop + node.clientHeight >= node.scrollHeight - 16;
+                          if (isNearBottom && routeVehicleHasMore && !routeVehicleLoading) {
+                            setVehicleDropdownOpen(true);
+                            loadRouteVehiclePage({
+                              page: routeVehiclePage + 1,
+                              search: routeVehicleSearch,
+                              fromScroll: true,
+                            });
+                          }
+                        }
+                      : undefined
+                  }
                 />
               ))}
-            {routeOptions.length > 0 && (
+            {(routeOptions.length > 0 || !!routeVehicleLoader) && (
               <MultiSelect
                 label='Select Vehicle Routes'
                 options={routeOptions}
                 value={filterData.routes || []}
                 onChange={handleMultiChange('routes', routeOptions)}
+                selectedLabelMap={selectedRouteLabels}
+                loading={routeVehicleLoading}
+                open={routeVehicleLoader ? routeDropdownOpen : undefined}
+                onOpen={routeVehicleLoader ? () => setRouteDropdownOpen(true) : undefined}
+                onClose={
+                  routeVehicleLoader
+                    ? (_, reason) => {
+                        if (isLoadingMoreRef.current && reason === 'blur') return;
+                        setRouteDropdownOpen(false);
+                      }
+                    : undefined
+                }
+                onSearchInput={
+                  routeVehicleLoader
+                    ? (newSearch) => {
+                        setRouteDropdownOpen(true);
+                        setRouteVehicleSearch(newSearch);
+                        loadRouteVehiclePage({ page: 1, search: newSearch, reset: true });
+                      }
+                    : undefined
+                }
+                onListboxScroll={
+                  routeVehicleLoader
+                    ? (event) => {
+                        const node = event.currentTarget;
+                        const isNearBottom = node.scrollTop + node.clientHeight >= node.scrollHeight - 16;
+                        if (isNearBottom && routeVehicleHasMore && !routeVehicleLoading) {
+                          setRouteDropdownOpen(true);
+                          loadRouteVehiclePage({
+                            page: routeVehiclePage + 1,
+                            search: routeVehicleSearch,
+                            fromScroll: true,
+                          });
+                        }
+                      }
+                    : undefined
+                }
               />
             )}
             {departmentOptions.length > 0 &&

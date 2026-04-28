@@ -1,13 +1,12 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOption from '../../../components/FilterOption';
 import CommonTable from '../../../components/table/CommonTable';
-import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchAnnouncements, deleteAnnouncement, uploadAnnouncementData } from '../../../redux/announcementSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
@@ -39,9 +38,6 @@ function Announcement() {
   const fileInputRef = useRef();
   const company_id = localStorage.getItem('company_id');
 
-  const { allRoutes: routes } = useSelector((state) => state?.vehicleRoute || {});
-  const { allVehicles: vehicles } = useSelector((state) => state.vehicles || []);
-
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -51,11 +47,21 @@ function Announcement() {
   const [filterData, setFilterData] = useState({ fromDate: '', toDate: '', routes: [], vehicles: [] });
   const [filteredData, setFilteredData] = useState([]);
 
-  useEffect(() => {
-    if (company_id) {
-      dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
-      dispatch(fetchAllVehicles({ limit: 1000 }));
-    }
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(company_id && { company_id }),
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routeRows = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routeRows,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
   }, [dispatch, company_id]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
@@ -208,8 +214,7 @@ function Announcement() {
           handleFileUpload={handleFileUpload}
           fileInputRef={fileInputRef}
           setFile={setFile}
-          routes={routes}
-          vehicles={vehicles}
+          routeVehicleLoader={loadRouteVehicleOptions}
         />
       </form>
 

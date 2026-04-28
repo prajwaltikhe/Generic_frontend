@@ -1,12 +1,16 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommanTable from '../../../components/table/CommonTable';
-import { fetchVehicleRoutes, deleteVehicleRoute, uploadVehicleRouteData } from '../../../redux/vehicleRouteSlice';
+import {
+  fetchVehicleRoutes,
+  deleteVehicleRoute,
+  uploadVehicleRouteData,
+} from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const shifts = [
@@ -65,10 +69,13 @@ function VehicleRoute() {
   const [searchQuery, setSearchQuery] = useState('');
   const [file, setFile] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
+  const [filterData, setFilterData] = useState({ routes: [], vehicles: [] });
 
   const { loading } = useSelector((state) => state.vehicleRoute);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
+    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
+    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
     ...(searchQuery?.trim() && { search: searchQuery.trim() }),
     page: customPage,
     limit: customLimit,
@@ -81,7 +88,28 @@ function VehicleRoute() {
       setTotalCount(res?.payload?.pagination?.total ?? routes.length ?? 0);
     });
     // eslint-disable-next-line
-  }, [dispatch, page, limit, searchQuery]);
+  }, [dispatch, page, limit, searchQuery, filterData]);
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setPage(0);
+  };
+
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routes = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routes,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
+  }, [dispatch]);
 
   const handleView = (row) => {
     navigate('/management/vehicle-route/view', { state: { mode: 'view', rowData: row.row } });
@@ -109,6 +137,7 @@ function VehicleRoute() {
   };
 
   const handleFormReset = () => {
+    setFilterData({ routes: [], vehicles: [] });
     setSearchQuery('');
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = null;
@@ -204,16 +233,24 @@ function VehicleRoute() {
         </div>
       </div>
 
-      <FilterOption
-        handleFormReset={handleFormReset}
-        handleFileUpload={handleFileUpload}
-        setFile={setFile}
-        file={file}
-        handleExport={handleExport}
-        handleExportPDF={handleExportPDF}
-        handleSample={handleSample}
-        fileInputRef={fileInputRef}
-      />
+      <form onSubmit={handleFormSubmit}>
+        <FilterOption
+          filterData={filterData}
+          setFilterData={setFilterData}
+          handleFormSubmit={handleFormSubmit}
+          handleFormReset={handleFormReset}
+          handleFileUpload={handleFileUpload}
+          setFile={setFile}
+          file={file}
+          handleExport={handleExport}
+          handleExportPDF={handleExportPDF}
+          handleSample={handleSample}
+          fileInputRef={fileInputRef}
+          routeVehicleLoader={loadRouteVehicleOptions}
+          isDate={false}
+          compactVehicleTags
+        />
+      </form>
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         <CommanTable

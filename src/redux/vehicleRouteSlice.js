@@ -11,7 +11,7 @@ export const fetchVehicleRoutes = createAsyncThunk('vehicleRoute/fetchVehicleRou
   }
 });
 
-export const fetchAllVehicleRoutes = createAsyncThunk('vehicleRoute/fetchAllVehicleRoutes', async (params = { limit: 1000 }, thunkAPI) => {
+export const fetchAllVehicleRoutes = createAsyncThunk('vehicleRoute/fetchAllVehicleRoutes', async (params = { limit: 150 }, thunkAPI) => {
   try {
     const res = await ApiService.get(APIURL.VEHICLE_ROUTE, params);
     return res.data;

@@ -1,9 +1,10 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchPlantInTime, deletePlantInTime, uploadPlantInTimeData } from '../../../redux/plantInTimeSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import CommonSearch from '../../../components/CommonSearch';
 import FilterOptions from '../../../components/FilterOption';
 import CommanTable from '../../../components/table/CommonTable';
@@ -68,9 +69,12 @@ function PlantInTime() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
+  const [filterData, setFilterData] = useState({ routes: [], vehicles: [] });
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
     company_id: companyID,
+    ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
+    ...(filterData.vehicles?.length && { vehicles: JSON.stringify(filterData.vehicles) }),
     ...(searchQuery?.trim() && { search: searchQuery.trim() }),
     page: customPage,
     limit: customLimit,
@@ -79,7 +83,7 @@ function PlantInTime() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line
-  }, [page, limit, searchQuery]);
+  }, [page, limit, searchQuery, filterData]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -119,11 +123,33 @@ function PlantInTime() {
   };
 
   const handleFormReset = () => {
+    setFilterData({ routes: [], vehicles: [] });
     setSearchQuery('');
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = null;
     setPage(0);
   };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setPage(0);
+  };
+
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routes = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routes,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
+  }, [dispatch]);
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
@@ -219,16 +245,24 @@ function PlantInTime() {
         </div>
       </div>
 
-      <FilterOptions
-        handleFormReset={handleFormReset}
-        handleFileUpload={handleFileUpload}
-        setFile={setFile}
-        file={file}
-        handleExport={handleExport}
-        handleExportPDF={handleExportPDF}
-        handleSample={handleSample}
-        fileInputRef={fileInputRef}
-      />
+      <form onSubmit={handleFormSubmit}>
+        <FilterOptions
+          filterData={filterData}
+          setFilterData={setFilterData}
+          handleFormSubmit={handleFormSubmit}
+          handleFormReset={handleFormReset}
+          handleFileUpload={handleFileUpload}
+          setFile={setFile}
+          file={file}
+          handleExport={handleExport}
+          handleExportPDF={handleExportPDF}
+          handleSample={handleSample}
+          fileInputRef={fileInputRef}
+          routeVehicleLoader={loadRouteVehicleOptions}
+          isDate={false}
+          compactVehicleTags
+        />
+      </form>
 
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>
         <CommanTable

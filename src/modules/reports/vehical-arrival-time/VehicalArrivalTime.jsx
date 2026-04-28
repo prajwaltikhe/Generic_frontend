@@ -6,7 +6,7 @@ import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import CustomTab from '../vehicle-activity/components/CustomTab';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
 import { fetchVehicleArrivalData } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
@@ -36,7 +36,6 @@ function VehicalArrivalTime() {
 
   const company_id = localStorage.getItem('company_id');
   const { VehicleArrivalTimeReport, loading, error } = useSelector((state) => state?.vehicleReport);
-  const { allRoutes } = useSelector((state) => state?.vehicleRoute || {});
   const { allVehicles } = useSelector((state) => state?.vehicles || []);
 
   // Read status from URL query parameter on component mount
@@ -112,9 +111,25 @@ function VehicalArrivalTime() {
 
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
       dispatch(fetchAllVehicles({ limit: 1000 }));
     }
+  }, [dispatch, company_id]);
+
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(company_id && { company_id }),
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routes = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routes,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
   }, [dispatch, company_id]);
 
   const buildApiPayload = useCallback(() => {
@@ -216,7 +231,7 @@ const handleExport = async () => {
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
           vehicles={allVehicles}
-          routes={allRoutes}
+          routeVehicleLoader={loadRouteVehicleOptions}
           statuses={statusOptions}
         />
       </form>

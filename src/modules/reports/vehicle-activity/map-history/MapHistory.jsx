@@ -5,7 +5,7 @@ import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOption from '../../../../components/FilterOption';
 import { fetchVehicles } from '../../../../redux/vehiclesSlice';
-import { fetchAllVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
+import { fetchVehicleRoutes } from '../../../../redux/vehicleRouteSlice';
 import { useEffect, useState, useRef, useCallback, useMemo, memo } from 'react';
 import { fetchMapHistoryData } from '../../../../redux/vehicleActivitySlice';
 import { MapContainer, TileLayer, Popup, useMap } from 'react-leaflet';
@@ -206,12 +206,27 @@ function MapHistory() {
 
   const company_id = localStorage.getItem('company_id');
   const vehicles = useSelector((s) => s?.vehicles?.vehicles || []);
-  const { allRoutes: vehicleRoutes } = useSelector((s) => s?.vehicleRoute || {});
   const dataFilter = useRef(filterData);
 
   useEffect(() => {
     dispatch(fetchVehicles({ limit: 150 }));
-    if (company_id) dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
+  }, [dispatch, company_id]);
+
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(company_id && { company_id }),
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routes = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routes,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
   }, [dispatch, company_id]);
 
   const validMapPoints = useMemo(() => filteredData.filter(isValidPoint), [filteredData]);
@@ -314,7 +329,7 @@ function MapHistory() {
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
           vehicles={vehicles}
-          routes={vehicleRoutes}
+          routeVehicleLoader={loadRouteVehicleOptions}
           singleVehicle
         />
       </form>

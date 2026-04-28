@@ -98,7 +98,7 @@ function EmployeeOnboard() {
       date_only: r.date ? moment(r.date).format('YYYY-MM-DD') : '-',
       boarding_in_time: r.boarding_in ? moment(r.boarding_in).format('hh:mm:ss A') : '-',
       boarding_out_time: r.boarding_out ? moment(r.boarding_out).format('hh:mm:ss A') : '-',
-      source: r.vehicle_source || '-',
+      source: r.source || r.vehicle_source || '-',
       destination: r.destination || '-',
       driver_contact: r.driver_contact_number || '-',
     }));

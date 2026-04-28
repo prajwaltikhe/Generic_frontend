@@ -1,12 +1,12 @@
 import moment from 'moment-timezone';
 import { toast } from 'react-toastify';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import OverSpeedChart from './charts/OverSpeedLineChart';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
-import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
 import { fetchOverSpeedReport } from '../../../redux/vehicleReportSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
@@ -14,7 +14,6 @@ import { formatDuration } from '../../../utils/formatters';
 
 const columns = [
   { key: 'date_only', header: 'Date', render: (_, r) => r?.date_only || '-' },
-  { key: 'time_only', header: 'Time', render: (_, r) => r?.time_only || '-' },
   { key: 'vehicle_type', header: 'Vehicle Type', render: (_, r) => r?.vehicle_type || 'Bus' },
   { key: 'vehicle_number', header: 'Vehicle Number', render: (_, r) => r?.vehicle_number || '-' },
   { key: 'route_details', header: 'Route Details', render: (_, r) => r?.route_details || '-' },
@@ -72,7 +71,6 @@ function Overspeed() {
   const [filteredData, setFilteredData] = useState([]);
 
   const company_id = localStorage.getItem('company_id');
-  const { allRoutes: vehicleRoutes } = useSelector((state) => state?.vehicleRoute || {});
   const { allVehicles: vehicles } = useSelector((state) => state?.vehicles || []);
   const { speedOverReportData, loading, error } = useSelector((state) => state?.vehicleReport);
 
@@ -88,9 +86,25 @@ function Overspeed() {
 
   useEffect(() => {
     if (company_id) {
-      dispatch(fetchAllVehicleRoutes({ company_id, limit: 1000 }));
       dispatch(fetchAllVehicles({ limit: 1000 }));
     }
+  }, [dispatch, company_id]);
+
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(company_id && { company_id }),
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routes = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routes,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
   }, [dispatch, company_id]);
 
   useEffect(() => {
@@ -122,7 +136,6 @@ function Overspeed() {
         vehicle_id: item.vehicle_id || item.id || item._id,
         ...item,
         date_only: item.date_time ? moment.tz(item.date_time, 'Asia/Kolkata').format('YYYY-MM-DD') : '-',
-        time_only: item.date_time ? moment.tz(item.date_time, 'Asia/Kolkata').format('hh:mm:ss A') : '-',
         max_over_speed_duration: formatDuration(item.max_over_speed_duration),
         max_overspeed_lat_long_formatted: lat_long_formatted,
       };
@@ -210,7 +223,7 @@ function Overspeed() {
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
           vehicles={vehicles}
-          routes={vehicleRoutes}
+          routeVehicleLoader={loadRouteVehicleOptions}
         />
       </form>
       <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4'>

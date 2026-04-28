@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import FilterOption from '../../../components/FilterOption';
 import ReportTable from '../../../components/table/ReportTable';
 import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
+import { fetchVehicles } from '../../../redux/vehiclesSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 import { fetchVehicleGeoFence, vehicleGeofenceReport } from '../../../redux/geofenceSlice';
 
@@ -20,7 +21,7 @@ const columns = [
   { key: 'no_of_visit', header: 'No. Of Visit', render: (v) => v ?? '-' },
 ];
 
-const initialFilter = { geofences: [], routes: [], fromDate: '', toDate: '' };
+const initialFilter = { geofences: [], vehicles: [], routes: [], fromDate: '', toDate: '' };
 
 function GeofencEntryExit() {
   const dispatch = useDispatch();
@@ -34,6 +35,7 @@ function GeofencEntryExit() {
 
   const { GeoFenceVehicleReport, loading, error, vehicleGeoFence } = useSelector((s) => s.geofence);
   const { routes } = useSelector((s) => s.vehicleRoute?.vehicleRoutes || {});
+  const { vehicles } = useSelector((s) => s?.vehicles || {});
 
   const buildApiPayload = useCallback(
     (overrides = {}) => {
@@ -41,6 +43,7 @@ function GeofencEntryExit() {
       return {
         company_id,
         ...(d.geofences?.length && { geofences: JSON.stringify(d.geofences) }),
+        ...(d.vehicles?.length && { vehicles: JSON.stringify(d.vehicles) }),
         ...(d.routes?.length && { routes: JSON.stringify(d.routes) }),
         ...(d.fromDate && { from_date: d.fromDate }),
         ...(d.toDate && { to_date: d.toDate }),
@@ -52,6 +55,7 @@ function GeofencEntryExit() {
 
   useEffect(() => {
     if (company_id) dispatch(fetchVehicleRoutes({ company_id, limit: 150 }));
+    if (company_id) dispatch(fetchVehicles({ limit: 150 }));
     if (company_id) dispatch(fetchVehicleGeoFence({ company_id, limit: 500 }));
   }, [company_id, dispatch]);
 
@@ -150,6 +154,7 @@ function GeofencEntryExit() {
           setFilterData={setFilterData}
           handleFormReset={handleFormReset}
           geofences={vehicleGeoFence?.geofences || []}
+          vehicles={vehicles}
           routes={routes}
           report={true}
         />

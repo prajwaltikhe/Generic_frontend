@@ -1,15 +1,14 @@
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import IModal from '../../../components/modal/Modal';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { fetchDrivers, deleteDriver, changeDriverStatus, uploadDriverData } from '../../../redux/driverSlice';
 import FilterOption from '../../../components/FilterOption';
 import CommonSearch from '../../../components/CommonSearch';
 import CommonTable from '../../../components/table/CommonTable';
-import { fetchAllVehicleRoutes } from '../../../redux/vehicleRouteSlice';
-import { fetchAllVehicles } from '../../../redux/vehiclesSlice';
+import { fetchVehicleRoutes } from '../../../redux/vehicleRouteSlice';
 import { exportToExcel, exportToPDF, buildExportRows } from '../../../utils/exportUtils';
 
 const columns = [
@@ -74,9 +73,6 @@ function Driver() {
   const navigate = useNavigate();
   const fileInputRef = useRef();
 
-  const { allRoutes: vehicleRoutes } = useSelector((s) => s.vehicleRoute || {});
-  const { allVehicles } = useSelector((s) => s.vehicles || []);
-
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [file, setFile] = useState(null);
@@ -87,18 +83,25 @@ function Driver() {
   const [filterData, setFilterData] = useState({ routes: [], vehicles: [] });
   const [filteredData, setFilteredData] = useState([]);
 
-  useEffect(() => {
-    dispatch(fetchAllVehicleRoutes({ limit: 1000 }));
-    dispatch(fetchAllVehicles({ limit: 1000 }));
+  const loadRouteVehicleOptions = useCallback(async ({ page: optionPage = 1, limit: optionLimit = 50, search = '' }) => {
+    const res = await dispatch(
+      fetchVehicleRoutes({
+        page: optionPage,
+        limit: optionLimit,
+        ...(search?.trim() && { search: search.trim() }),
+      }),
+    );
+    const routes = res?.payload?.routes || [];
+    const pagination = res?.payload?.pagination;
+    return {
+      items: routes,
+      hasMore: pagination ? pagination.hasNextPage : false,
+    };
   }, [dispatch]);
 
   const buildApiPayload = (customPage = page + 1, customLimit = limit) => ({
     ...(filterData.routes?.length && { routes: JSON.stringify(filterData.routes) }),
-    ...(filterData.vehicles?.length === allVehicles?.length && filterData.vehicles?.length > 0
-      ? { vehicles: 'all' }
-      : filterData.vehicles?.length
-        ? { vehicles: JSON.stringify(filterData.vehicles) }
-        : {}),
+    ...(filterData.vehicles?.length ? { vehicles: JSON.stringify(filterData.vehicles) } : {}),
     ...(searchQuery?.trim() && { search: searchQuery.trim() }),
     page: customPage,
     limit: customLimit,
@@ -274,8 +277,7 @@ function Driver() {
           handleFileUpload={handleFileUpload}
           fileInputRef={fileInputRef}
           setFile={setFile}
-          routes={vehicleRoutes}
-          vehicles={allVehicles || []}
+          routeVehicleLoader={loadRouteVehicleOptions}
           isDate={false}
         />
       </form>
