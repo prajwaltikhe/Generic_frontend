@@ -60,14 +60,33 @@ function SeatOccupancy() {
       const occupancy_rate_formatted =
         r.occupancy_rate ? `${r.occupancy_rate}${typeof r.occupancy_rate === 'number' ? '%' : ''}` : '-';
 
-      const dateStr = r.created_at || r.date_time || r.date;
-      const m = dateStr ? moment(dateStr) : null;
-      const isValidDate = m && m.isValid();
+      // Prefer latest punch in the filtered window (from API). Using `r.date` alone is often
+      // date-only or a range string → was incorrectly shown as 12:00:00 AM for every row.
+      const snap = r.snapshot_time;
+      // API returns ISO or DB timestamp; convert instant → IST wall clock for display.
+      const mSnap =
+        snap != null && snap !== '' ? moment(snap).tz('Asia/Kolkata') : null;
+      const hasSnap = mSnap && mSnap.isValid();
+
+      const dateField = r.date;
+      let date_only = '-';
+      if (typeof dateField === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateField)) {
+        date_only = dateField;
+      } else if (typeof dateField === 'string' && dateField.length) {
+        date_only = dateField;
+      } else if (hasSnap) {
+        date_only = mSnap.format('YYYY-MM-DD');
+      }
+
+      let time_only = '-';
+      if (hasSnap) {
+        time_only = mSnap.format('hh:mm:ss A');
+      }
 
       return {
         ...r,
-        date_only: isValidDate ? m.format('YYYY-MM-DD') : '-',
-        time_only: isValidDate ? m.format('hh:mm:ss A') : '-',
+        date_only,
+        time_only,
         occupancy_rate_formatted,
       };
     });

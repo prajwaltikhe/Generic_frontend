@@ -44,6 +44,8 @@ const ReportTable = ({
   setSearchQuery,
   limitOptions,
   totalCount = 0,
+  /** When true, table body scrolls and pagination stays visible in one viewport (parent must set height). */
+  fillViewport = false,
 }) => {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
@@ -67,14 +69,34 @@ const ReportTable = ({
   const safeLimit = validLimits.includes(limit) ? limit : validLimits[0];
 
   return (
-    <div className='bg-white rounded-sm border-t-3 border-[#07163d] mt-4 pb-4 max-h-full h-fit'>
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+    <div
+      className={
+        fillViewport
+          ? 'bg-white rounded-sm border-t-3 border-[#07163d] mt-2 flex flex-col flex-1 min-h-0 overflow-hidden'
+          : 'bg-white rounded-sm border-t-3 border-[#07163d] mt-4 pb-4 max-h-full h-fit'
+      }>
+      <Paper
+        sx={{
+          width: '100%',
+          overflow: 'hidden',
+          ...(fillViewport && {
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+          }),
+        }}>
         {typeof setSearchQuery === 'function' && (
           <div className='p-3 pb-0'>
             <CommonSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           </div>
         )}
-        <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
+        <TableContainer
+          sx={
+            fillViewport
+              ? { flex: 1, minHeight: 0, overflow: 'auto', overflowX: 'auto' }
+              : { maxHeight: 720, overflowX: 'auto' }
+          }>
           <Table stickyHeader size='medium'>
             <TableHead>
               <TableRow sx={{ height: 40 }}>
@@ -138,6 +160,7 @@ const ReportTable = ({
             setLimit(Number(e.target.value));
             setPage(0);
           }}
+          sx={fillViewport ? { flexShrink: 0, borderTop: '1px solid #e0e0e0' } : undefined}
         />
       </Paper>
     </div>

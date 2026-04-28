@@ -96,11 +96,13 @@ const MapComponent = ({ selectedVehicle }) => {
       label: d.status ?? 'Unknown',
       route_name: d.route_name ?? '',
     });
-    if (selectedVehicle) return [standardize(selectedVehicle)];
+    // Always show the full fleet on the map. Selecting a vehicle only pans/zooms
+    // and highlights it — hiding every other marker made it look like the app
+    // was "stuck" on one bus with no way to recover except clearing localStorage.
     return (allDevices || [])
       .filter((d) => d && typeof d.lat === 'number' && typeof d.lng === 'number')
       .map(standardize);
-  }, [selectedVehicle, allDevices]);
+  }, [allDevices]);
 
   const mapCenter = useMemo(() => {
     if (selectedVehicle?.lat && selectedVehicle?.lng) return [selectedVehicle.lat, selectedVehicle.lng];
@@ -158,7 +160,7 @@ const MapComponent = ({ selectedVehicle }) => {
                 </div>
               </div>
             </Popup>
-            {selectedVehicle && d.id === selectedVehicle.id && (
+            {selectedVehicle?.id && d.id === selectedVehicle.id && (
               <Circle
                 center={[d.lat, d.lng]}
                 radius={300}

@@ -25,13 +25,25 @@ const statusOptions = [
   { label: 'Late Arrival', value: 'LATE' },
 ];
 
+/** Default to last 14 days in IST so first load hits a range that usually has GeofenceReport rows. */
+function defaultArrivalFilterRange() {
+  const end = moment.tz('Asia/Kolkata').format('YYYY-MM-DD');
+  const start = moment.tz('Asia/Kolkata').subtract(14, 'days').format('YYYY-MM-DD');
+  return { fromDate: start, toDate: end };
+}
+
 function VehicalArrivalTime() {
   const dispatch = useDispatch();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
-  const [filterData, setFilterData] = useState({ vehicles: [], routes: [], fromDate: '', toDate: '', status: 'all' });
+  const [filterData, setFilterData] = useState(() => ({
+    vehicles: [],
+    routes: [],
+    status: 'all',
+    ...defaultArrivalFilterRange(),
+  }));
   const [filteredData, setFilteredData] = useState([]);
 
   const company_id = localStorage.getItem('company_id');
@@ -55,27 +67,24 @@ function VehicalArrivalTime() {
 
   const currentPathId = location.pathname.split('/').pop();
 
-  const columns = useMemo(() => {
-    const isNightShift = currentPathId === '2f7d76b8-87a9-4dc1-822a-a39e99b314e9';
-    return [
+  const columns = useMemo(
+    () => [
       { key: 'date_only', header: 'Date', render: (_v, r) => r.date_only || '-' },
       { key: 'time_only', header: 'Time', render: (_v, r) => r.time_only || '-' },
       { key: 'vehicle_number', header: 'Vehicle Number', render: (_v, row) => row?.vehicle_number || '-' },
       { key: 'route_name', header: 'Route Details', render: (_v, row) => row?.route_name || '-' },
       { key: 'driver_name', header: 'Driver Name', render: (_v, row) => row?.driver_name || '-' },
       { key: 'driver_number', header: 'Driver Number', render: (_v, row) => row?.driver_number || '-' },
-      ...(isNightShift ? [] : [
-        {
-          key: 'target_arrival_time',
-          header: 'Target Arrival Time',
-          render: (_v, row) => row?.target_arrival_time || '-',
-        },
-        {
-          key: 'actual_arrival_time',
-          header: 'Actual Arrival Time',
-          render: (_v, row) => row?.actual_arrival_time || '-',
-        },
-      ]),
+      {
+        key: 'target_arrival_24',
+        header: 'Target Arrival Time',
+        render: (_v, row) => row?.target_arrival_24 ?? '-',
+      },
+      {
+        key: 'actual_arrival_24',
+        header: 'Actual Arrival Time',
+        render: (_v, row) => row?.actual_arrival_24 ?? '-',
+      },
       {
         key: 'lat_long_formatted',
         header: 'Lat-Long',
@@ -106,8 +115,9 @@ function VehicalArrivalTime() {
           return '-';
         },
       },
-    ];
-  }, [currentPathId]);
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (company_id) {
@@ -154,10 +164,33 @@ function VehicalArrivalTime() {
         else lat_long_formatted = val;
       }
 
+      // Time column: 12-hour with AM/PM. Target / Actual: 24-hour HH:mm (IST).
+      let time_only = '-';
+      let actual_arrival_24 = '-';
+      if (r?.actual_arrival_time && r?.date) {
+        const m = moment.tz(`${r.date} ${r.actual_arrival_time}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
+        if (m.isValid()) {
+          time_only = m.format('hh:mm:ss A');
+          actual_arrival_24 = m.format('HH:mm');
+        } else {
+          time_only = r.actual_arrival_time;
+          actual_arrival_24 = r.actual_arrival_time;
+        }
+      }
+
+      let target_arrival_24 = '-';
+      if (r?.target_arrival_time != null && String(r.target_arrival_time).trim() !== '') {
+        const raw = String(r.target_arrival_time).trim();
+        const tm = moment(raw, ['HH:mm', 'H:mm', 'hh:mm A', 'h:mm A'], true);
+        target_arrival_24 = tm.isValid() ? tm.format('HH:mm') : raw;
+      }
+
       return {
         ...r,
         date_only: r.date ? moment(r.date).format('YYYY-MM-DD') : '-',
-        time_only: r.date ? moment(r.date).format('hh:mm:ss A') : '-',
+        time_only,
+        target_arrival_24,
+        actual_arrival_24,
         lat_long_formatted,
       };
     });
@@ -213,16 +246,20 @@ const handleExport = async () => {
   };
 
   const handleFormReset = () => {
-    setFilterData({ vehicles: [], routes: [], fromDate: '', toDate: '', status: 'all' });
+    setFilterData({ vehicles: [], routes: [], status: 'all', ...defaultArrivalFilterRange() });
   };
 
   const totalCount = VehicleArrivalTimeReport?.pagination?.total || filteredData.length;
 
   return (
-    <div className='w-full h-full p-2'>
-      <CustomTab tabs={tabs} />
-      <h1 className='text-2xl font-bold mb-4 text-[#07163d]'>Vehical Arrival Time Report (Total: {totalCount})</h1>
-      <form onSubmit={handleFormSubmit}>
+    <div className='flex flex-col h-[calc(100dvh-16px)] min-h-0 w-full overflow-hidden'>
+      <div className='shrink-0'>
+        <CustomTab tabs={tabs} />
+      </div>
+      <h1 className='text-2xl font-bold mb-2 text-[#07163d] shrink-0'>
+        Vehical Arrival Time Report (Total: {totalCount})
+      </h1>
+      <form className='shrink-0' onSubmit={handleFormSubmit}>
         <FilterOption
           handleExport={handleExport}
           handleExportPDF={handleExportPDF}
@@ -236,6 +273,7 @@ const handleExport = async () => {
         />
       </form>
       <ReportTable
+        fillViewport
         columns={columns}
         data={filteredData}
         loading={loading}

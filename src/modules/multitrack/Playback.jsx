@@ -26,7 +26,9 @@ export default function Playback() {
   const { playbackData, loadingPlayback } = useSelector((s) => s.multiTrackStatus);
 
   useEffect(() => {
-    setRouteCoordinate(playbackData.map((i) => [i.latitude, i.longitude, i.speed]));
+    setRouteCoordinate(
+      playbackData.map((i) => [i.latitude, i.longitude, i.speed, new Date(i.timestamp).getTime()]),
+    );
   }, [playbackData]);
 
   const setShortcutDates = (type) => {

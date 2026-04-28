@@ -1,5 +1,24 @@
 import moment from 'moment-timezone';
 import { IoArrowBack } from 'react-icons/io5';
+
+/** API sends `YYYY-MM-DD HH:mm:ss` in Asia/Kolkata after server fix; tolerate ISO and legacy shapes. */
+function parseViolationTimestamp(value) {
+  if (value == null || value === '') return null;
+  const strictFormats = [
+    'YYYY-MM-DD HH:mm:ss',
+    'YYYY-MM-DD HH:mm:ss.SSS',
+    'YYYY-MM-DDTHH:mm:ss.SSSZ',
+    'YYYY-MM-DDTHH:mm:ssZ',
+    'YYYY-MM-DDTHH:mm:ss.SSS',
+  ];
+  for (const f of strictFormats) {
+    const m = moment.tz(value, f, true, 'Asia/Kolkata');
+    if (m.isValid()) return m;
+  }
+  const iso = moment(value);
+  if (iso.isValid()) return iso.clone().tz('Asia/Kolkata');
+  return null;
+}
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -84,31 +103,26 @@ function RouteViolationDetails() {
   });
 
   const formatData = (items) =>
-    items.map((item, i) => ({
+    items.map((item, i) => {
+      const startM = parseViolationTimestamp(item.violation_start_time);
+      const endM = parseViolationTimestamp(item.violation_end_time);
+      return {
       id: item.id || i + 1,
       date: item.date ?? '-',
       vehicle_number: item.vehicle_number ?? '-',
       route_details: item.route_details ?? item.route_name ?? '-',
       driver_name: item.driver_name ?? '-',
       driver_number: item.driver_number ?? item.driver_phone ?? '-',
-      violation_start_date: item.violation_start_time
-        ? moment(item.violation_start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('YYYY-MM-DD')
-        : '-',
-      violation_start_time_only: item.violation_start_time
-        ? moment(item.violation_start_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('hh:mm:ss A')
-        : '-',
+      violation_start_date: startM ? startM.format('YYYY-MM-DD') : '-',
+      violation_start_time_only: startM ? startM.format('hh:mm:ss A') : '-',
       violation_start_time: item.violation_start_time ?? item.start_time ?? '-',
       violation_start_lat_long:
         item.violation_start_lat && item.violation_start_long
           ? `${item.violation_start_lat}, ${item.violation_start_long}`
           : '-',
       start_gmap_url: item.start_gmap_url,
-      violation_end_date: item.violation_end_time
-        ? moment(item.violation_end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('YYYY-MM-DD')
-        : '-',
-      violation_end_time_only: item.violation_end_time
-        ? moment(item.violation_end_time, ['HH:mm:ss', 'HH:mm', 'YYYY-MM-DD HH:mm:ss']).format('hh:mm:ss A')
-        : '-',
+      violation_end_date: endM ? endM.format('YYYY-MM-DD') : '-',
+      violation_end_time_only: endM ? endM.format('hh:mm:ss A') : '-',
       violation_end_time: item.violation_end_time ?? item.end_time ?? '-',
       violation_end_lat_long:
         item.violation_end_lat && item.violation_end_long
@@ -116,7 +130,8 @@ function RouteViolationDetails() {
           : '-',
       end_gmap_url: item.end_gmap_url,
       violation_distance: item.violation_distance ?? '-',
-    }));
+    };
+    });
 
   const fetchData = () => {
     if (!id) return;

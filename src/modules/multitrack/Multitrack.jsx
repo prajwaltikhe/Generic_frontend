@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useFetchVehicles } from '../../hooks/useFetchVehicles';
 import TrackingPanel from './components/TrackingPanel';
@@ -46,9 +46,26 @@ export default function Multitrack() {
     if (selectedVehicleId) setShowPanel(true);
   }, [selectedVehicleId]);
 
+  const clearMapSelection = useCallback(() => {
+    setShowPanel(false);
+    setSelectedVehicleId(null);
+    localStorage.removeItem('selectedVehicleId');
+  }, []);
+
+  // Leaving Multi Track should not leave a "stuck" single-vehicle map when the user returns.
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem('selectedVehicleId');
+    };
+  }, []);
+
   return (
     <div className='relative flex-1 h-screen rounded-md'>
-      <TrackingPanel handleRightPanel={handleRightPanel} />
+      <TrackingPanel
+        handleRightPanel={handleRightPanel}
+        selectedVehicleId={selectedVehicleId}
+        onClearMapSelection={clearMapSelection}
+      />
       <MapComponent selectedVehicle={selectedVehicle} />
       <MheStatusPanel
         onCollapsePanel={collapseDetailPanelOnly}

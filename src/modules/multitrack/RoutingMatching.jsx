@@ -1,79 +1,124 @@
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 import car from '../../assets/logo.png';
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react';
 
 const OSRM_MATCH_URL = 'https://router.project-osrm.org/match/v1/driving';
-const BATCH_SIZE = 80; // OSRM limit is 100, keep some margin
-const MATCH_RADIUS = 25; // meters – how far a GPS point can be from a road
+const BATCH_SIZE = 80; // OSRM hard limit is 100, keep some margin
 
-/**
- * Snap an array of [lat, lng, speed] GPS points to actual roads via OSRM Match API.
- * Returns an array of [lat, lng] for the road-snapped polyline.
- * Falls back to raw coordinates on error.
- */
-async function snapToRoads(coordinates) {
-  if (!coordinates?.length || coordinates.length < 2) return coordinates.map((c) => [c[0], c[1]]);
+// A trip is split into a new "segment" whenever consecutive GPS fixes are
+// separated by more than one of these thresholds. The OSRM Match API cannot
+// meaningfully snap across such gaps — asking it to do so produces the
+// "straight line through a field" artefact the client reported.
+const GAP_TIME_SEC = 60;
+const GAP_DIST_M = 300;
 
-  // Split coordinates into overlapping batches so seams connect properly
-  const batches = [];
-  for (let i = 0; i < coordinates.length; i += BATCH_SIZE - 1) {
-    batches.push(coordinates.slice(i, Math.min(i + BATCH_SIZE, coordinates.length)));
-  }
-
-  const snappedPath = [];
-
-  for (let bIdx = 0; bIdx < batches.length; bIdx++) {
-    const batch = batches[bIdx];
-    if (batch.length < 2) {
-      // Need at least 2 points for OSRM
-      snappedPath.push([batch[0][0], batch[0][1]]);
-      continue;
-    }
-
-    try {
-      // OSRM expects lng,lat order
-      const coordStr = batch.map((c) => `${c[1]},${c[0]}`).join(';');
-      const radiuses = batch.map(() => MATCH_RADIUS).join(';');
-      const url = `${OSRM_MATCH_URL}/${coordStr}?overview=full&geometries=geojson&radiuses=${radiuses}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.code === 'Ok' && data.matchings?.length > 0) {
-        for (const matching of data.matchings) {
-          const geojsonCoords = matching.geometry.coordinates;
-          // GeoJSON is [lng, lat] → convert to [lat, lng]
-          const latLngs = geojsonCoords.map((c) => [c[1], c[0]]);
-
-          // Skip first point of subsequent batches to avoid duplicate at seam
-          const startIdx = snappedPath.length > 0 ? 1 : 0;
-          for (let i = startIdx; i < latLngs.length; i++) {
-            snappedPath.push(latLngs[i]);
-          }
-        }
-      } else {
-        // Fallback: use raw GPS points for this batch
-        const startIdx = snappedPath.length > 0 ? 1 : 0;
-        for (let i = startIdx; i < batch.length; i++) {
-          snappedPath.push([batch[i][0], batch[i][1]]);
-        }
-      }
-    } catch {
-      // Fallback: use raw GPS points for this batch
-      const startIdx = snappedPath.length > 0 ? 1 : 0;
-      for (let i = startIdx; i < batch.length; i++) {
-        snappedPath.push([batch[i][0], batch[i][1]]);
-      }
-    }
-  }
-
-  return snappedPath;
+// Haversine distance (metres) between two [lat, lng] points.
+function haversineMeters(a, b) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/**
- * For a snapped path point, find the nearest original GPS point to get its speed value.
- */
+// Adaptive match radius: faster points get a wider snap window because the
+// tracker error plus the time-to-next-fix means a larger positional envelope.
+// Capped at 100 m so we don't snap onto parallel roads.
+function radiusForPoint(speedKmh) {
+  const s = Number(speedKmh) || 0;
+  return Math.round(Math.max(30, Math.min(100, s * 1.5)));
+}
+
+function splitIntoSegments(coords) {
+  if (!coords?.length) return [];
+  const segments = [];
+  let current = [coords[0]];
+  for (let i = 1; i < coords.length; i++) {
+    const prev = current[current.length - 1];
+    const cur = coords[i];
+    const dt = prev[3] && cur[3] ? (cur[3] - prev[3]) / 1000 : 0;
+    const dd = haversineMeters(prev, cur);
+    if ((dt && dt > GAP_TIME_SEC) || dd > GAP_DIST_M) {
+      segments.push(current);
+      current = [cur];
+    } else {
+      current.push(cur);
+    }
+  }
+  if (current.length) segments.push(current);
+  return segments;
+}
+
+async function snapBatch(batch, accumulator) {
+  // OSRM expects lng,lat order.
+  const coordStr = batch.map((c) => `${c[1]},${c[0]}`).join(';');
+  const radiuses = batch.map((c) => radiusForPoint(c[2])).join(';');
+  const haveTimestamps = batch.every((c) => Number.isFinite(c[3]));
+  const timestamps = haveTimestamps ? batch.map((c) => Math.floor(c[3] / 1000)).join(';') : null;
+
+  let url = `${OSRM_MATCH_URL}/${coordStr}?overview=full&geometries=geojson&tidy=true&gaps=split&radiuses=${radiuses}`;
+  if (timestamps) url += `&timestamps=${timestamps}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.code === 'Ok' && data.matchings?.length) {
+      for (const matching of data.matchings) {
+        if (!matching?.geometry?.coordinates?.length) continue;
+        const latLngs = matching.geometry.coordinates.map((c) => [c[1], c[0]]);
+        const startIdx = accumulator.length > 0 ? 1 : 0;
+        for (let i = startIdx; i < latLngs.length; i++) accumulator.push(latLngs[i]);
+      }
+      return true;
+    }
+  } catch {
+    // fall through to fallback below
+  }
+  const startIdx = accumulator.length > 0 ? 1 : 0;
+  for (let i = startIdx; i < batch.length; i++) accumulator.push([batch[i][0], batch[i][1]]);
+  return false;
+}
+
+async function snapSegment(segment) {
+  if (!segment?.length) return { coords: [], snapped: false };
+  if (segment.length < 2) {
+    return { coords: [[segment[0][0], segment[0][1]]], snapped: false };
+  }
+
+  const batches = [];
+  for (let i = 0; i < segment.length; i += BATCH_SIZE - 1) {
+    batches.push(segment.slice(i, Math.min(i + BATCH_SIZE, segment.length)));
+  }
+
+  const snapped = [];
+  let allOk = true;
+  for (const batch of batches) {
+    if (batch.length < 2) {
+      const startIdx = snapped.length > 0 ? 1 : 0;
+      for (let i = startIdx; i < batch.length; i++) snapped.push([batch[i][0], batch[i][1]]);
+      allOk = false;
+      continue;
+    }
+    const ok = await snapBatch(batch, snapped);
+    if (!ok) allOk = false;
+  }
+  return { coords: snapped, snapped: allOk };
+}
+
+async function buildRoute(coordinates) {
+  const segments = splitIntoSegments(coordinates);
+  const snapped = [];
+  for (const seg of segments) {
+    const result = await snapSegment(seg);
+    if (result.coords.length) snapped.push(result);
+  }
+  return snapped;
+}
+
 function findNearestSpeed(lat, lng, originalCoords) {
   let minDist = Infinity;
   let speed = 0;
@@ -92,12 +137,12 @@ function findNearestSpeed(lat, lng, originalCoords) {
 const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
   const map = useMap();
   const markerRef = useRef();
-  const polylineRef = useRef();
+  const polylineRefs = useRef([]);
   const sourceMarkerRef = useRef();
   const destMarkerRef = useRef();
   const intervalRef = useRef();
   const posRef = useRef(0);
-  const [snappedCoords, setSnappedCoords] = useState([]);
+  const [route, setRoute] = useState([]); // [{ coords: [[lat,lng],...], snapped: bool }]
 
   const getSourceIcon = () =>
     L.divIcon({
@@ -148,13 +193,12 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     [vehicle_number],
   );
 
-  // Clean up all map layers
   const cleanup = useCallback(() => {
     clearInterval(intervalRef.current);
-    if (polylineRef.current) {
-      map.removeLayer(polylineRef.current);
-      polylineRef.current = null;
+    for (const pl of polylineRefs.current) {
+      if (pl) map.removeLayer(pl);
     }
+    polylineRefs.current = [];
     if (markerRef.current) {
       map.removeLayer(markerRef.current);
       markerRef.current = null;
@@ -169,22 +213,19 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     }
   }, [map]);
 
-  // Snap GPS coordinates to roads when raw coordinates change
+  // Build the route (segments + snapping) whenever raw coordinates change.
   useEffect(() => {
     if (!coordinates?.length || coordinates.length < 2) {
-      Promise.resolve().then(() => setSnappedCoords([]));
+      setRoute([]);
       return;
     }
 
     let cancelled = false;
 
-    snapToRoads(coordinates).then((snapped) => {
-      if (!cancelled && snapped.length >= 2) {
-        setSnappedCoords(snapped);
-      } else if (!cancelled) {
-        // Fallback if snapping returned too few points
-        setSnappedCoords(coordinates.map((c) => [c[0], c[1]]));
-      }
+    buildRoute(coordinates).then((built) => {
+      if (cancelled) return;
+      if (built.length) setRoute(built);
+      else setRoute([{ coords: coordinates.map((c) => [c[0], c[1]]), snapped: false }]);
     });
 
     return () => {
@@ -192,49 +233,113 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     };
   }, [coordinates]);
 
-  // Draw route polyline + markers when snapped coordinates are ready
+  // Flat animation path: concatenate all segment coords, interpolating a few
+  // points across each gap so the car marker transitions smoothly rather than
+  // teleporting. The interpolated gap points are NOT drawn as a solid road —
+  // the gap polyline below shows a dashed line so the user sees the trace is
+  // approximate over that span.
+  const animationPath = useMemo(() => {
+    const arr = [];
+    for (let i = 0; i < route.length; i++) {
+      const seg = route[i];
+      if (i > 0) {
+        const prev = route[i - 1].coords;
+        const a = prev[prev.length - 1];
+        const b = seg.coords[0];
+        if (a && b) {
+          const STEPS = 8;
+          for (let s = 1; s < STEPS; s++) {
+            const t = s / STEPS;
+            arr.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+          }
+        }
+      }
+      for (const c of seg.coords) arr.push(c);
+    }
+    return arr;
+  }, [route]);
+
+  // Render segments + gap lines + markers when route updates.
   useEffect(() => {
-    if (!map || !snappedCoords?.length || snappedCoords.length < 2) return;
+    if (!map || !route.length) return;
 
     cleanup();
 
-    // Draw polyline along road-snapped path
-    polylineRef.current = L.polyline(snappedCoords, {
-      color: '#4285f4',
-      weight: 5,
-      opacity: 1,
-      smoothFactor: 1,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(map);
+    const allBoundsPoints = [];
 
-    // Fit map bounds to polyline
-    map.fitBounds(polylineRef.current.getBounds(), { padding: [50, 50], maxZoom: 16 });
+    for (let i = 0; i < route.length; i++) {
+      const seg = route[i];
+      if (seg.coords.length >= 2) {
+        const pl = L.polyline(seg.coords, {
+          color: seg.snapped ? '#4285f4' : '#f59e0b', // amber if we couldn't snap this segment
+          weight: 5,
+          opacity: 1,
+          smoothFactor: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+          dashArray: seg.snapped ? null : '6 8',
+        }).addTo(map);
+        polylineRefs.current.push(pl);
+        allBoundsPoints.push(...seg.coords);
+      }
 
-    const first = snappedCoords[0];
-    const last = snappedCoords[snappedCoords.length - 1];
+      if (i > 0) {
+        const prev = route[i - 1].coords;
+        const a = prev[prev.length - 1];
+        const b = seg.coords[0];
+        if (a && b) {
+          const gap = L.polyline([a, b], {
+            color: '#9ca3af',
+            weight: 4,
+            opacity: 0.9,
+            dashArray: '2 10',
+            lineCap: 'round',
+          }).addTo(map);
+          polylineRefs.current.push(gap);
+          allBoundsPoints.push(a, b);
+        }
+      }
+    }
 
-    // Source marker (green circle)
-    sourceMarkerRef.current = L.marker([first[0], first[1]], { icon: getSourceIcon(), zIndexOffset: 1000 }).addTo(map);
+    if (allBoundsPoints.length >= 2) {
+      const bounds = L.latLngBounds(allBoundsPoints);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    }
 
-    // Destination marker (red square)
-    destMarkerRef.current = L.marker([last[0], last[1]], { icon: getDestIcon(), zIndexOffset: 1000 }).addTo(map);
+    const first = route[0].coords[0];
+    const lastSeg = route[route.length - 1].coords;
+    const last = lastSeg[lastSeg.length - 1];
 
-    // Vehicle marker at start position
-    const startSpeed = coordinates?.length ? findNearestSpeed(first[0], first[1], coordinates) : 0;
-    markerRef.current = L.marker([first[0], first[1]], { icon: getCarIcon(), zIndexOffset: 2000 })
-      .addTo(map)
-      .bindPopup(popHtml(first[0], first[1], startSpeed), { closeButton: false, autoClose: false })
-      .openPopup();
+    if (first) {
+      sourceMarkerRef.current = L.marker([first[0], first[1]], {
+        icon: getSourceIcon(),
+        zIndexOffset: 1000,
+      }).addTo(map);
+    }
+
+    if (last) {
+      destMarkerRef.current = L.marker([last[0], last[1]], {
+        icon: getDestIcon(),
+        zIndexOffset: 1000,
+      }).addTo(map);
+    }
+
+    if (first) {
+      const startSpeed = coordinates?.length ? findNearestSpeed(first[0], first[1], coordinates) : 0;
+      markerRef.current = L.marker([first[0], first[1]], { icon: getCarIcon(), zIndexOffset: 2000 })
+        .addTo(map)
+        .bindPopup(popHtml(first[0], first[1], startSpeed), { closeButton: false, autoClose: false })
+        .openPopup();
+    }
 
     posRef.current = 0;
 
     return cleanup;
-  }, [map, snappedCoords, vehicle_number, popHtml, cleanup, coordinates]);
+  }, [map, route, vehicle_number, popHtml, cleanup, coordinates]);
 
-  // Handle play/pause animation along snapped path
+  // Play / pause animation along the full interpolated path.
   useEffect(() => {
-    if (!snappedCoords?.length || snappedCoords.length < 2) return;
+    if (!animationPath.length || animationPath.length < 2) return;
 
     clearInterval(intervalRef.current);
 
@@ -242,15 +347,15 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     markerRef.current.setIcon(getCarIcon());
 
     if (isPlaying) {
-      if (posRef.current >= snappedCoords.length) posRef.current = 0;
+      if (posRef.current >= animationPath.length) posRef.current = 0;
       const delay = Math.max(10, 1000 / Math.max(speed, 1));
 
       intervalRef.current = setInterval(() => {
-        if (posRef.current >= snappedCoords.length) {
+        if (posRef.current >= animationPath.length) {
           clearInterval(intervalRef.current);
           return;
         }
-        const [lat, lng] = snappedCoords[posRef.current];
+        const [lat, lng] = animationPath[posRef.current];
         const currentSpeed = coordinates?.length ? findNearestSpeed(lat, lng, coordinates) : 0;
         markerRef.current.setLatLng([lat, lng]);
         markerRef.current.setPopupContent(popHtml(lat, lng, currentSpeed));
@@ -259,7 +364,7 @@ const RoutingMatching = ({ coordinates, speed, isPlaying, vehicle_number }) => {
     }
 
     return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed, snappedCoords, coordinates, popHtml]);
+  }, [isPlaying, speed, animationPath, coordinates, popHtml]);
 
   return null;
 };

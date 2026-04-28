@@ -1,5 +1,6 @@
 import Search from '@mui/icons-material/Search';
 import Refresh from '@mui/icons-material/Refresh';
+import Clear from '@mui/icons-material/Clear';
 import { TextField as Input, IconButton, Tooltip } from '@mui/material';
 
 export default function ISearch({ onChange, value, onRefresh }) {
@@ -11,7 +12,7 @@ export default function ISearch({ onChange, value, onRefresh }) {
           value={value}
           variant='standard'
           size='small'
-          placeholder='Search Vehicle'
+          placeholder='Search name, number, or route'
           fullWidth
           sx={{
             '& .MuiInput-underline:before': { borderBottom: 'none' },
@@ -23,6 +24,17 @@ export default function ISearch({ onChange, value, onRefresh }) {
           }}
           onChange={onChange}
         />
+        {value ? (
+          <Tooltip title='Clear search'>
+            <IconButton
+              size='small'
+              aria-label='Clear search'
+              onClick={() => onChange({ target: { value: '' } })}
+              sx={{ color: '#9ca3af' }}>
+              <Clear fontSize='small' />
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </div>
 
       <div className='flex items-center border-l pl-2 border-gray-200'>

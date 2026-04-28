@@ -61,7 +61,7 @@ export const fetchDestinationArrivalFemale = createAsyncThunk(
   'employee/fetchDestinationArrivalFemale',
   async (params, { rejectWithValue }) => {
     try {
-      const response = await ApiService.get('destinationarrivalfemale', params);
+      const response = await ApiService.get('destinationArrivalFemale', params);
       if (!response.success)
         return rejectWithValue(response.message || 'Failed to fetch destination arrival female report');
 

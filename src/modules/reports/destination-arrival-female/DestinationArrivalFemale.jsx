@@ -103,8 +103,8 @@ function DestinationArrivalFemale() {
     payload.departments = departments?.length ? JSON.stringify(departments) : undefined;
     payload.employees = employees?.length ? JSON.stringify(employees) : undefined;
     payload.plants = plants?.length ? JSON.stringify(plants) : undefined;
-    payload.routes = JSON.stringify(Array.isArray(routes) ? routes : []);
-    payload.vehicles = JSON.stringify(Array.isArray(vehicles) ? vehicles : []);
+    if (routes?.length) payload.routes = JSON.stringify(routes);
+    if (vehicles?.length) payload.vehicles = JSON.stringify(vehicles);
 
     if (fromDate) payload.from_date = fromDate;
     if (toDate) payload.to_date = toDate;

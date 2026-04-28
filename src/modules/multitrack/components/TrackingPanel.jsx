@@ -57,7 +57,7 @@ const StatCard = ({ icon, label, value, bg, color, onClick }) => (
   </div>
 );
 
-const TrackingPanel = ({ handleRightPanel }) => {
+const TrackingPanel = ({ handleRightPanel, selectedVehicleId, onClearMapSelection }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -90,10 +90,16 @@ const TrackingPanel = ({ handleRightPanel }) => {
 
   const filtered = useMemo(() => cleaned[activeTab] || [], [cleaned, activeTab]);
 
-  const shownDevices = useMemo(
-    () => (!search ? filtered : filtered.filter((d) => d.vehicle_name?.toLowerCase().includes(search.toLowerCase()))),
-    [search, filtered],
-  );
+  const shownDevices = useMemo(() => {
+    if (!search.trim()) return filtered;
+    const q = search.toLowerCase().trim();
+    return filtered.filter((d) => {
+      const name = (d.vehicle_name || '').toLowerCase();
+      const num = (d.vehicle_number || '').toLowerCase();
+      const route = (d.route_name || '').toLowerCase();
+      return name.includes(q) || num.includes(q) || route.includes(q);
+    });
+  }, [search, filtered]);
 
   const defaultShiftId = '2f7d76b8-87a9-4dc1-822a-a39e99b314e9';
 
@@ -152,6 +158,14 @@ const TrackingPanel = ({ handleRightPanel }) => {
         </div>
         <div className='p-2 border-b border-gray-300'>
           <ISearch onChange={(e) => setSearch(e.target.value)} value={search} onRefresh={handleRefresh} />
+          {selectedVehicleId && onClearMapSelection && (
+            <button
+              type='button'
+              onClick={onClearMapSelection}
+              className='mt-2 w-full text-center text-xs py-1.5 rounded border border-[#1d31a6] text-[#1d31a6] hover:bg-[#1d31a6] hover:text-white transition-colors'>
+              Clear selected vehicle (map and side panel)
+            </button>
+          )}
           {isRefreshing && isProcessed && (
             <div className='text-[11px] text-gray-500 mt-1'>Refreshing vehicle data...</div>
           )}
