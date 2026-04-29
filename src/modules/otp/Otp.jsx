@@ -13,7 +13,18 @@ import { fetchPlants } from '../../redux/plantSlice';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { fetchDepartments } from '../../redux/departmentSlice';
-import { IconButton, Paper, TextField, Button, InputAdornment, Typography } from '@mui/material';
+import {
+  IconButton,
+  Paper,
+  TextField,
+  Button,
+  InputAdornment,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
 import { APIURL } from '../../constants';
 import { AuthService } from '../../services';
 import { isPortalTokenValid } from '../../auth/sessionUtils';
@@ -26,6 +37,10 @@ const validationSchema = Yup.object({
 
 const RESEND_COOLDOWN_SEC = 60;
 
+function todayLocalKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function Otp() {
   const { login } = useAuth();
   const dispatch = useDispatch();
@@ -33,6 +48,7 @@ function Otp() {
   const [showOtp, setShowOtp] = useState(false);
   const [resendSec, setResendSec] = useState(0);
   const [resendBusy, setResendBusy] = useState(false);
+  const [pwdReminder, setPwdReminder] = useState({ open: false, isLastDay: false, authId: '' });
 
   useEffect(() => {
     if (isPortalTokenValid()) {
@@ -83,7 +99,7 @@ function Otp() {
       try {
         const actionResult = await dispatch(verifyOtp({ userId, otp: values.otp }));
         if (verifyOtp.fulfilled.match(actionResult)) {
-          const { token, user } = actionResult.payload;
+          const { token, user, passwordReminder } = actionResult.payload;
           const cred = await signInWithCustomToken(auth, token);
           const idToken = await cred.user.getIdToken();
 
@@ -92,11 +108,28 @@ function Otp() {
           localStorage.removeItem('user_id');
           localStorage.removeItem('pendingUserEmail');
           toast.success('OTP verified');
-          navigate('/dashboard');
 
-          // Load initial data in background (after navigation)
-          dispatch(fetchDepartments({ limit: 10 }));
-          dispatch(fetchPlants({ limit: 50 }));
+          const authId = user?.auth_id;
+          const day = todayLocalKey();
+          const remKey = authId ? `portalPwdRemLast:${authId}` : null;
+          const shouldRemind =
+            passwordReminder?.show && remKey && localStorage.getItem(remKey) !== day;
+
+          const goDashboard = () => {
+            navigate('/dashboard');
+            dispatch(fetchDepartments({ limit: 10 }));
+            dispatch(fetchPlants({ limit: 50 }));
+          };
+
+          if (shouldRemind) {
+            setPwdReminder({
+              open: true,
+              isLastDay: !!passwordReminder?.isLastDay,
+              authId,
+            });
+          } else {
+            goDashboard();
+          }
         } else {
           toast.error(actionResult.payload || 'Invalid OTP');
         }
@@ -107,8 +140,52 @@ function Otp() {
     },
   });
 
+  const dismissReminderForToday = () => {
+    const { authId } = pwdReminder;
+    if (authId) localStorage.setItem(`portalPwdRemLast:${authId}`, todayLocalKey());
+    setPwdReminder((s) => ({ ...s, open: false }));
+  };
+
+  const onRemindTomorrow = () => {
+    dismissReminderForToday();
+    navigate('/dashboard');
+    dispatch(fetchDepartments({ limit: 10 }));
+    dispatch(fetchPlants({ limit: 50 }));
+  };
+
+  const onResetNow = () => {
+    dismissReminderForToday();
+    navigate('/profile?tab=password', { replace: true });
+    dispatch(fetchDepartments({ limit: 10 }));
+    dispatch(fetchPlants({ limit: 50 }));
+  };
+
   return (
     <div className='bg-[#ecf0f5] w-full h-screen flex justify-center items-center'>
+      <Dialog
+        open={pwdReminder.open}
+        disableEscapeKeyDown
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick') return;
+        }}>
+        <DialogTitle>Change your password</DialogTitle>
+        <DialogContent>
+          <Typography variant='body2' className='pt-1'>
+            For security, please change your password. It has been at least 85 days since your last password update,
+            and your 90-day cycle is ending soon.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 3, pb: 2 }}>
+          {!pwdReminder.isLastDay ? (
+            <Button onClick={onRemindTomorrow} color='inherit' sx={{ textTransform: 'none' }}>
+              Remind me again tomorrow
+            </Button>
+          ) : null}
+          <Button variant='contained' onClick={onResetNow} sx={{ textTransform: 'none' }}>
+            Reset now
+          </Button>
+        </DialogActions>
+      </Dialog>
       <div className='flex flex-col items-center'>
         <img src={logo} alt='samsung logo' className='w-40' />
         <Paper elevation={3} className='p-5 w-[420px] mt-3'>

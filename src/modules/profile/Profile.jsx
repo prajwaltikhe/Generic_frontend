@@ -6,10 +6,13 @@ import { getRoleFromStorage } from '../../utils/roles';
 import { toast } from 'react-toastify';
 import ApiService from '../../services/ApiService';
 import { APIURL } from '../../constants';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Profile() {
   const role = getRoleFromStorage();
-  const showPasswordTab = role === 'superadmin';
+  const isSuperAdmin = role === 'superadmin';
+  const showPasswordTab = true;
+  const [searchParams] = useSearchParams();
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [savingInfo, setSavingInfo] = useState(false);
@@ -33,6 +36,12 @@ export default function Profile() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'password' && showPasswordTab) {
+      setTab(1);
+    }
+  }, [searchParams, showPasswordTab]);
 
   const currentTab = useMemo(() => {
     if (!showPasswordTab && tab > 0) return 0;
@@ -70,13 +79,17 @@ export default function Profile() {
       <div className='p-4 bg-white'>
         <Tabs value={currentTab} onChange={(_, v) => setTab(v)}>
           <Tab label='Information' />
-          {showPasswordTab && <Tab label='Password' />}
+          {showPasswordTab ? <Tab label='Password' /> : null}
         </Tabs>
         <div className='p-4'>
           {currentTab === 0 ? (
             <Information role={role} profile={profile} loading={loading} saving={savingInfo} onSave={handleSaveInfo} />
           ) : (
-            <PasswordPanel saving={savingPassword} onSave={handleSavePassword} />
+            <PasswordPanel
+              variant={isSuperAdmin ? 'superadmin' : 'otp'}
+              saving={savingPassword}
+              onSave={handleSavePassword}
+            />
           )}
         </div>
       </div>

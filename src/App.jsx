@@ -5,6 +5,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 const Login = lazy(() => import('./modules/login/Login'));
+const ForgotPassword = lazy(() => import('./modules/forgot-password/ForgotPassword'));
 const Otp = lazy(() => import('./modules/otp/Otp'));
 const TermsOfService = lazy(() => import('./modules/legal/TermsOfService'));
 const Layout = lazy(() => import('./components/layout/Layout'));
@@ -35,6 +36,7 @@ export default function App() {
           <Routes>
             <Route path='/login' element={<Login />} />
             <Route path='/' element={<Login />} />
+            <Route path='/forgot-password' element={<ForgotPassword />} />
             <Route path='/otp' element={<Otp />} />
             {/* Public: not behind Layout / role guards; IP whitelist applies only to login API, not this page */}
             <Route path='/terms-of-service' element={<TermsOfService />} />

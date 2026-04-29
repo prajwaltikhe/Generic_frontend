@@ -1,12 +1,18 @@
 export const APIURL = {
   LOGIN: 'users/login',
   RESEND_LOGIN_OTP: 'users/resend-login-otp',
+  FORGOT_PASSWORD_REQUEST: 'users/forgot-password/request',
+  FORGOT_PASSWORD_COMPLETE: 'users/forgot-password/complete',
+  FORGOT_PASSWORD_RESEND: 'users/forgot-password/resend',
   CAPTCHA: 'captcha',
   VERIFY_OTP: 'users/verifyotp',
   SUPER_ADMIN_EMAIL_SERVICE: 'super-admin/email-service',
   SUPER_ADMIN_SMS_SERVICE: 'super-admin/sms-service',
   SUPER_ADMIN_IP_WHITELIST: 'super-admin/ip-whitelist',
   PORTAL_USERS: 'portal-users',
+  PORTAL_PASSWORD_RESET_REQUEST_OTP: 'portal-users/me/password-reset/request-otp',
+  PORTAL_PASSWORD_RESET_COMPLETE: 'portal-users/me/password-reset/complete',
+  PORTAL_PASSWORD_RESET_RESEND: 'portal-users/me/password-reset/resend',
 
   VEHICLE: 'vehicle',
   LASTVEHICLEDATA: 'lastvehicledata',

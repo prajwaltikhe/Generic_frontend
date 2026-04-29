@@ -260,9 +260,9 @@ function Login() {
               </Button>
             </div>
             <div className='mt-2 w-full text-right'>
-              <a href='#' className='text-sm text-blue-500 hover:text-gray-800'>
+              <Link to='/forgot-password' className='text-sm text-blue-500 hover:text-gray-800 hover:underline'>
                 Forgot your password?
-              </a>
+              </Link>
             </div>
             <div className='mt-4 w-full text-center text-sm text-gray-600'>
               <Link to='/terms-of-service' className='text-blue-600 hover:text-blue-800 hover:underline'>

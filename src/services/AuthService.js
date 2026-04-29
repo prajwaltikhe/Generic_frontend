@@ -33,6 +33,14 @@ const AuthService = {
 
   resendLoginOtp: async (url, userId) => ApiService.postPublic(url, { userId }),
 
+  requestForgotPasswordOtp: async (url, phone_number, captchaToken, captchaAnswer) =>
+    ApiService.postPublic(url, { phone_number, captchaToken, captchaAnswer }),
+
+  completeForgotPassword: async (url, userId, otp, newPassword, confirmPassword) =>
+    ApiService.postPublic(url, { userId, otp, newPassword, confirmPassword }),
+
+  resendForgotPasswordOtp: async (url, userId) => ApiService.postPublic(url, { userId }),
+
   logout: removeToken,
   getToken,
   isAuthenticated: () => {
